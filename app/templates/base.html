@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Dozentenmanager{% endblock %}</title>
+
+    <!-- Bulma CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{{ url_for('index') }}">
+                <strong>Dozentenmanager</strong>
+            </a>
+
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+
+        <div id="navbarMenu" class="navbar-menu">
+            <div class="navbar-start">
+                <!-- Navigation items will be added as features are implemented -->
+                <!--
+                <a class="navbar-item" href="{{ url_for('students.list') }}">
+                    <span class="icon"><i class="fas fa-user-graduate"></i></span>
+                    <span>Studierende</span>
+                </a>
+                <a class="navbar-item" href="{{ url_for('courses.list') }}">
+                    <span class="icon"><i class="fas fa-book"></i></span>
+                    <span>Lehrveranstaltungen</span>
+                </a>
+                <a class="navbar-item" href="{{ url_for('exams.list') }}">
+                    <span class="icon"><i class="fas fa-clipboard-check"></i></span>
+                    <span>Prüfungen</span>
+                </a>
+                <a class="navbar-item" href="{{ url_for('universities.list') }}">
+                    <span class="icon"><i class="fas fa-university"></i></span>
+                    <span>Hochschulen</span>
+                </a>
+                -->
+            </div>
+
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <!-- Future: Add user menu here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumb -->
+    {% block breadcrumb %}{% endblock %}
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <section class="section pt-4 pb-0">
+                <div class="container">
+                    {% for category, message in messages %}
+                        <div class="notification is-{{ category if category in ['info', 'success', 'warning', 'danger'] else 'info' }} is-light">
+                            <button class="delete"></button>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <section class="section">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                <strong>Dozentenmanager</strong> - Student Management System
+            </p>
+            <p class="is-size-7">
+                Version 0.1.0
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bulma navbar burger toggle script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all "navbar-burger" elements
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+            // Add click event on each of them
+            $navbarBurgers.forEach( el => {
+                el.addEventListener('click', () => {
+                    // Get the target from the "data-target" attribute
+                    const target = el.dataset.target;
+                    const $target = document.getElementById(target);
+
+                    // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                    el.classList.toggle('is-active');
+                    $target.classList.toggle('is-active');
+                });
+            });
+
+            // Auto-hide flash messages after 5 seconds
+            const $notifications = document.querySelectorAll('.notification .delete');
+            $notifications.forEach(($delete) => {
+                const $notification = $delete.parentNode;
+
+                $delete.addEventListener('click', () => {
+                    $notification.parentNode.removeChild($notification);
+                });
+
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    if ($notification.parentNode) {
+                        $notification.parentNode.removeChild($notification);
+                    }
+                }, 5000);
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

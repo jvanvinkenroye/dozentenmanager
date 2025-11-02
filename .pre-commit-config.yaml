@@ -1,0 +1,47 @@
+# Pre-commit hooks configuration for Dozentenmanager
+# Install with: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.3
+    hooks:
+      # Run linter
+      - id: ruff
+        args: [--fix]
+      # Run formatter
+      - id: ruff-format
+
+  # Mypy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-python-dateutil
+          - sqlalchemy[mypy]
+
+  # General pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+      # Check YAML syntax
+      - id: check-yaml
+      # Check for large files
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      # Check for merge conflicts
+      - id: check-merge-conflict
+      # Check for debug statements
+      - id: debug-statements
+      # Check JSON syntax
+      - id: check-json
+      # Check TOML syntax
+      - id: check-toml
+      # Detect private keys
+      - id: detect-private-key

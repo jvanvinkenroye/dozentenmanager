@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{% if student %}{{ student.first_name }} {{ student.last_name}} bearbeiten{% else %}Neue/r Studierende/r{% endif %} - Studierende - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('student.index') }}">Studierende</a></li>
+                {% if student %}
+                <li><a href="{{ url_for('student.show', student_id=student.id) }}">{{ student.last_name}}, {{ student.first_name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Bearbeiten</a></li>
+                {% else %}
+                <li class="is-active"><a href="#" aria-current="page">Neue/r Studierende/r</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    {% if student %}
+    Studierende/n bearbeiten
+    {% else %}
+    Neue/n Studierende/n hinzufügen
+    {% endif %}
+</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post">
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Vorname <span class="has-text-danger">*</span></label>
+                            <div class="control">
+                                <input
+                                    class="input"
+                                    type="text"
+                                    name="first_name"
+                                    placeholder="z.B. Max"
+                                    value="{% if form_data %}{{ form_data.first_name }}{% elif student %}{{ student.first_name }}{% endif %}"
+                                    required
+                                    autofocus>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Nachname <span class="has-text-danger">*</span></label>
+                            <div class="control">
+                                <input
+                                    class="input"
+                                    type="text"
+                                    name="last_name"
+                                    placeholder="z.B. Mustermann"
+                                    value="{% if form_data %}{{ form_data.last_name }}{% elif student %}{{ student.last_name }}{% endif %}"
+                                    required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Matrikelnummer <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="student_id"
+                            placeholder="z.B. 12345678"
+                            value="{% if form_data %}{{ form_data.student_id }}{% elif student %}{{ student.student_id }}{% endif %}"
+                            pattern="[0-9]{8}"
+                            required>
+                    </div>
+                    <p class="help">Genau 8 Ziffern</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">E-Mail <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="email"
+                            name="email"
+                            placeholder="z.B. max.mustermann@example.com"
+                            value="{% if form_data %}{{ form_data.email }}{% elif student %}{{ student.email }}{% endif %}"
+                            required>
+                    </div>
+                    <p class="help">Gültige E-Mail-Adresse erforderlich</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">Studiengang <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="program"
+                            placeholder="z.B. Informatik"
+                            value="{% if form_data %}{{ form_data.program }}{% elif student %}{{ student.program }}{% endif %}"
+                            required>
+                    </div>
+                    <p class="help">Studiengang oder Studienfach</p>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span>{% if student %}Aktualisieren{% else %}Erstellen{% endif %}</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{% if student %}{{ url_for('student.show', student_id=student.id) }}{% else %}{{ url_for('student.index') }}{% endif %}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle">Hilfe</h2>
+
+            <div class="content">
+                <h3 class="is-size-6 has-text-weight-semibold">Matrikelnummer</h3>
+                <p>Die Matrikelnummer muss genau 8 Ziffern enthalten und eindeutig sein.</p>
+
+                <h3 class="is-size-6 has-text-weight-semibold">E-Mail-Adresse</h3>
+                <p>Die E-Mail-Adresse muss gültig und eindeutig sein.</p>
+
+                <div class="notification is-info is-light">
+                    <p class="is-size-7">
+                        <span class="icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </span>
+                        <strong>Tipp:</strong> Alle Felder mit * sind Pflichtfelder.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

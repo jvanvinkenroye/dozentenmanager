@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Studierende - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Studierende</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">Studierende</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{{ url_for('student.new') }}" class="button is-primary">
+                <span class="icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+                <span>Neue/r Studierende/r</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="box">
+    <form method="get" action="{{ url_for('student.index') }}">
+        <div class="field is-horizontal">
+            <div class="field-body">
+                <div class="field">
+                    <div class="control is-expanded has-icons-left">
+                        <input class="input" type="text" name="search" placeholder="Suche (Name, Matrikelnummer, E-Mail)" value="{{ search_term }}">
+                        <span class="icon is-left">
+                            <i class="fas fa-search"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control is-expanded has-icons-left">
+                        <input class="input" type="text" name="program" placeholder="Studiengang" value="{{ program_filter }}">
+                        <span class="icon is-left">
+                            <i class="fas fa-graduation-cap"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="field is-narrow">
+                    <div class="control">
+                        <button type="submit" class="button is-info">
+                            <span class="icon">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <span>Suchen</span>
+                        </button>
+                    </div>
+                </div>
+                {% if search_term or program_filter %}
+                <div class="field is-narrow">
+                    <div class="control">
+                        <a href="{{ url_for('student.index') }}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Zurücksetzen</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Student List -->
+{% if students %}
+<div class="box">
+    <table class="table is-fullwidth is-hoverable is-striped">
+        <thead>
+            <tr>
+                <th>Matrikelnr.</th>
+                <th>Name</th>
+                <th>E-Mail</th>
+                <th>Studiengang</th>
+                <th class="has-text-right">Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>
+                    <span class="tag is-light">{{ student.student_id }}</span>
+                </td>
+                <td>
+                    <a href="{{ url_for('student.show', student_id=student.id) }}" class="has-text-weight-semibold">
+                        {{ student.last_name }}, {{ student.first_name }}
+                    </a>
+                </td>
+                <td>{{ student.email }}</td>
+                <td>{{ student.program }}</td>
+                <td class="has-text-right">
+                    <div class="buttons is-right">
+                        <a href="{{ url_for('student.show', student_id=student.id) }}" class="button is-small is-info is-light" title="Details anzeigen">
+                            <span class="icon is-small">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </a>
+                        <a href="{{ url_for('student.edit', student_id=student.id) }}" class="button is-small is-warning is-light" title="Bearbeiten">
+                            <span class="icon is-small">
+                                <i class="fas fa-edit"></i>
+                            </span>
+                        </a>
+                        <a href="{{ url_for('student.delete', student_id=student.id) }}" class="button is-small is-danger is-light" title="Löschen">
+                            <span class="icon is-small">
+                                <i class="fas fa-trash"></i>
+                            </span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="has-text-grey">
+        <p><strong>{{ students|length }}</strong> Studierende gefunden</p>
+    </div>
+</div>
+{% else %}
+<div class="notification is-warning is-light">
+    <p class="has-text-weight-semibold">
+        <span class="icon">
+            <i class="fas fa-info-circle"></i>
+        </span>
+        Keine Studierenden gefunden.
+    </p>
+    {% if search_term or program_filter %}
+    <p>Versuchen Sie es mit anderen Suchbegriffen oder <a href="{{ url_for('student.index') }}">alle Studierenden anzeigen</a>.</p>
+    {% else %}
+    <p>Beginnen Sie mit dem <a href="{{ url_for('student.new') }}">Hinzufügen einer/eines neuen Studierenden</a>.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} löschen - Studierende - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('student.index') }}">Studierende</a></li>
+                <li><a href="{{ url_for('student.show', student_id=student.id) }}">{{ student.last_name }}, {{ student.first_name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Löschen</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title has-text-danger">
+    <span class="icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </span>
+    Studierende/n löschen
+</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <div class="notification is-danger is-light">
+                <p class="has-text-weight-semibold">
+                    <span class="icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                    Sind Sie sicher, dass Sie diese/n Studierende/n löschen möchten?
+                </p>
+                <p class="mt-2">Diese Aktion kann nicht rückgängig gemacht werden!</p>
+            </div>
+
+            <div class="content">
+                <h2 class="subtitle">Details</h2>
+
+                <table class="table is-fullwidth">
+                    <tbody>
+                        <tr>
+                            <th>Matrikelnummer</th>
+                            <td><span class="tag is-light">{{ student.student_id }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Name</th>
+                            <td><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>E-Mail</th>
+                            <td>{{ student.email }}</td>
+                        </tr>
+                        <tr>
+                            <th>Studiengang</th>
+                            <td>{{ student.program }}</td>
+                        </tr>
+                        <tr>
+                            <th>Erstellt am</th>
+                            <td>{{ student.created_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Zuletzt aktualisiert</th>
+                            <td>{{ student.updated_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post">
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-danger">
+                            <span class="icon">
+                                <i class="fas fa-trash"></i>
+                            </span>
+                            <span>Ja, endgültig löschen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('student.show', student_id=student.id) }}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-arrow-left"></i>
+                            </span>
+                            <span>Nein, abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle has-text-danger">Warnung</h2>
+
+            <div class="content">
+                <p>Das Löschen dieses/r Studierenden wird:</p>
+                <ul>
+                    <li>Die/den Studierende/n permanent entfernen</li>
+                    <li>Möglicherweise verknüpfte Daten beeinflussen</li>
+                </ul>
+
+                <div class="notification is-warning is-light">
+                    <p class="is-size-7">
+                        <span class="icon">
+                            <i class="fas fa-info-circle"></i>
+                        </span>
+                        <strong>Hinweis:</strong> Überprüfen Sie, ob diese/r Studierende noch mit Lehrveranstaltungen oder Prüfungen verknüpft ist.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

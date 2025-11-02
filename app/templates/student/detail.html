@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.first_name }} {{ student.last_name }} - Studierende - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('student.index') }}">Studierende</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ student.last_name }}, {{ student.first_name }}</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <div>
+                <h1 class="title">{{ student.first_name }} {{ student.last_name }}</h1>
+                <p class="subtitle is-6">
+                    <span class="tag is-medium is-light">{{ student.student_id }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('student.edit', student_id=student.id) }}" class="button is-warning">
+                    <span class="icon">
+                        <i class="fas fa-edit"></i>
+                    </span>
+                    <span>Bearbeiten</span>
+                </a>
+                <a href="{{ url_for('student.delete', student_id=student.id) }}" class="button is-danger">
+                    <span class="icon">
+                        <i class="fas fa-trash"></i>
+                    </span>
+                    <span>Löschen</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column is-half">
+        <div class="box">
+            <h2 class="subtitle">Persönliche Informationen</h2>
+
+            <div class="field">
+                <label class="label">Matrikelnummer</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.student_id }}" readonly>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Vorname</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.first_name }}" readonly>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Nachname</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.last_name }}" readonly>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">E-Mail</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.email }}" readonly>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Studiengang</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.program }}" readonly>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Erstellt am</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.created_at.strftime('%d.%m.%Y %H:%M:%S') }}" readonly>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Zuletzt aktualisiert</label>
+                <div class="control">
+                    <input class="input" type="text" value="{{ student.updated_at.strftime('%d.%m.%Y %H:%M:%S') }}" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="column is-half">
+        <div class="box">
+            <h2 class="subtitle">Aktivitäten</h2>
+
+            <div class="notification is-info is-light">
+                <p class="has-text-weight-semibold">
+                    <span class="icon">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
+                    Aktivitäten werden in zukünftigen Versionen verfügbar sein.
+                </p>
+                <ul class="mt-2">
+                    <li>Einschreibungen in Lehrveranstaltungen</li>
+                    <li>Prüfungsleistungen</li>
+                    <li>Abgaben</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="buttons">
+    <a href="{{ url_for('student.index') }}" class="button is-light">
+        <span class="icon">
+            <i class="fas fa-arrow-left"></i>
+        </span>
+        <span>Zurück zur Liste</span>
+    </a>
+</div>
+{% endblock %}

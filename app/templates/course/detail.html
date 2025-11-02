@@ -107,21 +107,67 @@
 
     <div class="column is-half">
         <div class="box">
-            <h2 class="subtitle">Studierende</h2>
-
-            <div class="notification is-info is-light">
-                <p class="has-text-weight-semibold">
-                    <span class="icon">
-                        <i class="fas fa-info-circle"></i>
-                    </span>
-                    Einschreibungen werden in zukünftigen Versionen verfügbar sein.
-                </p>
-                <ul class="mt-2">
-                    <li>Liste der eingeschriebenen Studierenden</li>
-                    <li>Teilnehmerzahl und Kapazität</li>
-                    <li>Einschreibungsstatus</li>
-                </ul>
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h2 class="subtitle">Studierende ({{ enrollments|length }})</h2>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        {% if available_students %}
+                        <button class="button is-success is-small" onclick="document.getElementById('enroll-modal').classList.add('is-active')">
+                            <span class="icon"><i class="fas fa-user-plus"></i></span>
+                            <span>Einschreiben</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+
+            {% if enrollments %}
+            <table class="table is-fullwidth is-hoverable is-striped">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Matrikelnummer</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('student.show', student_id=enrollment.student.student_id) }}">
+                                {{ enrollment.student.first_name }} {{ enrollment.student.last_name }}
+                            </a>
+                        </td>
+                        <td>{{ enrollment.student.student_id }}</td>
+                        <td>
+                            <span class="tag {% if enrollment.status == 'active' %}is-success{% elif enrollment.status == 'completed' %}is-info{% else %}is-warning{% endif %}">
+                                {{ enrollment.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <form method="post" action="{{ url_for('enrollment.unenroll') }}" style="display: inline;">
+                                <input type="hidden" name="student_id" value="{{ enrollment.student.id }}">
+                                <input type="hidden" name="course_id" value="{{ course.id }}">
+                                <input type="hidden" name="redirect_to" value="course">
+                                <button type="submit" class="button is-danger is-small" onclick="return confirm('Studierende/n wirklich austragen?')">
+                                    <span class="icon is-small"><i class="fas fa-user-times"></i></span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="notification is-info is-light">
+                Keine Studierenden eingeschrieben.
+            </div>
+            {% endif %}
         </div>
 
         <div class="box">
@@ -151,5 +197,42 @@
         </span>
         <span>Zurück zur Liste</span>
     </a>
+</div>
+
+<!-- Enroll Student Modal -->
+<div id="enroll-modal" class="modal">
+    <div class="modal-background" onclick="document.getElementById('enroll-modal').classList.remove('is-active')"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Studierenden einschreiben</p>
+            <button class="delete" aria-label="close" onclick="document.getElementById('enroll-modal').classList.remove('is-active')"></button>
+        </header>
+        <form method="post" action="{{ url_for('enrollment.enroll') }}">
+            <section class="modal-card-body">
+                <input type="hidden" name="course_id" value="{{ course.id }}">
+                <input type="hidden" name="redirect_to" value="course">
+
+                <div class="field">
+                    <label class="label">Student auswählen</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="student_id" required>
+                                <option value="">Bitte wählen...</option>
+                                {% for student in available_students %}
+                                <option value="{{ student.id }}">
+                                    {{ student.last_name }}, {{ student.first_name }} ({{ student.student_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button type="submit" class="button is-success">Einschreiben</button>
+                <button type="button" class="button" onclick="document.getElementById('enroll-modal').classList.remove('is-active')">Abbrechen</button>
+            </footer>
+        </form>
+    </div>
 </div>
 {% endblock %}

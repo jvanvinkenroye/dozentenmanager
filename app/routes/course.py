@@ -11,7 +11,8 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
 import app as app_module
-from app.models.course import Course, validate_semester, generate_slug
+from app.models.course import Course, generate_slug, validate_semester
+from app.models.student import Student
 from app.models.university import University
 
 # Configure logging
@@ -94,6 +95,8 @@ def show(course_id: int) -> str | Any:
         Rendered template with course details or redirect
     """
     try:
+        from app.models.enrollment import Enrollment
+
         course = (
             app_module.db_session.query(Course)  # type: ignore[union-attr]
             .filter_by(id=course_id)
@@ -104,7 +107,30 @@ def show(course_id: int) -> str | Any:
             flash(f"Course with ID {course_id} not found.", "error")
             return redirect(url_for("course.index"))
 
-        return render_template("course/detail.html", course=course)
+        # Get enrollments for this course
+        enrollments = (
+            app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
+            .filter_by(course_id=course_id)
+            .all()
+        )
+
+        # Get all students for enrollment dropdown (students not already enrolled)
+        enrolled_student_ids = [e.student_id for e in enrollments]
+        available_students = (
+            app_module.db_session.query(Student)  # type: ignore[union-attr]
+            .filter(
+                ~Student.id.in_(enrolled_student_ids) if enrolled_student_ids else True  # type: ignore[arg-type]
+            )
+            .order_by(Student.last_name, Student.first_name)
+            .all()
+        )
+
+        return render_template(
+            "course/detail.html",
+            course=course,
+            enrollments=enrollments,
+            available_students=available_students,
+        )
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching course: {e}")

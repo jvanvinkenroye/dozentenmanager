@@ -10,6 +10,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Next features in development will be listed here
 
+## [0.3.0] - 2025-11-02
+
+### Added
+- **Course Management System** (CLI + Web)
+  - Course model with semester validation and slug generation
+  - Semester format validation (YYYY_SoSe or YYYY_WiSe)
+  - Automatic slug generation from course names (handles German umlauts)
+  - Foreign key relationship to University
+  - Unique constraint on university_id + semester + slug combination
+  - Database migration with indexes on semester and university_id
+  - CLI tool (`cli/course_cli.py`) with full CRUD operations:
+    - Add courses with semester validation and university selection
+    - List courses with search (name) and filters (university/semester)
+    - Show course details
+    - Update course information with auto-slug regeneration
+    - Delete courses
+  - Flask blueprint for course management routes
+  - Responsive Bulma-based templates:
+    - List view with search and dual filters (university dropdown + semester)
+    - Detail view showing course and university information
+    - Create/edit form with semester pattern validation and help sidebar
+    - Delete confirmation page with warnings about related data
+  - 28 unit tests for CLI operations
+  - Navigation updated with courses link (Lehrveranstaltungen)
+  - Integration with existing Flask application
+
+### Changed
+- Updated base template navigation to include courses section
+- Registered course blueprint in Flask app factory
+
+### Fixed
+- SQLAlchemy DetachedInstanceError in test fixtures (return IDs instead of objects)
+- IntegrityError test assertions for unique constraint violations
+- Type checking for SQLAlchemy exception handling
+
+### Technical
+- Total test count: 122 tests (61 university + 33 student + 28 course)
+- All tests passing with 100% success rate
+- Linting clean (ruff)
+- Type checking passing (mypy)
+- Pre-commit hooks configured and passing
+
 ## [0.2.0] - 2025-11-02
 
 ### Added
@@ -135,24 +177,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Summary Statistics
 
-### Version 0.2.0
-- **Lines of Code**: ~2,000+ (CLI + web interface)
-- **Models**: 2 (University, Student)
-- **CLI Tools**: 2
-- **Web Routes**: 10
-- **Templates**: 8
-- **Tests**: 94 (73 unit + 21 integration)
+### Version 0.3.0
+- **Lines of Code**: ~3,000+ (CLI + web interface)
+- **Models**: 3 (University, Student, Course)
+- **CLI Tools**: 3
+- **Web Routes**: 15 (5 per feature × 3 features)
+- **Templates**: 12 (4 per feature × 3 features)
+- **Tests**: 122 (101 unit + 21 integration)
 - **Test Coverage**: 100% pass rate
 
 ### Commits
-- Total commits: 6
-- Features: 4
+- Total commits: 8
+- Features: 6
 - Chores: 2
 
 ### Development Timeline
 - Project initialized: 2025-11-02
 - University Management completed: 2025-11-02
 - Student Management completed: 2025-11-02
+- Course Management completed: 2025-11-02
 - Duration: Single day (rapid development session)
 
 ---
@@ -165,7 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **German Localization**: Web interface uses German labels and text
 - **Responsive Design**: Bulma CSS framework ensures mobile-friendly interface
 
-[Unreleased]: https://github.com/yourusername/dozentenmanager/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/yourusername/dozentenmanager/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/yourusername/dozentenmanager/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yourusername/dozentenmanager/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yourusername/dozentenmanager/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/yourusername/dozentenmanager/releases/tag/v0.0.1

@@ -146,18 +146,10 @@ def register_blueprints(app: Flask) -> None:
         app: Flask application instance
     """
     # Import blueprints here to avoid circular imports
-    # from app.routes.universities import universities_bp
-    # from app.routes.students import students_bp
-    # from app.routes.courses import courses_bp
-    # from app.routes.enrollments import enrollments_bp
-    # from app.routes.exams import exams_bp
+    from app.routes.university import bp as university_bp
 
-    # Register blueprints when they are created
-    # app.register_blueprint(universities_bp)
-    # app.register_blueprint(students_bp)
-    # app.register_blueprint(courses_bp)
-    # app.register_blueprint(enrollments_bp)
-    # app.register_blueprint(exams_bp)
+    # Register blueprints
+    app.register_blueprint(university_bp)
 
     # Temporary: Register a simple index route
     @app.route("/")
@@ -169,6 +161,9 @@ def register_blueprints(app: Flask) -> None:
                 <h1>Dozentenmanager</h1>
                 <p>Student Management System</p>
                 <p>Application is running successfully!</p>
+                <ul>
+                    <li><a href="/universities">Universities</a></li>
+                </ul>
             </body>
         </html>
         """

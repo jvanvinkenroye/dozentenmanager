@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{% if university %}{{ university.name }} bearbeiten{% else %}Neue Hochschule{% endif %} - Hochschulen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('university.index') }}">Hochschulen</a></li>
+                {% if university %}
+                <li><a href="{{ url_for('university.show', university_id=university.id) }}">{{ university.name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Bearbeiten</a></li>
+                {% else %}
+                <li class="is-active"><a href="#" aria-current="page">Neue Hochschule</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    {% if university %}
+    Hochschule bearbeiten
+    {% else %}
+    Neue Hochschule hinzufügen
+    {% endif %}
+</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post">
+                <div class="field">
+                    <label class="label">Name <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="name"
+                            placeholder="z.B. Technische Hochschule Köln"
+                            value="{% if form_data %}{{ form_data.name }}{% elif university %}{{ university.name }}{% endif %}"
+                            required
+                            autofocus>
+                    </div>
+                    <p class="help">Der vollständige Name der Hochschule</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">
+                        Slug
+                        {% if not university %}
+                        <span class="has-text-grey-light">(optional - wird automatisch generiert)</span>
+                        {% else %}
+                        <span class="has-text-danger">*</span>
+                        {% endif %}
+                    </label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="slug"
+                            placeholder="z.B. th-koeln"
+                            value="{% if form_data %}{{ form_data.slug }}{% elif university %}{{ university.slug }}{% endif %}"
+                            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                            {% if university %}required{% endif %}>
+                    </div>
+                    <p class="help">
+                        URL-freundlicher Bezeichner (nur Kleinbuchstaben, Zahlen und Bindestriche).
+                        {% if not university %}
+                        Wenn leer, wird er automatisch aus dem Namen generiert.
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span>{% if university %}Aktualisieren{% else %}Erstellen{% endif %}</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{% if university %}{{ url_for('university.show', university_id=university.id) }}{% else %}{{ url_for('university.index') }}{% endif %}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle">Hilfe</h2>
+
+            <div class="content">
+                <h3 class="is-size-6 has-text-weight-semibold">Name</h3>
+                <p>Geben Sie den vollständigen offiziellen Namen der Hochschule ein.</p>
+
+                <h3 class="is-size-6 has-text-weight-semibold">Slug</h3>
+                <p>Der Slug wird für URLs verwendet und sollte eindeutig sein.</p>
+
+                <p><strong>Beispiele:</strong></p>
+                <ul>
+                    <li>"TH Köln" → <code>th-koeln</code></li>
+                    <li>"RWTH Aachen" → <code>rwth-aachen</code></li>
+                    <li>"Uni Düsseldorf" → <code>uni-duesseldorf</code></li>
+                </ul>
+
+                <div class="notification is-info is-light">
+                    <p class="is-size-7">
+                        <span class="icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </span>
+                        <strong>Tipp:</strong> Bei der Erstellung wird der Slug automatisch aus dem Namen generiert, wenn Sie ihn leer lassen.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

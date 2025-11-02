@@ -6,7 +6,8 @@ for the application and Alembic migrations.
 """
 
 # Import models here as they are created
-# from app.models.university import University
+from app.models.university import University
+
 # from app.models.student import Student
 # from app.models.course import Course
 # from app.models.enrollment import Enrollment
@@ -17,5 +18,6 @@ for the application and Alembic migrations.
 # from app.models.audit_log import AuditLog
 
 __all__ = [
-    # List model names here as they are created
+    "University",
+    # List other model names here as they are created
 ]

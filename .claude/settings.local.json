@@ -10,7 +10,12 @@
       "Bash(uv add:*)",
       "Bash(source .venv/bin/activate)",
       "Bash(pre-commit install:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(alembic revision:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff check:*)",
+      "Bash(mypy:*)"
     ],
     "deny": [],
     "ask": []

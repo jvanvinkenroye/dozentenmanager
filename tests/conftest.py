@@ -5,7 +5,8 @@ This module provides common test fixtures for unit and integration tests.
 """
 
 import pytest
-from app import create_app, Base, db_session
+import app as app_module
+from app import create_app, Base
 
 
 @pytest.fixture(scope="function")
@@ -19,14 +20,14 @@ def app():
     test_app = create_app("testing")
 
     with test_app.app_context():
-        # Create all tables
-        Base.metadata.create_all(bind=db_session.get_bind())
+        # Create all tables (db_session is initialized by create_app)
+        Base.metadata.create_all(bind=app_module.db_session.get_bind())
 
         yield test_app
 
         # Drop all tables after test
-        Base.metadata.drop_all(bind=db_session.get_bind())
-        db_session.remove()
+        Base.metadata.drop_all(bind=app_module.db_session.get_bind())
+        app_module.db_session.remove()
 
 
 @pytest.fixture(scope="function")
@@ -68,4 +69,4 @@ def db(app):
     Returns:
         SQLAlchemy database session
     """
-    return db_session
+    return app_module.db_session

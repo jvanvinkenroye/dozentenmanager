@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{% if course %}{{ course.name }} bearbeiten{% else %}Neue Lehrveranstaltung{% endif %} - Lehrveranstaltungen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('course.index') }}">Lehrveranstaltungen</a></li>
+                {% if course %}
+                <li><a href="{{ url_for('course.show', course_id=course.id) }}">{{ course.name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Bearbeiten</a></li>
+                {% else %}
+                <li class="is-active"><a href="#" aria-current="page">Neue Lehrveranstaltung</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    {% if course %}
+    Lehrveranstaltung bearbeiten
+    {% else %}
+    Neue Lehrveranstaltung hinzufügen
+    {% endif %}
+</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post">
+                <div class="field">
+                    <label class="label">Name <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="name"
+                            placeholder="z.B. Einführung in die Statistik"
+                            value="{% if form_data %}{{ form_data.name }}{% elif course %}{{ course.name }}{% endif %}"
+                            required
+                            autofocus>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Semester <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="semester"
+                            placeholder="z.B. 2023_SoSe oder 2024_WiSe"
+                            value="{% if form_data %}{{ form_data.semester }}{% elif course %}{{ course.semester }}{% endif %}"
+                            pattern="[0-9]{4}_(SoSe|WiSe)"
+                            required>
+                    </div>
+                    <p class="help">Format: YYYY_SoSe (Sommersemester) oder YYYY_WiSe (Wintersemester)</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">Hochschule <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="university_id" required>
+                                <option value="">Bitte wählen...</option>
+                                {% for uni in universities %}
+                                <option value="{{ uni.id }}"
+                                    {% if form_data and form_data.university_id|string == uni.id|string %}selected
+                                    {% elif course and course.university_id == uni.id %}selected{% endif %}>
+                                    {{ uni.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <p class="help">Wählen Sie die Hochschule aus, an der die Lehrveranstaltung angeboten wird</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">Slug (optional)</label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="slug"
+                            placeholder="Wird automatisch generiert, wenn leer"
+                            value="{% if form_data %}{{ form_data.slug }}{% elif course %}{{ course.slug }}{% endif %}">
+                    </div>
+                    <p class="help">URL-freundlicher Identifier (nur Kleinbuchstaben, Zahlen und Bindestriche). Wird automatisch aus dem Namen generiert, wenn nicht angegeben.</p>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span>{% if course %}Aktualisieren{% else %}Erstellen{% endif %}</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{% if course %}{{ url_for('course.show', course_id=course.id) }}{% else %}{{ url_for('course.index') }}{% endif %}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle">Hilfe</h2>
+
+            <div class="content">
+                <h3 class="is-size-6 has-text-weight-semibold">Semester-Format</h3>
+                <p>Das Semester muss im Format <code>YYYY_SoSe</code> oder <code>YYYY_WiSe</code> angegeben werden:</p>
+                <ul>
+                    <li><strong>SoSe</strong>: Sommersemester (z.B. 2023_SoSe)</li>
+                    <li><strong>WiSe</strong>: Wintersemester (z.B. 2024_WiSe)</li>
+                </ul>
+
+                <h3 class="is-size-6 has-text-weight-semibold">Eindeutigkeit</h3>
+                <p>Jede Hochschule kann nur eine Lehrveranstaltung mit demselben Slug pro Semester haben.</p>
+
+                <div class="notification is-info is-light">
+                    <p class="is-size-7">
+                        <span class="icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </span>
+                        <strong>Tipp:</strong> Alle Felder mit * sind Pflichtfelder.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        {% if not course %}
+        <div class="box">
+            <h2 class="subtitle">Beispiele</h2>
+
+            <div class="content">
+                <p class="is-size-7">Beispiele für Lehrveranstaltungsnamen:</p>
+                <ul class="is-size-7">
+                    <li>Einführung in die Statistik</li>
+                    <li>Data Science I</li>
+                    <li>Maschinelles Lernen</li>
+                    <li>Datenbanken für Anfänger</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

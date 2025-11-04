@@ -125,7 +125,7 @@
                         <span class="tag is-info is-light">{{ course.semester }}</span>
                     </td>
                     <td>
-                        <a href="{{ url_for('university.show', slug=course.university.slug) }}">
+                        <a href="{{ url_for('university.show', university_id=course.university.id) }}">
                             {{ course.university.name }}
                         </a>
                     </td>

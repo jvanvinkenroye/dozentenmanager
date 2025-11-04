@@ -10,6 +10,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Next features in development will be listed here
 
+## [0.4.0] - 2025-11-02
+
+### Added
+- **Enrollment Management System** (CLI + Web)
+  - Enrollment model with many-to-many relationship between Student and Course
+  - Status tracking (active, completed, dropped) with validation
+  - Automatic enrollment_date and unenrollment_date tracking
+  - Unique constraint preventing duplicate enrollments (student_id + course_id)
+  - Database indexes on student_id, course_id, and status
+  - Database migration with constraints and check clauses
+  - CLI tool (`cli/enrollment_cli.py`) with full operations:
+    - Add enrollment with duplicate prevention
+    - List enrollments by course or student
+    - Remove enrollment from course
+    - Update enrollment status (with automatic unenrollment_date)
+  - Flask blueprint for enrollment management routes
+  - Enhanced course detail page with enrollment features:
+    - Enrollment table showing all enrolled students
+    - Status badges (color-coded: active=green, completed=blue, dropped=yellow)
+    - Modal form for enrolling new students
+    - Dropdown showing only available (non-enrolled) students
+    - Unenroll button with JavaScript confirmation
+  - German flash messages for user feedback
+  - 20 unit tests for CLI operations
+  - Automated Playwright test demonstrating complete workflow
+
+### Changed
+- Course detail page now includes enrollment section with student list
+- Course routes enhanced to query enrollments and available students
+- Navigation structure supports enrollment management
+
+### Fixed
+- Template bug in course templates: changed `slug` parameter to `university_id` in `url_for('university.show')` calls
+  - Fixed in: `course/detail.html`, `course/list.html`, `course/delete.html`
+- SQLAlchemy DetachedInstanceError in enrollment CLI by pre-fetching related object names
+- Playwright configuration to use user home directory instead of sandboxed `/tmp/claude/`
+
+### Technical
+- Total test count: 142 tests (121 unit + 21 integration)
+- All tests passing with 100% success rate
+- Linting clean (ruff)
+- Type checking passing (mypy)
+- Pre-commit hooks configured and passing
+- Automated browser testing with Playwright demonstrating:
+  - Page load and enrollment display
+  - Modal-based student enrollment
+  - Enrollment removal with confirmation
+  - Real-time SQL query logging
+
+### Testing Infrastructure
+- Playwright browser automation added for end-to-end testing
+- Test script (`test_enrollment_web.py`) demonstrates complete enrollment workflow
+- Visible browser mode for debugging and demonstration
+- Automatic screenshot capture on errors
+
 ## [0.3.0] - 2025-11-02
 
 ### Added
@@ -177,18 +232,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Summary Statistics
 
-### Version 0.3.0
-- **Lines of Code**: ~3,000+ (CLI + web interface)
-- **Models**: 3 (University, Student, Course)
-- **CLI Tools**: 3
-- **Web Routes**: 15 (5 per feature × 3 features)
-- **Templates**: 12 (4 per feature × 3 features)
-- **Tests**: 122 (101 unit + 21 integration)
+### Version 0.4.0
+- **Lines of Code**: ~3,800+ (CLI + web interface + tests)
+- **Models**: 4 (University, Student, Course, Enrollment)
+- **CLI Tools**: 4
+- **Web Routes**: 18 (base routes + 3 enrollment routes)
+- **Templates**: 12 (enhanced course detail page)
+- **Tests**: 142 (121 unit + 21 integration)
 - **Test Coverage**: 100% pass rate
+- **E2E Tests**: Playwright browser automation
+
+### Phase 1 Completion
+Phase 1 (Core Data Management) is now **100% complete**:
+- ✅ 1.1 University Management
+- ✅ 1.2 Student Management
+- ✅ 1.3 Course Management
+- ✅ 1.4 Student Enrollment
 
 ### Commits
-- Total commits: 8
-- Features: 6
+- Total commits: 10
+- Features: 8
 - Chores: 2
 
 ### Development Timeline
@@ -196,6 +259,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - University Management completed: 2025-11-02
 - Student Management completed: 2025-11-02
 - Course Management completed: 2025-11-02
+- Enrollment Management completed: 2025-11-02
 - Duration: Single day (rapid development session)
 
 ---
@@ -208,7 +272,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **German Localization**: Web interface uses German labels and text
 - **Responsive Design**: Bulma CSS framework ensures mobile-friendly interface
 
-[Unreleased]: https://github.com/yourusername/dozentenmanager/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/yourusername/dozentenmanager/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/yourusername/dozentenmanager/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yourusername/dozentenmanager/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yourusername/dozentenmanager/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/yourusername/dozentenmanager/compare/v0.0.1...v0.1.0

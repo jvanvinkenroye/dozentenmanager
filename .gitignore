@@ -101,3 +101,10 @@ uv.lock
 
 # Pre-commit
 .pre-commit-config.yaml.bak
+
+# Playwright
+error_screenshot.png
+playwright_*/
+
+# Project documentation (AI-generated)
+GEMINI.md

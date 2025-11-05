@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Prüfungen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Prüfungen</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">Prüfungen</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{{ url_for('exam.new') }}" class="button is-primary">
+                <span class="icon">
+                    <i class="fas fa-plus"></i>
+                </span>
+                <span>Neue Prüfung</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="box">
+    <form method="get" action="{{ url_for('exam.index') }}">
+        <div class="field has-addons">
+            <div class="control is-expanded has-icons-left">
+                <div class="select is-fullwidth">
+                    <select name="course_id">
+                        <option value="">Alle Lehrveranstaltungen</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if course_id and course_id == course.id %}selected{% endif %}>
+                            {{ course.name }} ({{ course.semester }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <span class="icon is-left">
+                    <i class="fas fa-book"></i>
+                </span>
+            </div>
+            <div class="control">
+                <button type="submit" class="button is-info">
+                    <span class="icon">
+                        <i class="fas fa-filter"></i>
+                    </span>
+                    <span>Filtern</span>
+                </button>
+            </div>
+            {% if course_id %}
+            <div class="control">
+                <a href="{{ url_for('exam.index') }}" class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-times"></i>
+                    </span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Exam List -->
+{% if exams %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-hoverable is-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Lehrveranstaltung</th>
+                    <th class="has-text-right">Max. Punkte</th>
+                    <th class="has-text-right">Gewichtung</th>
+                    <th>Fälligkeitsdatum</th>
+                    <th>Komponenten</th>
+                    <th class="has-text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in exams %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('exam.show', exam_id=exam.id) }}" class="has-text-weight-semibold">
+                            {{ exam.name }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('course.show', course_id=exam.course.id) }}">
+                            {{ exam.course.name }}
+                        </a>
+                        <br>
+                        <span class="tag is-info is-light is-small">{{ exam.course.semester }}</span>
+                    </td>
+                    <td class="has-text-right">{{ exam.max_points }}</td>
+                    <td class="has-text-right">{{ (exam.weight * 100)|round|int }}%</td>
+                    <td>
+                        {% if exam.due_date %}
+                        <span class="tag is-light">{{ exam.due_date }}</span>
+                        {% else %}
+                        <span class="has-text-grey-light">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if exam.components %}
+                        <span class="tag is-success is-light">{{ exam.components|length }} Teil(e)</span>
+                        {% else %}
+                        <span class="has-text-grey-light">Keine Teile</span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-right">
+                        <div class="buttons is-right">
+                            <a href="{{ url_for('exam.show', exam_id=exam.id) }}" class="button is-small is-info" title="Anzeigen">
+                                <span class="icon">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </a>
+                            <a href="{{ url_for('exam.edit', exam_id=exam.id) }}" class="button is-small is-warning" title="Bearbeiten">
+                                <span class="icon">
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                            </a>
+                            <form method="post" action="{{ url_for('exam.delete', exam_id=exam.id) }}" style="display: inline;">
+                                <button type="submit" class="button is-small is-danger" title="Löschen" onclick="return confirm('Sind Sie sicher?');">
+                                    <span class="icon">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="has-text-grey">{{ exams|length }} Prüfung(en) gefunden</p>
+</div>
+{% else %}
+<div class="notification is-info is-light">
+    <p class="has-text-centered">
+        <span class="icon is-large">
+            <i class="fas fa-info-circle fa-2x"></i>
+        </span>
+    </p>
+    <p class="has-text-centered has-text-weight-semibold">
+        Keine Prüfungen gefunden
+    </p>
+    <p class="has-text-centered mt-2">
+        <a href="{{ url_for('exam.new') }}" class="button is-primary">
+            Erste Prüfung erstellen
+        </a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

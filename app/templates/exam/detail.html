@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.name }} - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ exam.name }}</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">{{ exam.name }}</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('exam.edit', exam_id=exam.id) }}" class="button is-warning">
+                    <span class="icon">
+                        <i class="fas fa-edit"></i>
+                    </span>
+                    <span>Bearbeiten</span>
+                </a>
+                <form method="post" action="{{ url_for('exam.delete', exam_id=exam.id) }}" style="display: inline;">
+                    <button type="submit" class="button is-danger" onclick="return confirm('Sind Sie sicher, dass Sie diese Prüfung löschen möchten?');">
+                        <span class="icon">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Löschen</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exam Details -->
+<div class="box">
+    <h2 class="subtitle">Prüfungsdetails</h2>
+    <div class="columns">
+        <div class="column">
+            <table class="table is-fullwidth">
+                <tbody>
+                    <tr>
+                        <th style="width: 200px;">Lehrveranstaltung:</th>
+                        <td>
+                            <a href="{{ url_for('course.show', course_id=exam.course.id) }}">{{ exam.course.name }}</a>
+                            <span class="tag is-info is-light ml-2">{{ exam.course.semester }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Maximale Punkte:</th>
+                        <td>{{ exam.max_points }}</td>
+                    </tr>
+                    <tr>
+                        <th>Gewichtung:</th>
+                        <td>{{ (exam.weight * 100)|round|int }}%</td>
+                    </tr>
+                    <tr>
+                        <th>Fälligkeitsdatum:</th>
+                        <td>
+                            {% if exam.due_date %}
+                            {{ exam.due_date }}
+                            {% else %}
+                            <span class="has-text-grey-light">Nicht festgelegt</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Erstellt am:</th>
+                        <td>{{ exam.created_at.strftime('%Y-%m-%d %H:%M') if exam.created_at else '—' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Zuletzt aktualisiert:</th>
+                        <td>{{ exam.updated_at.strftime('%Y-%m-%d %H:%M') if exam.updated_at else '—' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Exam Components -->
+<div class="box">
+    <div class="level">
+        <div class="level-left">
+            <div class="level-item">
+                <h2 class="subtitle mb-0">Prüfungsteile</h2>
+            </div>
+        </div>
+        <div class="level-right">
+            <div class="level-item">
+                <a href="{{ url_for('exam.new_component', exam_id=exam.id) }}" class="button is-primary is-small">
+                    <span class="icon">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span>Teil hinzufügen</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if components %}
+    <!-- Weight Validation Warning -->
+    {% if not weights_valid %}
+    <div class="notification is-warning">
+        <span class="icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </span>
+        <strong>Warnung:</strong> Die Gewichtungen der Teile summieren sich zu {{ total_weight|round(2) }} statt zu 1.0.
+        Dies kann zu ungenauen Berechnungen führen.
+    </div>
+    {% else %}
+    <div class="notification is-success is-light">
+        <span class="icon">
+            <i class="fas fa-check-circle"></i>
+        </span>
+        Die Gewichtungen der Teile summieren sich korrekt zu 1.0.
+    </div>
+    {% endif %}
+
+    <div class="table-container">
+        <table class="table is-fullwidth is-hoverable is-striped">
+            <thead>
+                <tr>
+                    <th>Reihenfolge</th>
+                    <th>Name</th>
+                    <th class="has-text-right">Max. Punkte</th>
+                    <th class="has-text-right">Gewichtung</th>
+                    <th class="has-text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for component in components %}
+                <tr>
+                    <td><span class="tag">{{ component.order }}</span></td>
+                    <td class="has-text-weight-semibold">{{ component.name }}</td>
+                    <td class="has-text-right">{{ component.max_points }}</td>
+                    <td class="has-text-right">{{ (component.weight * 100)|round|int }}%</td>
+                    <td class="has-text-right">
+                        <div class="buttons is-right">
+                            <a href="{{ url_for('exam.edit_component', exam_id=exam.id, component_id=component.id) }}" class="button is-small is-warning" title="Bearbeiten">
+                                <span class="icon">
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                            </a>
+                            <form method="post" action="{{ url_for('exam.delete_component', exam_id=exam.id, component_id=component.id) }}" style="display: inline;">
+                                <button type="submit" class="button is-small is-danger" title="Löschen" onclick="return confirm('Sind Sie sicher?');">
+                                    <span class="icon">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="2" class="has-text-right">Gesamt:</th>
+                    <th class="has-text-right">{{ components|sum(attribute='max_points') }}</th>
+                    <th class="has-text-right">{{ (total_weight * 100)|round|int }}%</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% else %}
+    <div class="notification is-info is-light">
+        <p class="has-text-centered">
+            <span class="icon is-large">
+                <i class="fas fa-info-circle fa-2x"></i>
+            </span>
+        </p>
+        <p class="has-text-centered has-text-weight-semibold">
+            Diese Prüfung hat noch keine Teile
+        </p>
+        <p class="has-text-centered mt-2">
+            <a href="{{ url_for('exam.new_component', exam_id=exam.id) }}" class="button is-primary">
+                Ersten Teil hinzufügen
+            </a>
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

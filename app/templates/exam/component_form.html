@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if component %}Teil bearbeiten{% else %}Neuer Teil{% endif %} - {{ exam.name }} - Dozentenmanager
+{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+                <li><a href="{{ url_for('exam.show', exam_id=exam.id) }}">{{ exam.name }}</a></li>
+                {% if component %}
+                <li class="is-active"><a href="#" aria-current="page">Teil bearbeiten</a></li>
+                {% else %}
+                <li class="is-active"><a href="#" aria-current="page">Neuer Teil</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    {% if component %}Teil bearbeiten{% else %}Neuer Teil{% endif %}
+</h1>
+<h2 class="subtitle">{{ exam.name }}</h2>
+
+<div class="box">
+    <form method="post">
+        <div class="field">
+            <label class="label">Name *</label>
+            <div class="control has-icons-left">
+                <input class="input" type="text" name="name" placeholder="z.B. Multiple Choice"
+                       value="{% if component %}{{ component.name }}{% endif %}" required>
+                <span class="icon is-left">
+                    <i class="fas fa-tag"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">Maximale Punkte *</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="number" step="0.1" min="0.1" name="max_points"
+                               placeholder="z.B. 40" value="{% if component %}{{ component.max_points }}{% endif %}" required>
+                        <span class="icon is-left">
+                            <i class="fas fa-chart-line"></i>
+                        </span>
+                    </div>
+                    <p class="help">Maximale Punkte für diesen Teil</p>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">Gewichtung *</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="number" step="0.01" min="0" max="1" name="weight"
+                               placeholder="z.B. 0.4" value="{% if component %}{{ component.weight }}{% endif %}" required>
+                        <span class="icon is-left">
+                            <i class="fas fa-percentage"></i>
+                        </span>
+                    </div>
+                    <p class="help">Gewichtung innerhalb der Prüfung (0.0 bis 1.0)</p>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">Reihenfolge *</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="number" min="1" name="order"
+                               placeholder="{% if next_order %}{{ next_order }}{% else %}1{% endif %}"
+                               value="{% if component %}{{ component.order }}{% elif next_order %}{{ next_order }}{% endif %}" required>
+                        <span class="icon is-left">
+                            <i class="fas fa-sort-numeric-up"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="submit" class="button is-primary">
+                    <span class="icon">
+                        <i class="fas fa-save"></i>
+                    </span>
+                    <span>Speichern</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="{{ url_for('exam.show', exam_id=exam.id) }}" class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-times"></i>
+                    </span>
+                    <span>Abbrechen</span>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="notification is-info is-light">
+    <p><strong>Hinweis:</strong> Felder mit * sind Pflichtfelder.</p>
+    <p class="mt-2">Die Gewichtungen aller Teile einer Prüfung sollten zusammen 1.0 (100%) ergeben.</p>
+    <p class="mt-2">Die Reihenfolge bestimmt, in welcher Reihenfolge die Teile angezeigt werden.</p>
+</div>
+{% endblock %}

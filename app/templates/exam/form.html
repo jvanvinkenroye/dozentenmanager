@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if exam %}Prüfung bearbeiten{% else %}Neue Prüfung{% endif %} - Dozentenmanager
+{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+                {% if exam %}
+                <li><a href="{{ url_for('exam.show', exam_id=exam.id) }}">{{ exam.name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Bearbeiten</a></li>
+                {% else %}
+                <li class="is-active"><a href="#" aria-current="page">Neue Prüfung</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    {% if exam %}Prüfung bearbeiten{% else %}Neue Prüfung{% endif %}
+</h1>
+
+<div class="box">
+    <form method="post">
+        <div class="field">
+            <label class="label">Lehrveranstaltung *</label>
+            <div class="control has-icons-left">
+                <div class="select is-fullwidth">
+                    <select name="course_id" required {% if exam %}disabled{% endif %}>
+                        <option value="">Bitte wählen...</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if exam and exam.course_id == course.id %}selected{% endif %}>
+                            {{ course.name }} ({{ course.semester }}) - {{ course.university.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <span class="icon is-left">
+                    <i class="fas fa-book"></i>
+                </span>
+            </div>
+            {% if exam %}
+            <p class="help">Die Lehrveranstaltung kann nach dem Erstellen nicht mehr geändert werden.</p>
+            {% endif %}
+        </div>
+
+        <div class="field">
+            <label class="label">Name *</label>
+            <div class="control has-icons-left">
+                <input class="input" type="text" name="name" placeholder="z.B. Abschlussprüfung"
+                       value="{% if exam %}{{ exam.name }}{% endif %}" required>
+                <span class="icon is-left">
+                    <i class="fas fa-file-alt"></i>
+                </span>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">Maximale Punkte *</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="number" step="0.1" min="0.1" name="max_points"
+                               placeholder="z.B. 100" value="{% if exam %}{{ exam.max_points }}{% endif %}" required>
+                        <span class="icon is-left">
+                            <i class="fas fa-chart-line"></i>
+                        </span>
+                    </div>
+                    <p class="help">Die maximal erreichbaren Punkte für diese Prüfung</p>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">Gewichtung *</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="number" step="0.01" min="0" max="1" name="weight"
+                               placeholder="z.B. 0.6" value="{% if exam %}{{ exam.weight }}{% endif %}" required>
+                        <span class="icon is-left">
+                            <i class="fas fa-percentage"></i>
+                        </span>
+                    </div>
+                    <p class="help">Gewichtung in der Endnote (0.0 bis 1.0, z.B. 0.6 für 60%)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="label">Fälligkeitsdatum</label>
+            <div class="control has-icons-left">
+                <input class="input" type="date" name="due_date"
+                       value="{% if exam and exam.due_date %}{{ exam.due_date }}{% endif %}">
+                <span class="icon is-left">
+                    <i class="fas fa-calendar"></i>
+                </span>
+            </div>
+            <p class="help">Optional: Datum, bis wann die Prüfung abzugeben ist</p>
+        </div>
+
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="submit" class="button is-primary">
+                    <span class="icon">
+                        <i class="fas fa-save"></i>
+                    </span>
+                    <span>Speichern</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="{% if exam %}{{ url_for('exam.show', exam_id=exam.id) }}{% else %}{{ url_for('exam.index') }}{% endif %}"
+                   class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-times"></i>
+                    </span>
+                    <span>Abbrechen</span>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="notification is-info is-light">
+    <p><strong>Hinweis:</strong> Felder mit * sind Pflichtfelder.</p>
+    <p class="mt-2">Die Gewichtung wird verwendet, um die finale Note aus mehreren Prüfungen zu berechnen.
+       Alle Prüfungen einer Lehrveranstaltung sollten zusammen eine Gewichtung von 1.0 (100%) ergeben.</p>
+</div>
+{% endblock %}

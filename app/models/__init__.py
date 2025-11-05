@@ -10,8 +10,8 @@ from app.models.course import Course  # noqa: F401
 from app.models.enrollment import Enrollment  # noqa: F401
 from app.models.student import Student  # noqa: F401
 from app.models.university import University  # noqa: F401
-# from app.models.exam import Exam
-# from app.models.exam_component import ExamComponent
+from app.models.exam import Exam  # noqa: F401
+from app.models.exam_component import ExamComponent  # noqa: F401
 # from app.models.submission import Submission
 # from app.models.document import Document
 # from app.models.audit_log import AuditLog
@@ -19,6 +19,8 @@ from app.models.university import University  # noqa: F401
 __all__ = [
     "Course",
     "Enrollment",
+    "Exam",
+    "ExamComponent",
     "Student",
     "University",
     # List other model names here as they are created

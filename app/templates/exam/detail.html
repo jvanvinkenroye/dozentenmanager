@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.name }} - Prüfungen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ exam.name }}</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">{{ exam.name }}</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('exam.edit', exam_id=exam.id) }}" class="button is-info">
+                    <span class="icon">
+                        <i class="fas fa-edit"></i>
+                    </span>
+                    <span>Bearbeiten</span>
+                </a>
+                <form method="post" action="{{ url_for('exam.delete', exam_id=exam.id) }}" style="display: inline;" onsubmit="return confirm('Möchten Sie diese Prüfung wirklich löschen?');">
+                    <button type="submit" class="button is-danger">
+                        <span class="icon">
+                            <i class="fas fa-trash"></i>
+                        </span>
+                        <span>Löschen</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <h2 class="subtitle">Prüfungsdetails</h2>
+
+            <div class="content">
+                <table class="table is-fullwidth">
+                    <tbody>
+                        <tr>
+                            <th style="width: 200px;">Name</th>
+                            <td><strong>{{ exam.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Prüfungsart</th>
+                            <td>
+                                <span class="tag {% if exam.exam_type == 'final' %}is-danger{% elif exam.exam_type == 'midterm' %}is-warning{% elif exam.exam_type == 'quiz' %}is-info{% elif exam.exam_type == 'homework' %}is-success{% else %}is-primary{% endif %}">
+                                    {{ exam.exam_type }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Lehrveranstaltung</th>
+                            <td>
+                                <a href="{{ url_for('course.show', course_id=exam.course.id) }}">
+                                    {{ exam.course.name }}
+                                </a>
+                                <br>
+                                <small class="has-text-grey">{{ exam.course.semester }} - {{ exam.course.university.name }}</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Maximalpunkte</th>
+                            <td>{{ exam.max_points }}</td>
+                        </tr>
+                        <tr>
+                            <th>Gewicht</th>
+                            <td>{{ (exam.weight * 100)|int }}% der Endnote</td>
+                        </tr>
+                        <tr>
+                            <th>Abgabedatum</th>
+                            <td>
+                                {% if exam.due_date %}
+                                    {{ exam.due_date.strftime('%d.%m.%Y um %H:%M Uhr') }}
+                                {% else %}
+                                    <span class="has-text-grey-light">Keine Frist gesetzt</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Erstellt</th>
+                            <td>{{ exam.created_at.strftime('%d.%m.%Y um %H:%M Uhr') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Zuletzt geändert</th>
+                            <td>{{ exam.updated_at.strftime('%d.%m.%Y um %H:%M Uhr') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">Schnellaktionen</h2>
+            <div class="content">
+                <div class="buttons is-fullwidth">
+                    <a href="{{ url_for('exam.edit', exam_id=exam.id) }}" class="button is-info is-fullwidth">
+                        <span class="icon">
+                            <i class="fas fa-edit"></i>
+                        </span>
+                        <span>Prüfung bearbeiten</span>
+                    </a>
+                </div>
+                <div class="buttons is-fullwidth">
+                    <a href="{{ url_for('course.show', course_id=exam.course.id) }}" class="button is-light is-fullwidth">
+                        <span class="icon">
+                            <i class="fas fa-book"></i>
+                        </span>
+                        <span>Lehrveranstaltung anzeigen</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="box has-background-info-light">
+            <h2 class="subtitle">Information</h2>
+            <div class="content">
+                <p>Diese Prüfung ist Teil der Lehrveranstaltung <strong>{{ exam.course.name }}</strong>.</p>
+                {% if exam.due_date %}
+                <p>Abgabefrist: <strong>{{ exam.due_date.strftime('%d.%m.%Y') }}</strong></p>
+                {% else %}
+                <p>Es wurde keine Abgabefrist festgelegt.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

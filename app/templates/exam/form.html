@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{% if exam %}{{ exam.name }} bearbeiten{% else %}Neue Prüfung{% endif %} - Prüfungen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+                {% if exam %}
+                <li><a href="{{ url_for('exam.show', exam_id=exam.id) }}">{{ exam.name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Bearbeiten</a></li>
+                {% else %}
+                <li class="is-active"><a href="#" aria-current="page">Neue Prüfung</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    {% if exam %}
+    Prüfung bearbeiten
+    {% else %}
+    Neue Prüfung hinzufügen
+    {% endif %}
+</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post">
+                <div class="field">
+                    <label class="label">Name <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="text"
+                            name="name"
+                            placeholder="z.B. Klausur 1 oder Abschlussprüfung"
+                            value="{% if form_data %}{{ form_data.name }}{% elif exam %}{{ exam.name }}{% endif %}"
+                            required
+                            autofocus>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Prüfungsart <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="exam_type" required>
+                                <option value="">Bitte wählen...</option>
+                                <option value="midterm" {% if (form_data and form_data.exam_type == 'midterm') or (exam and exam.exam_type == 'midterm') %}selected{% endif %}>Klausur (Mitte)</option>
+                                <option value="final" {% if (form_data and form_data.exam_type == 'final') or (exam and exam.exam_type == 'final') %}selected{% endif %}>Abschlussprüfung</option>
+                                <option value="quiz" {% if (form_data and form_data.exam_type == 'quiz') or (exam and exam.exam_type == 'quiz') %}selected{% endif %}>Test</option>
+                                <option value="homework" {% if (form_data and form_data.exam_type == 'homework') or (exam and exam.exam_type == 'homework') %}selected{% endif %}>Hausaufgabe</option>
+                                <option value="project" {% if (form_data and form_data.exam_type == 'project') or (exam and exam.exam_type == 'project') %}selected{% endif %}>Projekt</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Lehrveranstaltung <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select name="course_id" required>
+                                <option value="">Bitte wählen...</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}"
+                                    {% if form_data and form_data.course_id|string == course.id|string %}selected
+                                    {% elif exam and exam.course_id == course.id %}selected{% endif %}>
+                                    {{ course.name }} ({{ course.semester }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Maximalpunkte <span class="has-text-danger">*</span></label>
+                            <div class="control">
+                                <input
+                                    class="input"
+                                    type="number"
+                                    name="max_points"
+                                    step="0.01"
+                                    min="0.01"
+                                    placeholder="z.B. 100"
+                                    value="{% if form_data %}{{ form_data.max_points }}{% elif exam %}{{ exam.max_points }}{% endif %}"
+                                    required>
+                            </div>
+                            <p class="help">Maximal erreichbare Punktzahl</p>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Gewicht <span class="has-text-danger">*</span></label>
+                            <div class="control">
+                                <input
+                                    class="input"
+                                    type="number"
+                                    name="weight"
+                                    step="0.01"
+                                    min="0"
+                                    max="1"
+                                    placeholder="z.B. 0.3"
+                                    value="{% if form_data %}{{ form_data.weight }}{% elif exam %}{{ exam.weight }}{% endif %}"
+                                    required>
+                            </div>
+                            <p class="help">Gewicht bei der Endnotenberechnung (0-1, z.B. 0.3 = 30%)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Abgabedatum (Optional)</label>
+                    <div class="control">
+                        <input
+                            class="input"
+                            type="datetime-local"
+                            name="due_date"
+                            value="{% if form_data and form_data.due_date %}{{ form_data.due_date }}{% elif exam and exam.due_date %}{{ exam.due_date.strftime('%Y-%m-%dT%H:%M') }}{% endif %}">
+                    </div>
+                    <p class="help">Zeitpunkt, bis wann die Abgabe erfolgen muss</p>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-save"></i>
+                            </span>
+                            <span>Speichern</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{% if exam %}{{ url_for('exam.show', exam_id=exam.id) }}{% else %}{{ url_for('exam.index') }}{% endif %}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-times"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">Hinweise</h2>
+            <div class="content">
+                <p><strong>Prüfungsart:</strong> Wählen Sie die Art der Prüfung aus (Klausur, Test, Hausaufgabe, etc.)</p>
+                <p><strong>Maximalpunkte:</strong> Die höchste Punktzahl, die ein Student erreichen kann.</p>
+                <p><strong>Gewicht:</strong> Bestimmt, wie stark diese Prüfung in die Endnote einfließt. Beispiel: 0.3 bedeutet 30% der Endnote.</p>
+                <p><strong>Abgabedatum:</strong> Frist für Einreichungen. Optional.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

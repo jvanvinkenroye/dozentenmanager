@@ -157,23 +157,27 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(student_bp)
     app.register_blueprint(university_bp)
 
-    # Temporary: Register a simple index route
+    # Register index route
     @app.route("/")
     def index():
-        return """
-        <html>
-            <head><title>Dozentenmanager</title></head>
-            <body>
-                <h1>Dozentenmanager</h1>
-                <p>Student Management System</p>
-                <p>Application is running successfully!</p>
-                <ul>
-                    <li><a href="/students">Students</a></li>
-                    <li><a href="/universities">Universities</a></li>
-                </ul>
-            </body>
-        </html>
         """
+        Render the home page with dashboard statistics.
+
+        Returns:
+            Rendered home template with statistics
+        """
+        from flask import render_template
+        from app.models import University, Student, Course, Enrollment
+
+        # Get statistics from database
+        stats = {
+            "universities": University.query.count(),
+            "students": Student.query.count(),
+            "courses": Course.query.count(),
+            "enrollments": Enrollment.query.filter_by(status="active").count(),
+        }
+
+        return render_template("home.html", stats=stats)
 
 
 def register_error_handlers(app: Flask) -> None:

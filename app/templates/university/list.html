@@ -86,7 +86,7 @@
                     </a>
                 </td>
                 <td>
-                    <span class="tag is-light">{{ university.slug }}</span>
+                    <code class="has-text-dark">{{ university.slug }}</code>
                 </td>
                 <td>{{ university.created_at.strftime('%d.%m.%Y') }}</td>
                 <td class="has-text-right">
@@ -113,7 +113,7 @@
         </tbody>
     </table>
 
-    <div class="has-text-grey">
+    <div class="has-text-dark">
         <p><strong>{{ universities|length }}</strong> Hochschule(n) gefunden</p>
     </div>
 </div>

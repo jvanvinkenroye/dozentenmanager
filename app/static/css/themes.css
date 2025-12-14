@@ -1,0 +1,489 @@
+/**
+ * Theme System for Dozentenmanager
+ *
+ * Three professional color schemes with CSS variables
+ */
+
+/* ========================================
+   THEME 1: Academic Blue (Default)
+   ======================================== */
+:root,
+[data-theme="academic-blue"] {
+    /* Primary Colors */
+    --primary-color: #2C5F8D;
+    --primary-light: #4A90A4;
+    --primary-dark: #1A3A5C;
+
+    /* Secondary Colors */
+    --secondary-color: #4A90A4;
+    --secondary-light: #6BB5C9;
+    --secondary-dark: #2F6B7D;
+
+    /* Accent */
+    --accent-color: #FF6B35;
+    --accent-light: #FF8A5C;
+    --accent-dark: #E54D1F;
+
+    /* Semantic Colors */
+    --success-color: #06A77D;
+    --success-light: #32C9A3;
+    --success-dark: #048564;
+
+    --warning-color: #F4A261;
+    --warning-light: #F7B880;
+    --warning-dark: #E88B44;
+
+    --danger-color: #E63946;
+    --danger-light: #EB5F6A;
+    --danger-dark: #C91F2E;
+
+    --info-color: #4A90A4;
+    --info-light: #6BB5C9;
+    --info-dark: #2F6B7D;
+
+    /* Backgrounds */
+    --bg-primary: #F8F9FA;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #E9ECEF;
+    --bg-card: #FFFFFF;
+
+    /* Text */
+    --text-primary: #1a1d2e;
+    --text-secondary: #4a5568;
+    --text-light: #718096;
+    --text-on-primary: #FFFFFF;
+
+    /* Borders */
+    --border-color: #DEE2E6;
+    --border-light: #E9ECEF;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(43, 45, 66, 0.12);
+    --shadow-md: 0 4px 6px rgba(43, 45, 66, 0.1);
+    --shadow-lg: 0 10px 15px rgba(43, 45, 66, 0.1);
+}
+
+/* ========================================
+   THEME 2: Modern Mint
+   ======================================== */
+[data-theme="modern-mint"] {
+    /* Primary Colors */
+    --primary-color: #008F7A;
+    --primary-light: #00C9A7;
+    --primary-dark: #006B5B;
+
+    /* Secondary Colors */
+    --secondary-color: #00C9A7;
+    --secondary-light: #33D9BF;
+    --secondary-dark: #00A088;
+
+    /* Accent */
+    --accent-color: #845EC2;
+    --accent-light: #A07DD4;
+    --accent-dark: #6840A3;
+
+    /* Semantic Colors */
+    --success-color: #00D2FC;
+    --success-light: #33DEFD;
+    --success-dark: #00A8CC;
+
+    --warning-color: #FFC75F;
+    --warning-light: #FFD585;
+    --warning-dark: #E5AD3B;
+
+    --danger-color: #FF6F91;
+    --danger-light: #FF8FA9;
+    --danger-dark: #E54F71;
+
+    --info-color: #00C9A7;
+    --info-light: #33D9BF;
+    --info-dark: #00A088;
+
+    /* Backgrounds */
+    --bg-primary: #FAFBFC;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F0F2F5;
+    --bg-card: #FFFFFF;
+
+    /* Text */
+    --text-primary: #1a252f;
+    --text-secondary: #4a5c6a;
+    --text-light: #6b7c8a;
+    --text-on-primary: #FFFFFF;
+
+    /* Borders */
+    --border-color: #D1D8DD;
+    --border-light: #E4E9ED;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 143, 122, 0.12);
+    --shadow-md: 0 4px 6px rgba(0, 143, 122, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 143, 122, 0.1);
+}
+
+/* ========================================
+   THEME 3: University Navy
+   ======================================== */
+[data-theme="university-navy"] {
+    /* Primary Colors */
+    --primary-color: #003057;
+    --primary-light: #0077B6;
+    --primary-dark: #001F3F;
+
+    /* Secondary Colors */
+    --secondary-color: #0077B6;
+    --secondary-light: #3393C5;
+    --secondary-dark: #005A8C;
+
+    /* Accent */
+    --accent-color: #C1121F;
+    --accent-light: #D32F3E;
+    --accent-dark: #9A0E1A;
+
+    /* Semantic Colors */
+    --success-color: #2A9D8F;
+    --success-light: #52B5A8;
+    --success-dark: #1E7A6F;
+
+    --warning-color: #E9C46A;
+    --warning-light: #EED485;
+    --warning-dark: #D4AB48;
+
+    --danger-color: #D62828;
+    --danger-light: #E04F4F;
+    --danger-dark: #B01F1F;
+
+    --info-color: #0077B6;
+    --info-light: #3393C5;
+    --info-dark: #005A8C;
+
+    /* Backgrounds */
+    --bg-primary: #F7F7F7;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #EEEEEE;
+    --bg-card: #FFFFFF;
+
+    /* Text */
+    --text-primary: #0f1419;
+    --text-secondary: #4a5568;
+    --text-light: #718096;
+    --text-on-primary: #FFFFFF;
+
+    /* Borders */
+    --border-color: #CED4DA;
+    --border-light: #E0E5E9;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 48, 87, 0.12);
+    --shadow-md: 0 4px 6px rgba(0, 48, 87, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 48, 87, 0.1);
+}
+
+/* ========================================
+   Apply Theme Variables to Elements
+   ======================================== */
+
+/* Body & Backgrounds */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+/* Navigation */
+.navbar.is-primary {
+    background-color: var(--primary-color) !important;
+}
+
+.navbar-item,
+.navbar-link {
+    color: var(--text-on-primary) !important;
+}
+
+.navbar-item:hover,
+.navbar-link:hover {
+    background-color: var(--primary-dark) !important;
+}
+
+/* Buttons */
+.button.is-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-on-primary) !important;
+}
+
+.button.is-primary:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+}
+
+.button.is-info {
+    background-color: var(--info-color) !important;
+    border-color: var(--info-color) !important;
+}
+
+.button.is-link {
+    background-color: var(--secondary-color) !important;
+    border-color: var(--secondary-color) !important;
+}
+
+.button.is-success {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+.button.is-warning {
+    background-color: var(--warning-color) !important;
+    border-color: var(--warning-color) !important;
+}
+
+.button.is-danger {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+}
+
+/* Hero */
+.hero.is-info {
+    background-color: var(--info-color) !important;
+}
+
+.hero.is-primary {
+    background-color: var(--primary-color) !important;
+}
+
+/* Boxes with colored backgrounds */
+.box.has-background-primary-light {
+    background-color: var(--primary-light) !important;
+    color: var(--text-on-primary) !important;
+}
+
+.box.has-background-info-light {
+    background-color: var(--info-light) !important;
+    color: var(--text-on-primary) !important;
+}
+
+.box.has-background-link-light {
+    background-color: var(--secondary-light) !important;
+    color: var(--text-on-primary) !important;
+}
+
+.box.has-background-success-light {
+    background-color: var(--success-light) !important;
+    color: var(--text-on-primary) !important;
+}
+
+/* Cards & Boxes */
+.card,
+.box {
+    background-color: var(--bg-card) !important;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+}
+
+/* Input fields */
+.input,
+.textarea,
+.select select {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+    color: var(--text-light) !important;
+    opacity: 0.7;
+}
+
+/* Icons with colors */
+.has-text-primary {
+    color: var(--primary-color) !important;
+}
+
+.has-text-info {
+    color: var(--info-color) !important;
+}
+
+.has-text-link {
+    color: var(--secondary-color) !important;
+}
+
+.has-text-success {
+    color: var(--success-color) !important;
+}
+
+/* Notifications */
+.notification.is-success {
+    background-color: var(--success-light) !important;
+}
+
+.notification.is-warning {
+    background-color: var(--warning-light) !important;
+}
+
+.notification.is-danger {
+    background-color: var(--danger-light) !important;
+}
+
+.notification.is-info {
+    background-color: var(--info-light) !important;
+}
+
+/* Tags */
+.tag.is-success {
+    background-color: var(--success-color) !important;
+}
+
+.tag.is-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.tag.is-danger {
+    background-color: var(--danger-color) !important;
+}
+
+.tag.is-info {
+    background-color: var(--info-color) !important;
+}
+
+.tag.is-primary {
+    background-color: var(--primary-color) !important;
+}
+
+/* Links */
+a {
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--primary-dark);
+}
+
+/* Tables */
+.table {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+.table thead th {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.table tbody tr {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Striped table rows - light alternating colors */
+.table.is-striped tbody tr:nth-child(even) {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.table.is-striped tbody tr:nth-child(odd) {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Hoverable table rows */
+.table.is-hoverable tbody tr:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.table tr.is-clickable:hover {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* Table cell content */
+.table td,
+.table th {
+    color: var(--text-primary) !important;
+    border-color: var(--border-light) !important;
+}
+
+/* Links in tables */
+.table a {
+    color: var(--primary-color) !important;
+}
+
+.table a:hover {
+    color: var(--primary-dark) !important;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+/* Theme Switcher Button */
+.theme-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background-color: transparent;
+    border: 1px solid var(--text-on-primary);
+    border-radius: 4px;
+    color: var(--text-on-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.theme-switcher:hover {
+    background-color: var(--primary-dark);
+}
+
+.theme-switcher-icon {
+    font-size: 1.2rem;
+}
+
+/* Typography - Ensure good contrast */
+.title {
+    color: var(--text-primary) !important;
+}
+
+.subtitle {
+    color: var(--text-secondary) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+}
+
+/* Improve text readability */
+body {
+    color: var(--text-primary);
+}
+
+p, .content {
+    color: var(--text-primary);
+}
+
+/* Text color utilities with better contrast */
+.has-text-dark {
+    color: var(--text-primary) !important;
+}
+
+.has-text-grey,
+.has-text-gray {
+    color: var(--text-secondary) !important;
+}
+
+.has-text-grey-light,
+.has-text-gray-light {
+    color: var(--text-light) !important;
+}
+
+/* Code elements */
+code {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 0.25em 0.5em;
+    border-radius: 3px;
+    font-size: 0.875em;
+}
+
+/* Smooth theme transition */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

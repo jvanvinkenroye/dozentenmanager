@@ -130,7 +130,7 @@
                         </a>
                     </td>
                     <td>
-                        <span class="tag is-light">{{ course.slug }}</span>
+                        <code class="has-text-dark">{{ course.slug }}</code>
                     </td>
                     <td class="has-text-right">
                         <div class="buttons is-right">
@@ -156,7 +156,7 @@
             </tbody>
         </table>
     </div>
-    <p class="has-text-grey">{{ courses|length }} Lehrveranstaltung(en) gefunden</p>
+    <p class="has-text-dark">{{ courses|length }} Lehrveranstaltung(en) gefunden</p>
 </div>
 {% else %}
 <div class="notification is-info is-light">

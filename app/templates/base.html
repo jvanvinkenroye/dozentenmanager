@@ -11,6 +11,9 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Theme System -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/themes.css') }}">
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 
@@ -65,7 +68,13 @@
             <div class="navbar-end">
                 <div class="navbar-item">
                     <div class="buttons">
-                        <!-- Future: Add user menu here -->
+                        <!-- Theme Switcher -->
+                        <button id="theme-switcher-btn" class="button is-small is-light" title="Theme wechseln">
+                            <span class="icon">
+                                <i id="theme-icon" class="fas fa-graduation-cap"></i>
+                            </span>
+                            <span>Theme</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -105,7 +114,7 @@
                 <strong>Dozentenmanager</strong> - Student Management System
             </p>
             <p class="is-size-7">
-                Version 0.1.0
+                Version 0.4.0
             </p>
         </div>
     </footer>
@@ -147,6 +156,9 @@
             });
         });
     </script>
+
+    <!-- Theme Switcher Script -->
+    <script src="{{ url_for('static', filename='js/theme-switcher.js') }}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

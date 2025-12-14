@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Dozentenmanager{% endblock %}
+
+{% block content %}
+<div class="hero is-info is-bold mb-5">
+    <div class="hero-body">
+        <p class="title">
+            <span class="icon-text">
+                <span class="icon">
+                    <i class="fas fa-tachometer-alt"></i>
+                </span>
+                <span>Willkommen im Dozentenmanager</span>
+            </span>
+        </p>
+        <p class="subtitle">
+            Verwaltungssystem für Hochschuldozenten
+        </p>
+    </div>
+</div>
+
+<!-- Statistics Overview -->
+<div class="columns is-multiline mb-5">
+    <div class="column is-3">
+        <div class="box has-background-primary-light">
+            <div class="level">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">Hochschulen</p>
+                        <p class="title is-3">{{ stats.universities }}</p>
+                        <p class="is-size-7">
+                            <a href="{{ url_for('university.index') }}">Verwalten →</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="column is-3">
+        <div class="box has-background-info-light">
+            <div class="level">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">Studierende</p>
+                        <p class="title is-3">{{ stats.students }}</p>
+                        <p class="is-size-7">
+                            <a href="{{ url_for('student.index') }}">Verwalten →</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="column is-3">
+        <div class="box has-background-link-light">
+            <div class="level">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">Lehrveranstaltungen</p>
+                        <p class="title is-3">{{ stats.courses }}</p>
+                        <p class="is-size-7">
+                            <a href="{{ url_for('course.index') }}">Verwalten →</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="column is-3">
+        <div class="box has-background-success-light">
+            <div class="level">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">Einschreibungen</p>
+                        <p class="title is-3">{{ stats.enrollments }}</p>
+                        <p class="is-size-7">Aktive Teilnahmen</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<h2 class="title is-4 mb-4">
+    <span class="icon-text">
+        <span class="icon">
+            <i class="fas fa-rocket"></i>
+        </span>
+        <span>Schnellzugriff</span>
+    </span>
+</h2>
+
+<div class="columns is-multiline">
+    <!-- Universities Card -->
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content">
+                <div class="media">
+                    <div class="media-left">
+                        <span class="icon is-large has-text-primary">
+                            <i class="fas fa-university fa-2x"></i>
+                        </span>
+                    </div>
+                    <div class="media-content">
+                        <p class="title is-5">Hochschulen</p>
+                        <p class="subtitle is-6">Verwaltung von Universitäten und Hochschulen</p>
+                    </div>
+                </div>
+                <div class="content">
+                    <p>Verwalten Sie alle Hochschulen, an denen Sie lehren.</p>
+                    <div class="buttons">
+                        <a href="{{ url_for('university.index') }}" class="button is-primary is-small">
+                            <span class="icon">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span>Alle anzeigen</span>
+                        </a>
+                        <a href="{{ url_for('university.new') }}" class="button is-light is-small">
+                            <span class="icon">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span>Neu anlegen</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Card -->
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content">
+                <div class="media">
+                    <div class="media-left">
+                        <span class="icon is-large has-text-info">
+                            <i class="fas fa-user-graduate fa-2x"></i>
+                        </span>
+                    </div>
+                    <div class="media-content">
+                        <p class="title is-5">Studierende</p>
+                        <p class="subtitle is-6">Verwaltung von Studierendendaten</p>
+                    </div>
+                </div>
+                <div class="content">
+                    <p>Verwalten Sie alle Studierenden mit Kontaktdaten und Studiengängen.</p>
+                    <div class="buttons">
+                        <a href="{{ url_for('student.index') }}" class="button is-info is-small">
+                            <span class="icon">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span>Alle anzeigen</span>
+                        </a>
+                        <a href="{{ url_for('student.new') }}" class="button is-light is-small">
+                            <span class="icon">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span>Neu anlegen</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Card -->
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content">
+                <div class="media">
+                    <div class="media-left">
+                        <span class="icon is-large has-text-link">
+                            <i class="fas fa-book fa-2x"></i>
+                        </span>
+                    </div>
+                    <div class="media-content">
+                        <p class="title is-5">Lehrveranstaltungen</p>
+                        <p class="subtitle is-6">Verwaltung von Kursen und Seminaren</p>
+                    </div>
+                </div>
+                <div class="content">
+                    <p>Verwalten Sie Ihre Lehrveranstaltungen mit Semester-Zuordnung.</p>
+                    <div class="buttons">
+                        <a href="{{ url_for('course.index') }}" class="button is-link is-small">
+                            <span class="icon">
+                                <i class="fas fa-list"></i>
+                            </span>
+                            <span>Alle anzeigen</span>
+                        </a>
+                        <a href="{{ url_for('course.new') }}" class="button is-light is-small">
+                            <span class="icon">
+                                <i class="fas fa-plus"></i>
+                            </span>
+                            <span>Neu anlegen</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Coming Soon Section -->
+<div class="mt-6">
+    <h2 class="title is-4 mb-4">
+        <span class="icon-text">
+            <span class="icon">
+                <i class="fas fa-calendar-alt"></i>
+            </span>
+            <span>Geplante Features</span>
+        </span>
+    </h2>
+
+    <div class="notification is-warning is-light">
+        <p class="has-text-weight-semibold mb-2">Phase 2 - In Entwicklung:</p>
+        <div class="columns is-multiline">
+            <div class="column is-3">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-file-pdf"></i></span>
+                    <span>Dokumenten-Management</span>
+                </span>
+            </div>
+            <div class="column is-3">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-clipboard-check"></i></span>
+                    <span>Prüfungsverwaltung</span>
+                </span>
+            </div>
+            <div class="column is-3">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-star"></i></span>
+                    <span>Bewertungssystem</span>
+                </span>
+            </div>
+            <div class="column is-3">
+                <span class="icon-text">
+                    <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                    <span>Statistiken & Berichte</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="box mt-5 has-background-light">
+    <div class="columns is-vcentered">
+        <div class="column">
+            <p class="has-text-weight-semibold">
+                <span class="icon-text">
+                    <span class="icon has-text-success">
+                        <i class="fas fa-check-circle"></i>
+                    </span>
+                    <span>System Status: Aktiv</span>
+                </span>
+            </p>
+        </div>
+        <div class="column has-text-right">
+            <p class="is-size-7 has-text-grey">
+                Version 0.4.0 | Phase 1 abgeschlossen
+            </p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

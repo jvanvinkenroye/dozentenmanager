@@ -103,6 +103,7 @@ class Exam(Base, TimestampMixin):  # type: ignore[misc, valid-type]
         weight: Weight in final grade calculation (required, 0-1, e.g., 0.3 = 30%)
         course_id: Foreign key to course (required)
         course: Relationship to Course model
+        components: Relationship to ExamComponent models (back-populated)
         created_at: Timestamp when record was created
         updated_at: Timestamp when record was last updated
     """

@@ -676,3 +676,38 @@ class TestWeightValidation:
             # Get available weight excluding comp1 (comp2 uses 0.4, so 0.6 available)
             available = get_available_weight(sample_exam, comp1.id)  # type: ignore[arg-type]
             assert abs(available - 0.6) < 0.001
+
+    def test_calculate_weight_stats_empty(self, app, db):
+        """Test calculate_weight_stats with empty list."""
+        with app.app_context():
+            from cli.exam_component_cli import calculate_weight_stats
+
+            is_valid, total, available = calculate_weight_stats([])
+            assert is_valid is False
+            assert total == 0.0
+            assert available == 1.0
+
+    def test_calculate_weight_stats_valid(self, app, db, sample_exam):
+        """Test calculate_weight_stats with valid components."""
+        with app.app_context():
+            from cli.exam_component_cli import calculate_weight_stats
+
+            comp1 = add_component("Part 1", 60.0, 0.6, sample_exam)
+            comp2 = add_component("Part 2", 40.0, 0.4, sample_exam)
+
+            is_valid, total, available = calculate_weight_stats([comp1, comp2])
+            assert is_valid is True
+            assert abs(total - 1.0) < 0.001
+            assert abs(available - 0.0) < 0.001
+
+    def test_calculate_weight_stats_partial(self, app, db, sample_exam):
+        """Test calculate_weight_stats with partial weight."""
+        with app.app_context():
+            from cli.exam_component_cli import calculate_weight_stats
+
+            comp1 = add_component("Part 1", 60.0, 0.6, sample_exam)
+
+            is_valid, total, available = calculate_weight_stats([comp1])
+            assert is_valid is False
+            assert abs(total - 0.6) < 0.001
+            assert abs(available - 0.4) < 0.001

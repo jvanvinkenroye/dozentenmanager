@@ -29,6 +29,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def calculate_weight_stats(
+    components: list[ExamComponent],
+) -> tuple[bool, float, float]:
+    """
+    Calculate weight statistics from a list of components.
+
+    This is more efficient than validate_total_weight() when you already
+    have the components list, as it avoids re-querying the database.
+
+    Args:
+        components: List of ExamComponent objects
+
+    Returns:
+        Tuple of (is_valid, total_weight, available_weight)
+
+    Examples:
+        >>> components = [comp1, comp2]  # comp1.weight=0.6, comp2.weight=0.4
+        >>> is_valid, total, available = calculate_weight_stats(components)
+        >>> is_valid
+        True
+        >>> total
+        1.0
+        >>> available
+        0.0
+    """
+    total_weight = float(sum(c.weight for c in components))
+    is_valid = abs(total_weight - 1.0) < 0.001
+    available_weight = 1.0 - total_weight
+    return (is_valid, total_weight, available_weight)
+
+
 def validate_total_weight(
     exam_id: int, exclude_component_id: Optional[int] = None
 ) -> tuple[bool, float]:

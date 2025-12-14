@@ -115,16 +115,14 @@ class ExamComponent(Base, TimestampMixin):  # type: ignore[misc, valid-type]
     max_points = Column(Float, nullable=False)
     weight = Column(Float, nullable=False)
     order = Column(Integer, nullable=False, default=0)
-    exam_id = Column(Integer, ForeignKey("exam.id"), nullable=False, index=True)
+    exam_id = Column(Integer, ForeignKey("exam.id"), nullable=False)
 
     # Relationship to exam
     exam = relationship("Exam", backref="components")
 
-    # Indexes for common queries
-    __table_args__ = (
-        Index("idx_exam_component_exam", "exam_id"),
-        Index("idx_exam_component_order", "exam_id", "order"),
-    )
+    # Composite index serves both exam_id and (exam_id, order) queries
+    # due to leftmost prefix rule - no need for separate exam_id index
+    __table_args__ = (Index("idx_exam_component_order", "exam_id", "order"),)
 
     def __repr__(self) -> str:
         """

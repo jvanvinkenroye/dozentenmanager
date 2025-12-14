@@ -19,8 +19,7 @@ from cli.exam_component_cli import (
     add_component,
     update_component,
     delete_component as delete_component_cli,
-    validate_total_weight,
-    get_available_weight,
+    calculate_weight_stats,
 )
 
 # Configure logging
@@ -121,9 +120,8 @@ def show(exam_id: int) -> str | Any:
             .all()
         )
 
-        # Calculate total weight and validation status
-        is_valid, total_weight = validate_total_weight(exam_id)
-        available_weight = get_available_weight(exam_id)
+        # Calculate weight statistics from components list (avoids redundant queries)
+        is_valid, total_weight, available_weight = calculate_weight_stats(components)
 
         return render_template(
             "exam/detail.html",

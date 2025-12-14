@@ -200,12 +200,18 @@
                     </td>
                     <td>
                         <div class="buttons are-small">
-                            <button class="button is-info is-small" onclick="editComponent({{ component.id }}, '{{ component.name }}', '{{ component.description or '' }}', {{ component.max_points }}, {{ component.weight }}, {{ component.order }})">
+                            <button class="button is-info is-small edit-component-btn"
+                                    data-id="{{ component.id }}"
+                                    data-name="{{ component.name }}"
+                                    data-description="{{ component.description or '' }}"
+                                    data-max-points="{{ component.max_points }}"
+                                    data-weight="{{ component.weight }}"
+                                    data-order="{{ component.order }}">
                                 <span class="icon is-small">
                                     <i class="fas fa-edit"></i>
                                 </span>
                             </button>
-                            <form method="post" action="{{ url_for('exam.delete_exam_component', component_id=component.id) }}" style="display: inline;" onsubmit="return confirm('Möchten Sie diese Komponente wirklich löschen?');">
+                            <form method="post" action="{{ url_for('exam.delete_exam_component', component_id=component.id) }}" style="display: inline;" class="delete-component-form">
                                 <button type="submit" class="button is-danger is-small">
                                     <span class="icon is-small">
                                         <i class="fas fa-trash"></i>
@@ -228,7 +234,7 @@
 
     <!-- Add Component Button -->
     <div class="buttons">
-        <button class="button is-primary" onclick="showAddComponentForm()">
+        <button class="button is-primary" id="addComponentBtn">
             <span class="icon">
                 <i class="fas fa-plus"></i>
             </span>
@@ -239,12 +245,12 @@
 
 <!-- Add Component Modal -->
 <div class="modal" id="addComponentModal">
-    <div class="modal-background" onclick="closeAddComponentForm()"></div>
+    <div class="modal-background" data-action="close-add-modal"></div>
     <div class="modal-card">
         <form method="post" action="{{ url_for('exam.add_exam_component', exam_id=exam.id) }}">
             <header class="modal-card-head">
                 <p class="modal-card-title">Komponente hinzufügen</p>
-                <button class="delete" type="button" aria-label="close" onclick="closeAddComponentForm()"></button>
+                <button class="delete" type="button" aria-label="close" data-action="close-add-modal"></button>
             </header>
             <section class="modal-card-body">
                 <div class="field">
@@ -286,7 +292,7 @@
             </section>
             <footer class="modal-card-foot">
                 <button class="button is-primary" type="submit">Speichern</button>
-                <button class="button" type="button" onclick="closeAddComponentForm()">Abbrechen</button>
+                <button class="button" type="button" data-action="close-add-modal">Abbrechen</button>
             </footer>
         </form>
     </div>
@@ -294,12 +300,12 @@
 
 <!-- Edit Component Modal -->
 <div class="modal" id="editComponentModal">
-    <div class="modal-background" onclick="closeEditComponentForm()"></div>
+    <div class="modal-background" data-action="close-edit-modal"></div>
     <div class="modal-card">
         <form method="post" id="editComponentForm">
             <header class="modal-card-head">
                 <p class="modal-card-title">Komponente bearbeiten</p>
-                <button class="delete" type="button" aria-label="close" onclick="closeEditComponentForm()"></button>
+                <button class="delete" type="button" aria-label="close" data-action="close-edit-modal"></button>
             </header>
             <section class="modal-card-body">
                 <div class="field">
@@ -339,36 +345,80 @@
             </section>
             <footer class="modal-card-foot">
                 <button class="button is-primary" type="submit">Speichern</button>
-                <button class="button" type="button" onclick="closeEditComponentForm()">Abbrechen</button>
+                <button class="button" type="button" data-action="close-edit-modal">Abbrechen</button>
             </footer>
         </form>
     </div>
 </div>
 
 <script>
-function showAddComponentForm() {
-    document.getElementById('addComponentModal').classList.add('is-active');
-}
+(function() {
+    'use strict';
 
-function closeAddComponentForm() {
-    document.getElementById('addComponentModal').classList.remove('is-active');
-}
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get modal elements
+        const addModal = document.getElementById('addComponentModal');
+        const editModal = document.getElementById('editComponentModal');
+        const addBtn = document.getElementById('addComponentBtn');
 
-function editComponent(id, name, description, maxPoints, weight, order) {
-    const form = document.getElementById('editComponentForm');
-    form.action = '{{ url_for("exam.update_exam_component", component_id=0) }}'.replace('/0/', '/' + id + '/');
+        // Show add component modal
+        if (addBtn) {
+            addBtn.addEventListener('click', function() {
+                addModal.classList.add('is-active');
+            });
+        }
 
-    document.getElementById('editName').value = name;
-    document.getElementById('editDescription').value = description;
-    document.getElementById('editMaxPoints').value = maxPoints;
-    document.getElementById('editWeight').value = weight;
-    document.getElementById('editOrder').value = order;
+        // Close add component modal
+        document.querySelectorAll('[data-action="close-add-modal"]').forEach(function(el) {
+            el.addEventListener('click', function() {
+                addModal.classList.remove('is-active');
+            });
+        });
 
-    document.getElementById('editComponentModal').classList.add('is-active');
-}
+        // Close edit component modal
+        document.querySelectorAll('[data-action="close-edit-modal"]').forEach(function(el) {
+            el.addEventListener('click', function() {
+                editModal.classList.remove('is-active');
+            });
+        });
 
-function closeEditComponentForm() {
-    document.getElementById('editComponentModal').classList.remove('is-active');
-}
+        // Edit component buttons - use event delegation with data attributes
+        document.querySelectorAll('.edit-component-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                const description = this.dataset.description;
+                const maxPoints = this.dataset.maxPoints;
+                const weight = this.dataset.weight;
+                const order = this.dataset.order;
+
+                // Update form action URL
+                const form = document.getElementById('editComponentForm');
+                const baseUrl = '{{ url_for("exam.update_exam_component", component_id=0) }}';
+                form.action = baseUrl.replace('/0/', '/' + id + '/');
+
+                // Populate form fields
+                document.getElementById('editName').value = name;
+                document.getElementById('editDescription').value = description;
+                document.getElementById('editMaxPoints').value = maxPoints;
+                document.getElementById('editWeight').value = weight;
+                document.getElementById('editOrder').value = order;
+
+                // Show modal
+                editModal.classList.add('is-active');
+            });
+        });
+
+        // Delete component forms - add confirmation
+        document.querySelectorAll('.delete-component-form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Möchten Sie diese Komponente wirklich löschen?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+})();
 </script>
 {% endblock %}

@@ -29,7 +29,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def validate_total_weight(exam_id: int, exclude_component_id: Optional[int] = None) -> tuple[bool, float]:
+def validate_total_weight(
+    exam_id: int, exclude_component_id: Optional[int] = None
+) -> tuple[bool, float]:
     """
     Validate that total weight of all components for an exam equals 1.0.
 
@@ -48,7 +50,7 @@ def validate_total_weight(exam_id: int, exclude_component_id: Optional[int] = No
             query = query.filter(ExamComponent.id != exclude_component_id)
 
         components = query.all()
-        total_weight = sum(c.weight for c in components)
+        total_weight = float(sum(c.weight for c in components))
 
         # Allow small floating point tolerance (0.001)
         is_valid = abs(total_weight - 1.0) < 0.001
@@ -60,7 +62,9 @@ def validate_total_weight(exam_id: int, exclude_component_id: Optional[int] = No
         return (False, 0.0)
 
 
-def get_available_weight(exam_id: int, exclude_component_id: Optional[int] = None) -> float:
+def get_available_weight(
+    exam_id: int, exclude_component_id: Optional[int] = None
+) -> float:
     """
     Get available weight remaining for an exam.
 
@@ -126,8 +130,7 @@ def add_component(
     # Validate order
     if not validate_order(order):
         raise ValueError(
-            f"Invalid order: {order}. "
-            "Order must be a non-negative integer."
+            f"Invalid order: {order}. Order must be a non-negative integer."
         )
 
     # Validate exam exists
@@ -166,8 +169,7 @@ def add_component(
         app_module.db_session.commit()  # type: ignore[union-attr]
 
         logger.info(
-            f"Successfully added component: {component.name} "
-            f"for exam {exam.name}"
+            f"Successfully added component: {component.name} for exam {exam.name}"
         )
         return component
 
@@ -292,7 +294,9 @@ def update_component(
                 )
 
             # Check total weight constraint (excluding this component)
-            available_weight = get_available_weight(component.exam_id, component.id)
+            available_weight = get_available_weight(
+                int(component.exam_id), int(component.id)
+            )
             if weight > available_weight + 0.001:
                 raise ValueError(
                     f"Invalid weight: {weight}. "
@@ -309,8 +313,7 @@ def update_component(
         if order is not None:
             if not validate_order(order):
                 raise ValueError(
-                    f"Invalid order: {order}. "
-                    "Order must be a non-negative integer."
+                    f"Invalid order: {order}. Order must be a non-negative integer."
                 )
             component.order = order
 
@@ -489,13 +492,15 @@ def main() -> int:
 
                 print(f"\nFound {len(components)} component(s):\n")
 
-                current_exam_id = None
+                current_exam_id: Optional[int] = None
                 for component in components:
                     if component.exam_id != current_exam_id:
-                        current_exam_id = component.exam_id
+                        current_exam_id = int(component.exam_id)
                         print(f"\n=== Exam: {component.exam.name} ===")
                         is_valid, total = validate_total_weight(current_exam_id)
-                        print(f"Total Weight: {total:.3f} {'✓' if is_valid else '✗ (should be 1.0)'}\n")
+                        print(
+                            f"Total Weight: {total:.3f} {'✓' if is_valid else '✗ (should be 1.0)'}\n"
+                        )
 
                     print(f"  [{component.order}] ID {component.id}: {component.name}")
                     print(f"      Max Points: {component.max_points}")
@@ -571,7 +576,9 @@ def main() -> int:
             elif args.command == "reorder":
                 component = reorder_component(args.component_id, args.new_order)
                 if component:
-                    print(f"Component '{component.name}' order updated to {args.new_order}")
+                    print(
+                        f"Component '{component.name}' order updated to {args.new_order}"
+                    )
                     return 0
                 else:
                     print("Error: Failed to update component order")
@@ -597,7 +604,7 @@ def main() -> int:
                 total_weight = 0.0
                 for component in components:
                     print(f"  {component.name}: {component.weight * 100}%")
-                    total_weight += component.weight
+                    total_weight += float(component.weight)
 
                 print(f"\n  Total: {total_weight * 100}%")
 
@@ -605,7 +612,9 @@ def main() -> int:
                 if is_valid:
                     print("  Status: ✓ Valid (equals 1.0)")
                 else:
-                    print(f"  Status: ✗ Invalid (should be 100%, is {total_weight * 100}%)")
+                    print(
+                        f"  Status: ✗ Invalid (should be 100%, is {total_weight * 100}%)"
+                    )
                     print(f"  Difference: {(1.0 - total_weight) * 100:+.1f}%")
 
                 return 0 if is_valid else 1

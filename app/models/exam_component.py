@@ -4,7 +4,6 @@ ExamComponent model for Dozentenmanager.
 This module defines the ExamComponent model representing components/parts of an exam.
 """
 
-from typing import Optional
 from sqlalchemy import Column, Integer, String, Float, Text, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from app import Base
@@ -134,7 +133,9 @@ class ExamComponent(Base, TimestampMixin):  # type: ignore[misc, valid-type]
         Returns:
             String representation showing id, name, and exam_id
         """
-        return f"<ExamComponent(id={self.id}, name='{self.name}', exam_id={self.exam_id})>"
+        return (
+            f"<ExamComponent(id={self.id}, name='{self.name}', exam_id={self.exam_id})>"
+        )
 
     def to_dict(self) -> dict:
         """

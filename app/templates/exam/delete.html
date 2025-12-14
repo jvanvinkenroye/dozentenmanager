@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.name }} löschen - Prüfungen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+                <li><a href="{{ url_for('exam.show', exam_id=exam.id) }}">{{ exam.name }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Löschen</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title has-text-danger">
+    <span class="icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </span>
+    Prüfung löschen
+</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <div class="notification is-danger is-light">
+                <p class="has-text-weight-semibold">
+                    <span class="icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </span>
+                    Sind Sie sicher, dass Sie diese Prüfung löschen möchten?
+                </p>
+                <p class="mt-2">Diese Aktion kann nicht rückgängig gemacht werden!</p>
+            </div>
+
+            <div class="content">
+                <h2 class="subtitle">Details</h2>
+
+                <table class="table is-fullwidth">
+                    <tbody>
+                        <tr>
+                            <th>Name</th>
+                            <td><strong>{{ exam.name }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Lehrveranstaltung</th>
+                            <td>
+                                <a href="{{ url_for('course.show', course_id=exam.course.id) }}">
+                                    {{ exam.course.name }} ({{ exam.course.semester }})
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Datum</th>
+                            <td><span class="tag is-info">{{ exam.exam_date.strftime('%d.%m.%Y') }}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Maximale Punkte</th>
+                            <td>{{ exam.max_points }}</td>
+                        </tr>
+                        <tr>
+                            <th>Gewichtung</th>
+                            <td>{{ exam.weight }}%</td>
+                        </tr>
+                        {% if exam.description %}
+                        <tr>
+                            <th>Beschreibung</th>
+                            <td>{{ exam.description }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Erstellt am</th>
+                            <td>{{ exam.created_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Zuletzt aktualisiert</th>
+                            <td>{{ exam.updated_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post">
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-danger">
+                            <span class="icon">
+                                <i class="fas fa-trash"></i>
+                            </span>
+                            <span>Ja, endgültig löschen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('exam.show', exam_id=exam.id) }}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-arrow-left"></i>
+                            </span>
+                            <span>Nein, abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle has-text-danger">Warnung</h2>
+
+            <div class="content">
+                <p>Das Löschen dieser Prüfung wird:</p>
+                <ul>
+                    <li>Die Prüfung permanent entfernen</li>
+                    <li>Möglicherweise verknüpfte Daten beeinflussen</li>
+                    <li>Abgaben betreffen (zukünftige Funktion)</li>
+                    <li>Bewertungen betreffen (zukünftige Funktion)</li>
+                </ul>
+
+                <div class="notification is-warning is-light">
+                    <p class="is-size-7">
+                        <span class="icon">
+                            <i class="fas fa-info-circle"></i>
+                        </span>
+                        <strong>Hinweis:</strong> Überprüfen Sie, ob diese Prüfung noch mit Abgaben oder Bewertungen verknüpft ist.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -148,12 +148,14 @@ def register_blueprints(app: Flask) -> None:
     # Import blueprints here to avoid circular imports
     from app.routes.course import bp as course_bp
     from app.routes.enrollment import bp as enrollment_bp
+    from app.routes.exam import bp as exam_bp
     from app.routes.student import bp as student_bp
     from app.routes.university import bp as university_bp
 
     # Register blueprints
     app.register_blueprint(course_bp)
     app.register_blueprint(enrollment_bp)
+    app.register_blueprint(exam_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(university_bp)
 

@@ -36,7 +36,7 @@ async def test_enrollment():
 
         context = await p.chromium.launch_persistent_context(
             user_data_dir=temp_dir,
-            headless=False  # Set to False to see the browser
+            headless=False,  # Set to False to see the browser
         )
         page = await context.new_page()
 
@@ -57,10 +57,18 @@ async def test_enrollment():
 
             # Get student names from enrollment table
             for i in range(enrollment_rows):
-                student_name = await page.locator(f"table tbody tr:nth-child({i+1}) td:nth-child(1)").text_content()
-                student_id = await page.locator(f"table tbody tr:nth-child({i+1}) td:nth-child(2)").text_content()
-                status = await page.locator(f"table tbody tr:nth-child({i+1}) td:nth-child(3)").text_content()
-                logger.info(f"  - {student_name.strip()} (ID: {student_id.strip()}) - Status: {status.strip()}")
+                student_name = await page.locator(
+                    f"table tbody tr:nth-child({i + 1}) td:nth-child(1)"
+                ).text_content()
+                student_id = await page.locator(
+                    f"table tbody tr:nth-child({i + 1}) td:nth-child(2)"
+                ).text_content()
+                status = await page.locator(
+                    f"table tbody tr:nth-child({i + 1}) td:nth-child(3)"
+                ).text_content()
+                logger.info(
+                    f"  - {student_name.strip()} (ID: {student_id.strip()}) - Status: {status.strip()}"
+                )
 
             # Click "Einschreiben" button to open modal
             logger.info("Opening enrollment modal...")
@@ -70,7 +78,9 @@ async def test_enrollment():
 
             # Select Lisa Weber from dropdown
             logger.info("Selecting Lisa Weber from dropdown...")
-            await page.select_option("select[name='student_id']", label="Weber, Lisa (33333333)")
+            await page.select_option(
+                "select[name='student_id']", label="Weber, Lisa (33333333)"
+            )
 
             # Submit the form
             logger.info("Submitting enrollment form...")
@@ -80,7 +90,9 @@ async def test_enrollment():
             await page.wait_for_load_state("networkidle")
 
             # Check for success flash message
-            flash_message = await page.locator(".notification.is-success, .message.is-success").text_content()
+            flash_message = await page.locator(
+                ".notification.is-success, .message.is-success"
+            ).text_content()
             logger.info(f"Success message: {flash_message.strip()}")
 
             # Verify new enrollment count
@@ -90,15 +102,25 @@ async def test_enrollment():
             if new_enrollment_rows == enrollment_rows + 1:
                 logger.info("✓ Enrollment successful! Lisa Weber was added.")
             else:
-                logger.error(f"✗ Expected {enrollment_rows + 1} enrollments, but found {new_enrollment_rows}")
+                logger.error(
+                    f"✗ Expected {enrollment_rows + 1} enrollments, but found {new_enrollment_rows}"
+                )
 
             # List all current enrollments
             logger.info("Current enrollments after adding Lisa:")
             for i in range(new_enrollment_rows):
-                student_name = await page.locator(f"table tbody tr:nth-child({i+1}) td:nth-child(1)").text_content()
-                student_id = await page.locator(f"table tbody tr:nth-child({i+1}) td:nth-child(2)").text_content()
-                status = await page.locator(f"table tbody tr:nth-child({i+1}) td:nth-child(3)").text_content()
-                logger.info(f"  - {student_name.strip()} (ID: {student_id.strip()}) - Status: {status.strip()}")
+                student_name = await page.locator(
+                    f"table tbody tr:nth-child({i + 1}) td:nth-child(1)"
+                ).text_content()
+                student_id = await page.locator(
+                    f"table tbody tr:nth-child({i + 1}) td:nth-child(2)"
+                ).text_content()
+                status = await page.locator(
+                    f"table tbody tr:nth-child({i + 1}) td:nth-child(3)"
+                ).text_content()
+                logger.info(
+                    f"  - {student_name.strip()} (ID: {student_id.strip()}) - Status: {status.strip()}"
+                )
 
             # Wait a bit to see the final state
             logger.info("Waiting 3 seconds to view the result...")
@@ -117,7 +139,9 @@ async def test_enrollment():
             await page.wait_for_load_state("networkidle")
 
             # Check flash message
-            flash_message = await page.locator(".notification.is-success, .message.is-success").text_content()
+            flash_message = await page.locator(
+                ".notification.is-success, .message.is-success"
+            ).text_content()
             logger.info(f"Unenrollment message: {flash_message.strip()}")
 
             # Verify enrollment count decreased
@@ -127,7 +151,9 @@ async def test_enrollment():
             if final_enrollment_rows == new_enrollment_rows - 1:
                 logger.info("✓ Unenrollment successful!")
             else:
-                logger.error(f"✗ Expected {new_enrollment_rows - 1} enrollments, but found {final_enrollment_rows}")
+                logger.error(
+                    f"✗ Expected {new_enrollment_rows - 1} enrollments, but found {final_enrollment_rows}"
+                )
 
             # Wait to see final result
             logger.info("Waiting 3 seconds before closing...")

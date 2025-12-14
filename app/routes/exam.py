@@ -14,6 +14,14 @@ from sqlalchemy.exc import SQLAlchemyError
 import app as app_module
 from app.models.course import Course
 from app.models.exam import Exam, validate_weight, validate_max_points
+from app.models.exam_component import ExamComponent
+from cli.exam_component_cli import (
+    add_component,
+    update_component,
+    delete_component as delete_component_cli,
+    validate_total_weight,
+    get_available_weight,
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -105,9 +113,25 @@ def show(exam_id: int) -> str | Any:
             flash(f"Exam with ID {exam_id} not found.", "error")
             return redirect(url_for("exam.index"))
 
+        # Get components for this exam, ordered by display order
+        components = (
+            app_module.db_session.query(ExamComponent)  # type: ignore[union-attr]
+            .filter_by(exam_id=exam_id)
+            .order_by(ExamComponent.order)
+            .all()
+        )
+
+        # Calculate total weight and validation status
+        is_valid, total_weight = validate_total_weight(exam_id)
+        available_weight = get_available_weight(exam_id)
+
         return render_template(
             "exam/detail.html",
             exam=exam,
+            components=components,
+            total_weight=total_weight,
+            is_valid_weight=is_valid,
+            available_weight=available_weight,
         )
 
     except SQLAlchemyError as e:
@@ -528,3 +552,243 @@ def delete(exam_id: int) -> Any:
         logger.error(f"Database error while deleting exam: {e}")
         flash("Error deleting exam. Please try again.", "error")
         return redirect(url_for("exam.show", exam_id=exam_id))
+
+
+# ==================== Exam Component Routes ====================
+
+
+@bp.route("/<int:exam_id>/components/add", methods=["POST"])
+def add_exam_component(exam_id: int) -> Any:
+    """
+    Add a new component to an exam.
+
+    Args:
+        exam_id: Exam database ID
+
+    Form fields:
+        name: Component name (required)
+        description: Component description (optional)
+        max_points: Maximum points (required)
+        weight: Weight in exam grade (required, 0-1)
+        order: Display order (optional, defaults to 0)
+
+    Returns:
+        Redirect to exam detail page
+    """
+    try:
+        # Verify exam exists
+        exam = (
+            app_module.db_session.query(Exam)  # type: ignore[union-attr]
+            .filter_by(id=exam_id)
+            .first()
+        )
+
+        if not exam:
+            flash(f"Prüfung mit ID {exam_id} nicht gefunden.", "error")
+            return redirect(url_for("exam.index"))
+
+        # Get form data
+        name = request.form.get("name", "").strip()
+        description = request.form.get("description", "").strip() or None
+        max_points_str = request.form.get("max_points", "").strip()
+        weight_str = request.form.get("weight", "").strip()
+        order_str = request.form.get("order", "0").strip()
+
+        # Validate required fields
+        if not name:
+            flash("Komponentenname ist erforderlich.", "error")
+            return redirect(url_for("exam.show", exam_id=exam_id))
+
+        if not max_points_str:
+            flash("Maximalpunkte sind erforderlich.", "error")
+            return redirect(url_for("exam.show", exam_id=exam_id))
+
+        if not weight_str:
+            flash("Gewichtung ist erforderlich.", "error")
+            return redirect(url_for("exam.show", exam_id=exam_id))
+
+        # Parse numeric fields
+        try:
+            max_points = float(max_points_str)
+        except ValueError:
+            flash("Ungültiger Wert für Maximalpunkte.", "error")
+            return redirect(url_for("exam.show", exam_id=exam_id))
+
+        try:
+            weight = float(weight_str)
+        except ValueError:
+            flash("Ungültiger Wert für Gewichtung.", "error")
+            return redirect(url_for("exam.show", exam_id=exam_id))
+
+        try:
+            order = int(order_str)
+        except ValueError:
+            flash("Ungültiger Wert für Reihenfolge.", "error")
+            return redirect(url_for("exam.show", exam_id=exam_id))
+
+        # Use CLI function to add component (includes validation)
+        component = add_component(
+            name=name,
+            max_points=max_points,
+            weight=weight,
+            exam_id=exam_id,
+            description=description,
+            order=order,
+        )
+
+        if component:
+            flash(f"Komponente '{component.name}' erfolgreich hinzugefügt.", "success")
+        else:
+            flash("Fehler beim Hinzufügen der Komponente.", "error")
+
+        return redirect(url_for("exam.show", exam_id=exam_id))
+
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("exam.show", exam_id=exam_id))
+    except SQLAlchemyError as e:
+        app_module.db_session.rollback()  # type: ignore[union-attr]
+        logger.error(f"Database error while adding component: {e}")
+        flash(
+            "Fehler beim Hinzufügen der Komponente. Bitte versuchen Sie es erneut.",
+            "error",
+        )
+        return redirect(url_for("exam.show", exam_id=exam_id))
+
+
+@bp.route("/components/<int:component_id>/update", methods=["POST"])
+def update_exam_component(component_id: int) -> Any:
+    """
+    Update an existing exam component.
+
+    Args:
+        component_id: Component database ID
+
+    Form fields:
+        name: Component name (optional)
+        description: Component description (optional)
+        max_points: Maximum points (optional)
+        weight: Weight in exam grade (optional)
+        order: Display order (optional)
+
+    Returns:
+        Redirect to exam detail page
+    """
+    try:
+        # Get component to find exam_id for redirect
+        component_obj = (
+            app_module.db_session.query(ExamComponent)  # type: ignore[union-attr]
+            .filter_by(id=component_id)
+            .first()
+        )
+
+        if not component_obj:
+            flash(f"Komponente mit ID {component_id} nicht gefunden.", "error")
+            return redirect(url_for("exam.index"))
+
+        exam_id = int(component_obj.exam_id)
+
+        # Get form data
+        name = request.form.get("name", "").strip() or None
+        description = request.form.get("description", "").strip() or None
+        max_points_str = request.form.get("max_points", "").strip()
+        weight_str = request.form.get("weight", "").strip()
+        order_str = request.form.get("order", "").strip()
+
+        # Parse numeric fields if provided
+        max_points = None
+        if max_points_str:
+            try:
+                max_points = float(max_points_str)
+            except ValueError:
+                flash("Ungültiger Wert für Maximalpunkte.", "error")
+                return redirect(url_for("exam.show", exam_id=exam_id))
+
+        weight = None
+        if weight_str:
+            try:
+                weight = float(weight_str)
+            except ValueError:
+                flash("Ungültiger Wert für Gewichtung.", "error")
+                return redirect(url_for("exam.show", exam_id=exam_id))
+
+        order = None
+        if order_str:
+            try:
+                order = int(order_str)
+            except ValueError:
+                flash("Ungültiger Wert für Reihenfolge.", "error")
+                return redirect(url_for("exam.show", exam_id=exam_id))
+
+        # Use CLI function to update component (includes validation)
+        component = update_component(
+            component_id=component_id,
+            name=name,
+            description=description,
+            max_points=max_points,
+            weight=weight,
+            order=order,
+        )
+
+        if component:
+            flash(f"Komponente '{component.name}' erfolgreich aktualisiert.", "success")
+        else:
+            flash("Fehler beim Aktualisieren der Komponente.", "error")
+
+        return redirect(url_for("exam.show", exam_id=exam_id))
+
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("exam.show", exam_id=exam_id))
+    except SQLAlchemyError as e:
+        app_module.db_session.rollback()  # type: ignore[union-attr]
+        logger.error(f"Database error while updating component: {e}")
+        flash(
+            "Fehler beim Aktualisieren der Komponente. Bitte versuchen Sie es erneut.",
+            "error",
+        )
+        return redirect(url_for("exam.show", exam_id=exam_id))
+
+
+@bp.route("/components/<int:component_id>/delete", methods=["POST"])
+def delete_exam_component(component_id: int) -> Any:
+    """
+    Delete an exam component.
+
+    Args:
+        component_id: Component database ID
+
+    Returns:
+        Redirect to exam detail page
+    """
+    try:
+        # Get component to find exam_id for redirect
+        component_obj = (
+            app_module.db_session.query(ExamComponent)  # type: ignore[union-attr]
+            .filter_by(id=component_id)
+            .first()
+        )
+
+        if not component_obj:
+            flash(f"Komponente mit ID {component_id} nicht gefunden.", "error")
+            return redirect(url_for("exam.index"))
+
+        exam_id = int(component_obj.exam_id)
+        component_name = component_obj.name
+
+        # Use CLI function to delete component
+        if delete_component_cli(component_id):
+            flash(f"Komponente '{component_name}' erfolgreich gelöscht.", "success")
+        else:
+            flash("Fehler beim Löschen der Komponente.", "error")
+
+        return redirect(url_for("exam.show", exam_id=exam_id))
+
+    except SQLAlchemyError as e:
+        app_module.db_session.rollback()  # type: ignore[union-attr]
+        logger.error(f"Database error while deleting component: {e}")
+        flash(
+            "Fehler beim Löschen der Komponente. Bitte versuchen Sie es erneut.",
+            "error",
+        )
+        return redirect(url_for("exam.index"))

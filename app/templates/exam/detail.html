@@ -143,4 +143,232 @@
         </div>
     </div>
 </div>
+
+<!-- Exam Components Section -->
+<div class="box">
+    <div class="level">
+        <div class="level-left">
+            <div class="level-item">
+                <h2 class="subtitle">Prüfungskomponenten</h2>
+            </div>
+        </div>
+        <div class="level-right">
+            <div class="level-item">
+                <span class="tag {% if is_valid_weight %}is-success{% else %}is-warning{% endif %} is-medium">
+                    Gesamtgewicht: {{ (total_weight * 100)|int }}%
+                    {% if is_valid_weight %}✓{% else %}⚠{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% if not is_valid_weight %}
+    <div class="notification is-warning is-light">
+        <p><strong>Warnung:</strong> Die Summe der Komponentengewichte beträgt {{ (total_weight * 100)|int }}% und sollte 100% betragen.</p>
+        <p>Verfügbares Gewicht: <strong>{{ (available_weight * 100)|int }}%</strong></p>
+    </div>
+    {% endif %}
+
+    {% if components %}
+    <div class="content">
+        <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Name</th>
+                    <th>Beschreibung</th>
+                    <th style="width: 120px;">Max. Punkte</th>
+                    <th style="width: 100px;">Gewicht</th>
+                    <th style="width: 100px;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for component in components %}
+                <tr>
+                    <td>{{ component.order }}</td>
+                    <td><strong>{{ component.name }}</strong></td>
+                    <td>
+                        {% if component.description %}
+                            <span class="has-text-grey">{{ component.description }}</span>
+                        {% else %}
+                            <span class="has-text-grey-light">–</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ component.max_points }}</td>
+                    <td>
+                        <span class="tag is-info">{{ (component.weight * 100)|int }}%</span>
+                    </td>
+                    <td>
+                        <div class="buttons are-small">
+                            <button class="button is-info is-small" onclick="editComponent({{ component.id }}, '{{ component.name }}', '{{ component.description or '' }}', {{ component.max_points }}, {{ component.weight }}, {{ component.order }})">
+                                <span class="icon is-small">
+                                    <i class="fas fa-edit"></i>
+                                </span>
+                            </button>
+                            <form method="post" action="{{ url_for('exam.delete_exam_component', component_id=component.id) }}" style="display: inline;" onsubmit="return confirm('Möchten Sie diese Komponente wirklich löschen?');">
+                                <button type="submit" class="button is-danger is-small">
+                                    <span class="icon is-small">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="notification is-info is-light">
+        <p>Für diese Prüfung wurden noch keine Komponenten angelegt.</p>
+        <p><strong>Hinweis:</strong> Komponenten ermöglichen es, eine Prüfung in mehrere Teile zu unterteilen (z.B. schriftlicher Teil, praktischer Teil).</p>
+    </div>
+    {% endif %}
+
+    <!-- Add Component Button -->
+    <div class="buttons">
+        <button class="button is-primary" onclick="showAddComponentForm()">
+            <span class="icon">
+                <i class="fas fa-plus"></i>
+            </span>
+            <span>Komponente hinzufügen</span>
+        </button>
+    </div>
+</div>
+
+<!-- Add Component Modal -->
+<div class="modal" id="addComponentModal">
+    <div class="modal-background" onclick="closeAddComponentForm()"></div>
+    <div class="modal-card">
+        <form method="post" action="{{ url_for('exam.add_exam_component', exam_id=exam.id) }}">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Komponente hinzufügen</p>
+                <button class="delete" type="button" aria-label="close" onclick="closeAddComponentForm()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">Name <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input class="input" type="text" name="name" placeholder="z.B. Schriftlicher Teil" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Beschreibung</label>
+                    <div class="control">
+                        <textarea class="textarea" name="description" placeholder="Optionale Beschreibung der Komponente" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Maximalpunkte <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input class="input" type="number" step="0.01" name="max_points" placeholder="z.B. 60.0" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Gewicht (0-1) <span class="has-text-danger">*</span></label>
+                    <div class="control">
+                        <input class="input" type="number" step="0.01" min="0" max="1" name="weight" placeholder="z.B. 0.6 für 60%" required>
+                    </div>
+                    <p class="help">Verfügbares Gewicht: {{ (available_weight * 100)|int }}% ({{ available_weight }})</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">Reihenfolge</label>
+                    <div class="control">
+                        <input class="input" type="number" name="order" value="0" placeholder="0">
+                    </div>
+                    <p class="help">Niedrigere Zahlen werden zuerst angezeigt</p>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-primary" type="submit">Speichern</button>
+                <button class="button" type="button" onclick="closeAddComponentForm()">Abbrechen</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Component Modal -->
+<div class="modal" id="editComponentModal">
+    <div class="modal-background" onclick="closeEditComponentForm()"></div>
+    <div class="modal-card">
+        <form method="post" id="editComponentForm">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Komponente bearbeiten</p>
+                <button class="delete" type="button" aria-label="close" onclick="closeEditComponentForm()"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">Name</label>
+                    <div class="control">
+                        <input class="input" type="text" name="name" id="editName">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Beschreibung</label>
+                    <div class="control">
+                        <textarea class="textarea" name="description" id="editDescription" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Maximalpunkte</label>
+                    <div class="control">
+                        <input class="input" type="number" step="0.01" name="max_points" id="editMaxPoints">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Gewicht (0-1)</label>
+                    <div class="control">
+                        <input class="input" type="number" step="0.01" min="0" max="1" name="weight" id="editWeight">
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Reihenfolge</label>
+                    <div class="control">
+                        <input class="input" type="number" name="order" id="editOrder">
+                    </div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-primary" type="submit">Speichern</button>
+                <button class="button" type="button" onclick="closeEditComponentForm()">Abbrechen</button>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddComponentForm() {
+    document.getElementById('addComponentModal').classList.add('is-active');
+}
+
+function closeAddComponentForm() {
+    document.getElementById('addComponentModal').classList.remove('is-active');
+}
+
+function editComponent(id, name, description, maxPoints, weight, order) {
+    const form = document.getElementById('editComponentForm');
+    form.action = '{{ url_for("exam.update_exam_component", component_id=0) }}'.replace('/0/', '/' + id + '/');
+
+    document.getElementById('editName').value = name;
+    document.getElementById('editDescription').value = description;
+    document.getElementById('editMaxPoints').value = maxPoints;
+    document.getElementById('editWeight').value = weight;
+    document.getElementById('editOrder').value = order;
+
+    document.getElementById('editComponentModal').classList.add('is-active');
+}
+
+function closeEditComponentForm() {
+    document.getElementById('editComponentModal').classList.remove('is-active');
+}
+</script>
 {% endblock %}

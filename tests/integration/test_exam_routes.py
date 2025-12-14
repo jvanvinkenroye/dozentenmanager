@@ -397,3 +397,350 @@ class TestExamDelete:
         with app.app_context():
             response = client.post("/exams/9999/delete", follow_redirects=True)
             assert response.status_code == 200
+
+
+class TestExamComponentAdd:
+    """Test adding exam components."""
+
+    def test_add_component_success(self, app, client):
+        """Test successfully adding a component to an exam."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add component
+            response = client.post(
+                f"/exams/{exam.id}/components/add",
+                data={
+                    "name": "Written Part",
+                    "description": "Written exam part",
+                    "max_points": "60.0",
+                    "weight": "0.6",
+                    "order": "0",
+                },
+                follow_redirects=True,
+            )
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            assert "Written Part" in response_text
+            assert "60" in response_text
+
+    def test_add_component_missing_name(self, app, client):
+        """Test adding component without name."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Try to add component without name
+            response = client.post(
+                f"/exams/{exam.id}/components/add",
+                data={
+                    "name": "",
+                    "max_points": "60.0",
+                    "weight": "0.6",
+                },
+                follow_redirects=True,
+            )
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            assert "erforderlich" in response_text or "required" in response_text
+
+    def test_add_component_weight_exceeds_limit(self, app, client):
+        """Test adding component that would exceed total weight of 1.0."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add first component with weight 0.6
+            client.post(
+                f"/exams/{exam.id}/components/add",
+                data={
+                    "name": "Part 1",
+                    "max_points": "60.0",
+                    "weight": "0.6",
+                },
+            )
+
+            # Try to add second component with weight 0.6 (would exceed 1.0)
+            response = client.post(
+                f"/exams/{exam.id}/components/add",
+                data={
+                    "name": "Part 2",
+                    "max_points": "60.0",
+                    "weight": "0.6",
+                },
+                follow_redirects=True,
+            )
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            # Should show error about exceeding available weight
+            assert (
+                "available" in response_text.lower()
+                or "verfügbar" in response_text.lower()
+            )
+
+
+class TestExamComponentUpdate:
+    """Test updating exam components."""
+
+    def test_update_component_success(self, app, client):
+        """Test successfully updating a component."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add component
+            from cli.exam_component_cli import add_component
+
+            component = add_component(
+                name="Written Part",
+                max_points=60.0,
+                weight=0.6,
+                exam_id=exam.id,
+            )
+
+            # Update component name
+            response = client.post(
+                f"/exams/components/{component.id}/update",
+                data={"name": "Updated Part"},
+                follow_redirects=True,
+            )
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            assert "Updated Part" in response_text
+
+    def test_update_component_weight(self, app, client):
+        """Test updating component weight."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add two components
+            from cli.exam_component_cli import add_component
+
+            component1 = add_component(
+                name="Part 1", max_points=60.0, weight=0.6, exam_id=exam.id
+            )
+            add_component(name="Part 2", max_points=40.0, weight=0.4, exam_id=exam.id)
+
+            # Update first component weight to 0.5
+            response = client.post(
+                f"/exams/components/{component1.id}/update",
+                data={"weight": "0.5"},
+                follow_redirects=True,
+            )
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            assert "50%" in response_text or "0.5" in response_text
+
+    def test_update_component_not_found(self, app, client):
+        """Test updating non-existent component."""
+        with app.app_context():
+            response = client.post(
+                "/exams/components/9999/update",
+                data={"name": "Updated"},
+                follow_redirects=True,
+            )
+
+            assert response.status_code == 200
+
+
+class TestExamComponentDelete:
+    """Test deleting exam components."""
+
+    def test_delete_component_success(self, app, client):
+        """Test successfully deleting a component."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add component
+            from cli.exam_component_cli import add_component
+
+            component = add_component(
+                name="Written Part",
+                max_points=60.0,
+                weight=0.6,
+                exam_id=exam.id,
+            )
+
+            # Delete component
+            response = client.post(
+                f"/exams/components/{component.id}/delete", follow_redirects=True
+            )
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            assert "gelöscht" in response_text or "deleted" in response_text.lower()
+
+    def test_delete_component_not_found(self, app, client):
+        """Test deleting non-existent component."""
+        with app.app_context():
+            response = client.post(
+                "/exams/components/9999/delete", follow_redirects=True
+            )
+
+            assert response.status_code == 200
+
+
+class TestExamComponentDisplay:
+    """Test exam component display in exam detail view."""
+
+    def test_exam_detail_shows_components(self, app, client):
+        """Test that exam detail page displays components."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add components
+            from cli.exam_component_cli import add_component
+
+            add_component(
+                name="Written Part",
+                description="Written exam",
+                max_points=60.0,
+                weight=0.6,
+                exam_id=exam.id,
+                order=0,
+            )
+            add_component(
+                name="Practical Part",
+                description="Practical exam",
+                max_points=40.0,
+                weight=0.4,
+                exam_id=exam.id,
+                order=1,
+            )
+
+            # View exam detail page
+            response = client.get(f"/exams/{exam.id}")
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            assert "Written Part" in response_text
+            assert "Practical Part" in response_text
+            assert "Written exam" in response_text
+            assert "Practical exam" in response_text
+
+    def test_exam_detail_shows_weight_validation(self, app, client):
+        """Test that exam detail page shows weight validation status."""
+        with app.app_context():
+            # Create test data
+            university = add_university("TH Köln")
+            course = add_course(
+                name="Introduction to Programming",
+                semester="2024_WiSe",
+                university_id=university.id,
+            )
+            exam = add_exam(
+                name="Midterm Exam",
+                exam_type="midterm",
+                max_points=100.0,
+                weight=0.3,
+                course_id=course.id,
+            )
+
+            # Add components totaling 1.0
+            from cli.exam_component_cli import add_component
+
+            add_component(name="Part 1", max_points=60.0, weight=0.6, exam_id=exam.id)
+            add_component(name="Part 2", max_points=40.0, weight=0.4, exam_id=exam.id)
+
+            # View exam detail page
+            response = client.get(f"/exams/{exam.id}")
+
+            assert response.status_code == 200
+            response_text = response.data.decode("utf-8")
+            # Should show valid weight (100%)
+            assert "100%" in response_text
+            # Should show success indicator
+            assert "✓" in response_text or "success" in response_text

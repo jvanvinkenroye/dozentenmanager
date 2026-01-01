@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
 
@@ -22,6 +23,9 @@ Base = declarative_base()
 
 # Database session (will be initialized in create_app)
 db_session = None
+
+# CSRF Protection
+csrf = CSRFProtect()
 
 
 def create_app(config_name: Optional[str] = None) -> Flask:
@@ -42,6 +46,9 @@ def create_app(config_name: Optional[str] = None) -> Flask:
         config_name = os.environ.get("FLASK_ENV", "development")
 
     app.config.from_object(get_config(config_name))
+
+    # Initialize CSRF protection
+    csrf.init_app(app)
 
     # Initialize database
     init_db(app)

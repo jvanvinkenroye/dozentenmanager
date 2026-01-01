@@ -151,6 +151,7 @@
                         </td>
                         <td>
                             <form method="post" action="{{ url_for('enrollment.unenroll') }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="student_id" value="{{ enrollment.student.id }}">
                                 <input type="hidden" name="course_id" value="{{ course.id }}">
                                 <input type="hidden" name="redirect_to" value="course">
@@ -208,6 +209,7 @@
             <button class="delete" aria-label="close" onclick="document.getElementById('enroll-modal').classList.remove('is-active')"></button>
         </header>
         <form method="post" action="{{ url_for('enrollment.enroll') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <section class="modal-card-body">
                 <input type="hidden" name="course_id" value="{{ course.id }}">
                 <input type="hidden" name="redirect_to" value="course">

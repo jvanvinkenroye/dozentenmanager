@@ -42,6 +42,11 @@ class Config:
     LOG_MAX_BYTES = 10 * 1024 * 1024  # 10MB
     LOG_BACKUP_COUNT = 10
 
+    # CSRF Protection (Flask-WTF)
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # No time limit for CSRF tokens
+    WTF_CSRF_SSL_STRICT = True  # Require HTTPS in production
+
 
 class DevelopmentConfig(Config):
     """Development environment configuration."""
@@ -52,6 +57,7 @@ class DevelopmentConfig(Config):
         os.environ.get("DATABASE_URL") or f"sqlite:///{BASE_DIR}/dev_dozentenmanager.db"
     )
     SQLALCHEMY_ECHO = True  # Log SQL queries in development
+    WTF_CSRF_SSL_STRICT = False  # Allow HTTP in development
 
 
 class TestingConfig(Config):

@@ -76,6 +76,7 @@
             </div>
 
             <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="field is-grouped">
                     <div class="control">
                         <button type="submit" class="button is-danger">

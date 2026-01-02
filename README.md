@@ -5,7 +5,7 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 142 passing](https://img.shields.io/badge/tests-142%20passing-success.svg)](tests/)
+[![Tests: 219 passing](https://img.shields.io/badge/tests-219%20passing-success.svg)](tests/)
 
 ## 📋 Inhaltsverzeichnis
 
@@ -21,7 +21,7 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 
 ## ✨ Features
 
-### Phase 1 - Kernfunktionen (✅ Abgeschlossen - v0.4.0)
+### Phase 1 - Kernfunktionen (✅ Abgeschlossen - v0.5.0)
 
 #### 🏛️ Universitätsverwaltung
 - CRUD-Operationen für Universitäten
@@ -53,11 +53,18 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 - Interaktive Modal-Dialoge für Einschreibung
 - CLI und Web-Interface
 
+#### 📊 Prüfungsverwaltung
+- CRUD-Operationen für Prüfungen und Assessments
+- Prüfungstermin-Verwaltung
+- Punkteverwaltung (maximale Punktzahl)
+- Gewichtung für Gesamtnote (0-100%)
+- Verknüpfung mit Lehrveranstaltungen
+- CLI und Web-Interface
+
 ### 🔮 Geplante Features (Phase 2+)
 
 - Dokumenten-Management (PDF-Upload und Organisation)
-- Prüfungsverwaltung
-- Bewertungssystem
+- Bewertungssystem (Noten- und Punkteeingabe für Prüfungen)
 - Statistiken und Berichte
 - Export-Funktionen (CSV, PDF)
 - E-Mail-Benachrichtigungen
@@ -147,6 +154,7 @@ Nach dem Start der Anwendung mit `python run.py` können Sie das Web-Interface u
 - `/students` - Studierendenverwaltung
 - `/courses` - Lehrveranstaltungsverwaltung
 - `/courses/<id>` - Kursdetails mit Einschreibungsverwaltung
+- `/exams` - Prüfungsverwaltung
 
 ### CLI-Tools
 
@@ -211,6 +219,26 @@ python cli/enrollment_cli.py update-status \
   --student-id 1 \
   --course-id 1 \
   --status completed
+```
+
+#### Prüfungen verwalten
+```bash
+# Prüfung hinzufügen
+python cli/exam_cli.py add \
+  --name "Klausur Statistik I" \
+  --course-id 1 \
+  --exam-date 2024-06-15 \
+  --max-points 100 \
+  --weight 60
+
+# Prüfungen auflisten
+python cli/exam_cli.py list
+
+# Nach Kurs filtern
+python cli/exam_cli.py list --course-id 1
+
+# Prüfung aktualisieren
+python cli/exam_cli.py update --id 1 --max-points 120
 ```
 
 Alle CLI-Tools unterstützen `--help` für detaillierte Informationen:
@@ -285,25 +313,29 @@ dozentenmanager/
 │   │   ├── university.py
 │   │   ├── student.py
 │   │   ├── course.py
-│   │   └── enrollment.py
+│   │   ├── enrollment.py
+│   │   └── exam.py
 │   ├── routes/                # Flask Blueprints
 │   │   ├── university.py
 │   │   ├── student.py
 │   │   ├── course.py
-│   │   └── enrollment.py
+│   │   ├── enrollment.py
+│   │   └── exam.py
 │   ├── templates/             # Jinja2 Templates
 │   │   ├── base.html
 │   │   ├── university/
 │   │   ├── student/
 │   │   ├── course/
-│   │   └── enrollment/
+│   │   ├── enrollment/
+│   │   └── exam/
 │   └── static/                # CSS, JavaScript, Bilder
 │       └── css/
 ├── cli/                       # CLI-Tools
 │   ├── university_cli.py
 │   ├── student_cli.py
 │   ├── course_cli.py
-│   └── enrollment_cli.py
+│   ├── enrollment_cli.py
+│   └── exam_cli.py
 ├── tests/                     # Test-Suite
 │   ├── unit/                  # Unit-Tests
 │   ├── integration/           # Integration-Tests
@@ -349,8 +381,8 @@ open htmlcov/index.html  # macOS
 
 ### Test-Statistiken
 
-**v0.4.0:**
-- **142 Tests** (121 Unit + 21 Integration)
+**v0.5.0:**
+- **219 Tests** (175 Unit + 44 Integration)
 - **100% Pass-Rate**
 - **Coverage:** Umfassende Abdeckung aller CRUD-Operationen
 - **E2E-Tests:** Playwright Browser-Automatisierung
@@ -363,11 +395,12 @@ open htmlcov/index.html  # macOS
 
 ## 🗺️ Roadmap
 
-### ✅ Phase 1: Kern-Datenverwaltung (Abgeschlossen)
+### ✅ Phase 1: Kern-Datenverwaltung (Abgeschlossen - v0.5.0)
 - [x] 1.1 Universitätsverwaltung
 - [x] 1.2 Studierendenverwaltung
 - [x] 1.3 Lehrveranstaltungsverwaltung
 - [x] 1.4 Einschreibungsverwaltung
+- [x] 1.5 Prüfungsverwaltung (Struktur und CRUD)
 
 ### 🚧 Phase 2: Dokumenten-Management (Geplant)
 - [ ] 2.1 Datei-Upload-System
@@ -375,11 +408,11 @@ open htmlcov/index.html  # macOS
 - [ ] 2.3 PDF-Viewer-Integration
 - [ ] 2.4 Volltextsuche
 
-### 📋 Phase 3: Prüfungs- und Bewertungssystem (Geplant)
-- [ ] 3.1 Prüfungsverwaltung
-- [ ] 3.2 Bewertungseingabe
-- [ ] 3.3 Notenspiegel
-- [ ] 3.4 Statistiken und Analysen
+### 📋 Phase 3: Bewertungssystem (Geplant)
+- [ ] 3.1 Bewertungseingabe (Punkte/Noten pro Prüfung)
+- [ ] 3.2 Notenspiegel und Übersichten
+- [ ] 3.3 Statistiken und Analysen
+- [ ] 3.4 Automatische Notenberechnung
 
 ### 📊 Phase 4: Erweiterte Features (Geplant)
 - [ ] 4.1 E-Mail-Benachrichtigungen

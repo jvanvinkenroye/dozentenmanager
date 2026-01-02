@@ -6,7 +6,7 @@ This module defines the Student model representing students in the system.
 
 import re
 from sqlalchemy import Column, Integer, String, Index
-from app import Base
+from app import db
 from app.models.base import TimestampMixin
 
 
@@ -51,7 +51,7 @@ def validate_student_id(student_id: str) -> bool:
     return bool(re.match(r"^\d{8}$", student_id))
 
 
-class Student(Base, TimestampMixin):  # type: ignore[misc, valid-type]
+class Student(db.Model, TimestampMixin):  # type: ignore[name-defined]
     """
     Student model representing a student in the system.
 

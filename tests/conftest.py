@@ -5,8 +5,8 @@ This module provides common test fixtures for unit and integration tests.
 """
 
 import pytest
-import app as app_module
-from app import create_app, Base
+from app import create_app
+from app import db as _db
 
 
 @pytest.fixture(scope="function")
@@ -20,14 +20,14 @@ def app():
     test_app = create_app("testing")
 
     with test_app.app_context():
-        # Create all tables (db_session is initialized by create_app)
-        Base.metadata.create_all(bind=app_module.db_session.get_bind())
+        # Create all tables
+        _db.create_all()
 
         yield test_app
 
         # Drop all tables after test
-        Base.metadata.drop_all(bind=app_module.db_session.get_bind())
-        app_module.db_session.remove()
+        _db.drop_all()
+        _db.session.remove()
 
 
 @pytest.fixture(scope="function")
@@ -61,12 +61,12 @@ def runner(app):
 @pytest.fixture(scope="function")
 def db(app):
     """
-    Provide database session for tests.
+    Provide database instance for tests.
 
     Args:
         app: Flask application fixture
 
     Returns:
-        SQLAlchemy database session
+        Flask-SQLAlchemy database instance
     """
-    return app_module.db_session
+    return _db

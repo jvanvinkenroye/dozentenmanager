@@ -11,7 +11,7 @@ from typing import Any
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
-import app as app_module
+from app import db
 from app.models.course import Course
 from app.models.exam import Exam, validate_max_points, validate_weight
 
@@ -36,7 +36,7 @@ def index() -> str:
     course_id_param = request.args.get("course_id", "").strip()
 
     try:
-        query = app_module.db_session.query(Exam)  # type: ignore[union-attr]
+        query = db.session.query(Exam)
 
         if course_id_param:
             query = query.filter_by(course_id=int(course_id_param))
@@ -44,11 +44,7 @@ def index() -> str:
         exams = query.order_by(Exam.exam_date.desc(), Exam.name).all()
 
         # Get all courses for filter dropdown
-        courses = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .order_by(Course.name)
-            .all()
-        )
+        courses = db.session.query(Course).order_by(Course.name).all()
 
         return render_template(
             "exam/list.html",
@@ -80,11 +76,7 @@ def show(exam_id: int) -> str | Any:
         Rendered template with exam details or redirect
     """
     try:
-        exam = (
-            app_module.db_session.query(Exam)  # type: ignore[union-attr]
-            .filter_by(id=exam_id)
-            .first()
-        )
+        exam = db.session.query(Exam).filter_by(id=exam_id).first()
 
         if not exam:
             flash(f"Exam with ID {exam_id} not found.", "error")
@@ -122,11 +114,7 @@ def new() -> str | Any:
     """
     # Get courses for dropdown
     try:
-        courses = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .order_by(Course.name)
-            .all()
-        )
+        courses = db.session.query(Course).order_by(Course.name).all()
     except SQLAlchemyError as e:
         logger.error(f"Database error while loading courses: {e}")
         flash("Error loading courses. Please try again.", "error")
@@ -254,14 +242,14 @@ def new() -> str | Any:
             weight=weight,
             description=description if description else None,
         )
-        app_module.db_session.add(exam)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(exam)
+        db.session.commit()
 
         flash(f"Exam '{exam.name}' created successfully.", "success")
         return redirect(url_for("exam.show", exam_id=exam.id))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while creating exam: {e}")
         flash("Error creating exam. Please try again.", "error")
         return render_template(
@@ -295,22 +283,14 @@ def edit(exam_id: int) -> str | Any:
         Rendered form template (GET) or redirect to detail page (POST)
     """
     try:
-        exam = (
-            app_module.db_session.query(Exam)  # type: ignore[union-attr]
-            .filter_by(id=exam_id)
-            .first()
-        )
+        exam = db.session.query(Exam).filter_by(id=exam_id).first()
 
         if not exam:
             flash(f"Exam with ID {exam_id} not found.", "error")
             return redirect(url_for("exam.index"))
 
         # Get courses for dropdown
-        courses = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .order_by(Course.name)
-            .all()
-        )
+        courses = db.session.query(Course).order_by(Course.name).all()
 
         if request.method == "GET":
             return render_template(
@@ -445,12 +425,12 @@ def edit(exam_id: int) -> str | Any:
         exam.weight = weight
         exam.description = description if description else None
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         flash(f"Exam '{exam.name}' updated successfully.", "success")
         return redirect(url_for("exam.show", exam_id=exam.id))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating exam: {e}")
         flash("Error updating exam. Please try again.", "error")
         return render_template(
@@ -476,11 +456,7 @@ def delete(exam_id: int) -> str | Any:
         Rendered confirmation template (GET) or redirect to list (POST)
     """
     try:
-        exam = (
-            app_module.db_session.query(Exam)  # type: ignore[union-attr]
-            .filter_by(id=exam_id)
-            .first()
-        )
+        exam = db.session.query(Exam).filter_by(id=exam_id).first()
 
         if not exam:
             flash(f"Exam with ID {exam_id} not found.", "error")
@@ -491,14 +467,14 @@ def delete(exam_id: int) -> str | Any:
 
         # POST: Delete exam
         exam_name = exam.name
-        app_module.db_session.delete(exam)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(exam)
+        db.session.commit()
 
         flash(f"Exam '{exam_name}' deleted successfully.", "success")
         return redirect(url_for("exam.index"))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting exam: {e}")
         flash("Error deleting exam. Please try again.", "error")
         return redirect(url_for("exam.show", exam_id=exam_id))

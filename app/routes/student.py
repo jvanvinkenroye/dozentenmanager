@@ -10,7 +10,7 @@ from typing import Any
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
-import app as app_module
+from app import db
 from app.models.student import Student, validate_email, validate_student_id
 
 # Configure logging
@@ -36,7 +36,7 @@ def index() -> str:
     program_filter = request.args.get("program", "").strip()
 
     try:
-        query = app_module.db_session.query(Student)  # type: ignore[union-attr]
+        query = db.session.query(Student)
 
         if search_term:
             search_pattern = f"%{search_term}%"
@@ -83,11 +83,7 @@ def show(student_id: int) -> str | Any:
         Rendered template with student details or redirect
     """
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_id).first()
 
         if not student:
             flash(f"Student with ID {student_id} not found.", "error")
@@ -181,8 +177,8 @@ def new() -> str | Any:
             email=email.lower(),
             program=program,
         )
-        app_module.db_session.add(student)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(student)
+        db.session.commit()
 
         flash(
             f"Student '{student.first_name} {student.last_name}' created successfully.",
@@ -191,7 +187,7 @@ def new() -> str | Any:
         return redirect(url_for("student.show", student_id=student.id))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while creating student: {e}")
 
         # Check for unique constraint violations
@@ -229,11 +225,7 @@ def edit(student_id: int) -> str | Any:
         Rendered form template (GET) or redirect to detail page (POST)
     """
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_id).first()
 
         if not student:
             flash(f"Student with ID {student_id} not found.", "error")
@@ -299,7 +291,7 @@ def edit(student_id: int) -> str | Any:
         student.email = email.lower()
         student.program = program
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         flash(
             f"Student '{student.first_name} {student.last_name}' updated successfully.",
             "success",
@@ -307,7 +299,7 @@ def edit(student_id: int) -> str | Any:
         return redirect(url_for("student.show", student_id=student.id))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating student: {e}")
 
         # Check for unique constraint violations
@@ -338,11 +330,7 @@ def delete(student_id: int) -> str | Any:
         Rendered confirmation template (GET) or redirect to list (POST)
     """
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_id).first()
 
         if not student:
             flash(f"Student with ID {student_id} not found.", "error")
@@ -353,14 +341,14 @@ def delete(student_id: int) -> str | Any:
 
         # POST: Delete student
         student_name = f"{student.first_name} {student.last_name}"
-        app_module.db_session.delete(student)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(student)
+        db.session.commit()
 
         flash(f"Student '{student_name}' deleted successfully.", "success")
         return redirect(url_for("student.index"))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting student: {e}")
         flash("Error deleting student. Please try again.", "error")
         return redirect(url_for("student.show", student_id=student_id))

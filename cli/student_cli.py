@@ -12,7 +12,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import app as app_module
+from app import db
 from app import create_app
 from app.models.student import Student, validate_email, validate_student_id
 
@@ -96,14 +96,14 @@ def add_student(
             email=email,
             program=program,
         )
-        app_module.db_session.add(student)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(student)
+        db.session.commit()
 
         logger.info(f"Successfully created student: {student}")
         return student
 
     except IntegrityError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         if "student_id" in str(e):
             raise ValueError(f"Student with ID '{student_id}' already exists") from e
         elif "email" in str(e):
@@ -112,7 +112,7 @@ def add_student(
             raise
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while adding student: {e}")
         raise
 
@@ -131,7 +131,7 @@ def list_students(
         List of Student objects
     """
     try:
-        query = app_module.db_session.query(Student)  # type: ignore[union-attr]
+        query = db.session.query(Student)
 
         if search:
             search_term = f"%{search}%"
@@ -166,11 +166,7 @@ def get_student(student_db_id: int) -> Optional[Student]:
         Student object or None if not found
     """
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_db_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_db_id).first()
 
         if student:
             logger.info(f"Found student: {student}")
@@ -195,11 +191,7 @@ def get_student_by_student_id(student_id: str) -> Optional[Student]:
         Student object or None if not found
     """
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(student_id=student_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(student_id=student_id).first()
 
         if student:
             logger.info(f"Found student: {student}")
@@ -243,11 +235,7 @@ def update_student(
         raise ValueError("At least one field must be provided for update")
 
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_db_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_db_id).first()
 
         if not student:
             logger.warning(f"Student with ID {student_db_id} not found")
@@ -295,12 +283,12 @@ def update_student(
                 raise ValueError("Program cannot exceed 200 characters")
             student.program = program
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         logger.info(f"Successfully updated student: {student}")
         return student
 
     except IntegrityError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         if "student_id" in str(e):
             raise ValueError(f"Student with ID '{student_id}' already exists") from e
         elif "email" in str(e):
@@ -309,7 +297,7 @@ def update_student(
             raise
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating student: {e}")
         raise
 
@@ -325,23 +313,19 @@ def delete_student(student_db_id: int) -> bool:
         True if deleted, False if not found
     """
     try:
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_db_id)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_db_id).first()
 
         if not student:
             logger.warning(f"Student with ID {student_db_id} not found")
             return False
 
-        app_module.db_session.delete(student)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(student)
+        db.session.commit()
         logger.info(f"Successfully deleted student: {student}")
         return True
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting student: {e}")
         raise
 

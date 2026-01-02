@@ -11,7 +11,7 @@ from typing import Any
 from flask import Blueprint, flash, redirect, request, url_for
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import app as app_module
+from app import db
 from app.models.course import Course
 from app.models.enrollment import VALID_STATUSES, Enrollment
 from app.models.student import Student
@@ -54,21 +54,13 @@ def enroll() -> Any:
 
     try:
         # Verify student exists
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(id=student_id_int)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(id=student_id_int).first()
         if not student:
             flash("Student not found.", "error")
             return redirect(request.referrer or url_for("index"))
 
         # Verify course exists
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id_int)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id_int).first()
         if not course:
             flash("Course not found.", "error")
             return redirect(request.referrer or url_for("index"))
@@ -79,8 +71,8 @@ def enroll() -> Any:
             course_id=course_id_int,
             status="active",
         )
-        app_module.db_session.add(enrollment)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(enrollment)
+        db.session.commit()
 
         flash(
             f"{student.first_name} {student.last_name} wurde erfolgreich in "
@@ -95,7 +87,7 @@ def enroll() -> Any:
             return redirect(url_for("course.show", course_id=course.id))
 
     except IntegrityError:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         flash(
             "Der Studierende ist bereits in diesem Kurs eingeschrieben.",
             "error",
@@ -103,7 +95,7 @@ def enroll() -> Any:
         return redirect(request.referrer or url_for("index"))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while enrolling student: {e}")
         flash("Fehler beim Einschreiben. Bitte versuchen Sie es erneut.", "error")
         return redirect(request.referrer or url_for("index"))
@@ -141,7 +133,7 @@ def unenroll() -> Any:
     try:
         # Find enrollment
         enrollment = (
-            app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
+            db.session.query(Enrollment)
             .filter_by(student_id=student_id_int, course_id=course_id_int)
             .first()
         )
@@ -155,8 +147,8 @@ def unenroll() -> Any:
         course_name = enrollment.course.name
         student_student_id = enrollment.student.student_id
 
-        app_module.db_session.delete(enrollment)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(enrollment)
+        db.session.commit()
 
         flash(
             f"{student_name} wurde erfolgreich aus '{course_name}' ausgetragen.",
@@ -170,7 +162,7 @@ def unenroll() -> Any:
             return redirect(url_for("course.show", course_id=course_id_int))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while unenrolling student: {e}")
         flash("Fehler beim Austragen. Bitte versuchen Sie es erneut.", "error")
         return redirect(request.referrer or url_for("index"))
@@ -214,7 +206,7 @@ def update_status() -> Any:
     try:
         # Find enrollment
         enrollment = (
-            app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
+            db.session.query(Enrollment)
             .filter_by(student_id=student_id_int, course_id=course_id_int)
             .first()
         )
@@ -230,7 +222,7 @@ def update_status() -> Any:
         if status == "dropped" and not enrollment.unenrollment_date:
             enrollment.unenrollment_date = date.today()
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
 
         flash(
             f"Status wurde von '{old_status}' auf '{status}' aktualisiert.",
@@ -246,7 +238,7 @@ def update_status() -> Any:
             return redirect(url_for("course.show", course_id=course_id_int))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating enrollment status: {e}")
         flash(
             "Fehler beim Aktualisieren des Status. Bitte versuchen Sie es erneut.",

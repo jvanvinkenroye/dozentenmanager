@@ -19,7 +19,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import app as app_module
+from app import db
 from app.models.course import Course
 from app.models.enrollment import VALID_STATUSES, Enrollment, validate_status
 from app.models.student import Student
@@ -45,21 +45,13 @@ def add_enrollment(student_id_str: str, course_id: int) -> int:
     """
     try:
         # Verify student exists
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(student_id=student_id_str)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(student_id=student_id_str).first()
         if not student:
             logger.error(f"Student with ID {student_id_str} not found")
             return 1
 
         # Verify course exists
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
         if not course:
             logger.error(f"Course with ID {course_id} not found")
             return 1
@@ -71,8 +63,8 @@ def add_enrollment(student_id_str: str, course_id: int) -> int:
             status="active",
         )
 
-        app_module.db_session.add(enrollment)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(enrollment)
+        db.session.commit()
 
         logger.info(
             f"Successfully enrolled {student.first_name} {student.last_name} "
@@ -81,13 +73,13 @@ def add_enrollment(student_id_str: str, course_id: int) -> int:
         return 0
 
     except IntegrityError:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(
             f"Student {student_id_str} is already enrolled in course {course_id}"
         )
         return 1
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error: {e}")
         return 1
 
@@ -107,16 +99,14 @@ def list_enrollments(
         Exit code (0 for success, 1 for error)
     """
     try:
-        query = app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
+        query = db.session.query(Enrollment)
 
         if course_id:
             query = query.filter_by(course_id=course_id)
         elif student_id_str:
             # Get student database ID from student_id
             student = (
-                app_module.db_session.query(Student)  # type: ignore[union-attr]
-                .filter_by(student_id=student_id_str)
-                .first()
+                db.session.query(Student).filter_by(student_id=student_id_str).first()
             )
             if not student:
                 logger.error(f"Student with ID {student_id_str} not found")
@@ -169,18 +159,14 @@ def remove_enrollment(student_id_str: str, course_id: int) -> int:
     """
     try:
         # Get student database ID
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(student_id=student_id_str)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(student_id=student_id_str).first()
         if not student:
             logger.error(f"Student with ID {student_id_str} not found")
             return 1
 
         # Find enrollment
         enrollment = (
-            app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
+            db.session.query(Enrollment)
             .filter_by(student_id=student.id, course_id=course_id)
             .first()
         )
@@ -196,8 +182,8 @@ def remove_enrollment(student_id_str: str, course_id: int) -> int:
         student_first_name = student.first_name
         student_last_name = student.last_name
 
-        app_module.db_session.delete(enrollment)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(enrollment)
+        db.session.commit()
 
         logger.info(
             f"Successfully removed enrollment for {student_first_name} {student_last_name} "
@@ -206,7 +192,7 @@ def remove_enrollment(student_id_str: str, course_id: int) -> int:
         return 0
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error: {e}")
         return 1
 
@@ -232,18 +218,14 @@ def update_enrollment_status(student_id_str: str, course_id: int, status: str) -
             return 1
 
         # Get student database ID
-        student = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
-            .filter_by(student_id=student_id_str)
-            .first()
-        )
+        student = db.session.query(Student).filter_by(student_id=student_id_str).first()
         if not student:
             logger.error(f"Student with ID {student_id_str} not found")
             return 1
 
         # Find enrollment
         enrollment = (
-            app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
+            db.session.query(Enrollment)
             .filter_by(student_id=student.id, course_id=course_id)
             .first()
         )
@@ -261,7 +243,7 @@ def update_enrollment_status(student_id_str: str, course_id: int, status: str) -
         if status == "dropped" and not enrollment.unenrollment_date:
             enrollment.unenrollment_date = date.today()
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
 
         logger.info(
             f"Updated enrollment status from '{old_status}' to '{status}' for "
@@ -270,7 +252,7 @@ def update_enrollment_status(student_id_str: str, course_id: int, status: str) -
         return 0
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error: {e}")
         return 1
 

@@ -13,7 +13,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import app as app_module
+from app import db
 from app import create_app
 from app.models.university import University
 
@@ -123,14 +123,14 @@ def add_university(name: str, slug: Optional[str] = None) -> Optional[University
     try:
         # Create new university
         university = University(name=name, slug=slug)
-        app_module.db_session.add(university)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]  # type: ignore[union-attr]
+        db.session.add(university)
+        db.session.commit()
 
         logger.info(f"Successfully created university: {university}")
         return university
 
     except IntegrityError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]  # type: ignore[union-attr]
+        db.session.rollback()
         if "name" in str(e):
             raise ValueError(f"University with name '{name}' already exists") from e
         elif "slug" in str(e):
@@ -139,7 +139,7 @@ def add_university(name: str, slug: Optional[str] = None) -> Optional[University
             raise
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while adding university: {e}")
         raise
 
@@ -155,7 +155,7 @@ def list_universities(search: Optional[str] = None) -> list[University]:
         List of University objects
     """
     try:
-        query = app_module.db_session.query(University)  # type: ignore[union-attr]
+        query = db.session.query(University)
 
         if search:
             search_term = f"%{search}%"
@@ -184,11 +184,7 @@ def get_university(university_id: int) -> Optional[University]:
         University object or None if not found
     """
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
 
         if university:
             logger.info(f"Found university: {university}")
@@ -226,11 +222,7 @@ def update_university(
         )
 
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
 
         if not university:
             logger.warning(f"University with ID {university_id} not found")
@@ -252,12 +244,12 @@ def update_university(
                 )
             university.slug = slug
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         logger.info(f"Successfully updated university: {university}")
         return university
 
     except IntegrityError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         if "name" in str(e):
             raise ValueError(f"University with name '{name}' already exists") from e
         elif "slug" in str(e):
@@ -266,7 +258,7 @@ def update_university(
             raise
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating university: {e}")
         raise
 
@@ -282,23 +274,19 @@ def delete_university(university_id: int) -> bool:
         True if deleted, False if not found
     """
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
 
         if not university:
             logger.warning(f"University with ID {university_id} not found")
             return False
 
-        app_module.db_session.delete(university)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(university)
+        db.session.commit()
         logger.info(f"Successfully deleted university: {university}")
         return True
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting university: {e}")
         raise
 

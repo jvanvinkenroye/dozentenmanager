@@ -5,11 +5,11 @@ This module defines the University model representing educational institutions.
 """
 
 from sqlalchemy import Column, Integer, String, Index
-from app import Base
+from app import db
 from app.models.base import TimestampMixin
 
 
-class University(Base, TimestampMixin):  # type: ignore[misc, valid-type]
+class University(db.Model, TimestampMixin):  # type: ignore[name-defined]
     """
     University model representing an educational institution.
 

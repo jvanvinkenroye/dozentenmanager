@@ -10,7 +10,7 @@ from typing import Any
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
-import app as app_module
+from app import db
 from app.models.university import University
 from cli.university_cli import add_university, generate_slug, validate_slug
 
@@ -35,7 +35,7 @@ def index() -> str:
     search_term = request.args.get("search", "").strip()
 
     try:
-        query = app_module.db_session.query(University)  # type: ignore[union-attr]
+        query = db.session.query(University)
 
         if search_term:
             search_pattern = f"%{search_term}%"
@@ -70,11 +70,7 @@ def show(university_id: int) -> str | Any:
         Rendered template with university details or 404
     """
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
 
         if not university:
             flash(f"University with ID {university_id} not found.", "error")
@@ -171,11 +167,7 @@ def edit(university_id: int) -> str | Any:
         Rendered form template (GET) or redirect to detail page (POST)
     """
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
 
         if not university:
             flash(f"University with ID {university_id} not found.", "error")
@@ -214,19 +206,19 @@ def edit(university_id: int) -> str | Any:
         university.name = name
         university.slug = slug
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         flash(f"University '{university.name}' updated successfully.", "success")
         return redirect(url_for("university.show", university_id=university.id))
 
     except ValueError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         flash(str(e), "error")
         return render_template(
             "university/form.html", university=university, form_data=request.form
         )
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating university: {e}")
         flash("Error updating university. Please try again.", "error")
         return render_template(
@@ -249,11 +241,7 @@ def delete(university_id: int) -> str | Any:
         Rendered confirmation template (GET) or redirect to list (POST)
     """
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
 
         if not university:
             flash(f"University with ID {university_id} not found.", "error")
@@ -264,14 +252,14 @@ def delete(university_id: int) -> str | Any:
 
         # POST: Delete university
         university_name = university.name
-        app_module.db_session.delete(university)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(university)
+        db.session.commit()
 
         flash(f"University '{university_name}' deleted successfully.", "success")
         return redirect(url_for("university.index"))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting university: {e}")
         flash("Error deleting university. Please try again.", "error")
         return redirect(url_for("university.show", university_id=university_id))

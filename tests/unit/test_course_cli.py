@@ -15,7 +15,6 @@ from cli.course_cli import (
 )
 from app.models.course import validate_semester, generate_slug
 from app.models.university import University
-import app as app_module
 
 
 class TestValidationFunctions:
@@ -73,8 +72,8 @@ class TestAddCourse:
         """Create a sample university for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
             # Return the ID, not the object, to avoid detached instance issues
             return university.id
 
@@ -201,8 +200,8 @@ class TestListCourses:
             # Create universities
             uni1 = University(name="University A", slug="university-a")
             uni2 = University(name="University B", slug="university-b")
-            app_module.db_session.add_all([uni1, uni2])  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add_all([uni1, uni2])
+            db.session.commit()
 
             # Store IDs before creating courses
             uni1_id = uni1.id
@@ -257,8 +256,8 @@ class TestGetCourse:
         """Create a sample course for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = add_course(
                 name="Introduction to Statistics",
@@ -290,8 +289,8 @@ class TestUpdateCourse:
         """Create a sample course for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = add_course(
                 name="Introduction to Statistics",
@@ -353,8 +352,8 @@ class TestDeleteCourse:
         """Create a sample course for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = add_course(
                 name="Introduction to Statistics",

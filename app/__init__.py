@@ -12,17 +12,13 @@ from pathlib import Path
 from typing import Optional
 
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
 
 from config import get_config
 
-# Create SQLAlchemy base for models
-Base = declarative_base()
-
-# Database session (will be initialized in create_app)
-db_session = None
+# Create Flask-SQLAlchemy instance
+db = SQLAlchemy()
 
 # CSRF Protection
 csrf = CSRFProtect()
@@ -81,32 +77,16 @@ def init_db(app: Flask) -> None:
     Args:
         app: Flask application instance
     """
-    global db_session
-
-    # Create database engine
-    engine = create_engine(
-        app.config["SQLALCHEMY_DATABASE_URI"], echo=app.config["SQLALCHEMY_ECHO"]
-    )
-
-    # Create scoped session
-    db_session = scoped_session(
-        sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    )
-
-    # Make session available to models
-    Base.query = db_session.query_property()
+    # Initialize Flask-SQLAlchemy
+    db.init_app(app)
 
     # Import models here to avoid circular imports
     from app import models  # noqa: F401
 
     # Create tables if they don't exist (in development/testing)
-    if app.config["DEBUG"] or app.config["TESTING"]:
-        Base.metadata.create_all(bind=engine)
-
-    # Register teardown handler to close session
-    @app.teardown_appcontext
-    def shutdown_session(exception=None):
-        db_session.remove()
+    with app.app_context():
+        if app.config["DEBUG"] or app.config["TESTING"]:
+            db.create_all()
 
 
 def setup_logging(app: Flask) -> None:
@@ -214,7 +194,7 @@ def register_error_handlers(app: Flask) -> None:
 
     @app.errorhandler(500)
     def internal_error(error):
-        db_session.rollback()
+        db.session.rollback()
         app.logger.error(f"Internal server error: {error}")
         return (
             """

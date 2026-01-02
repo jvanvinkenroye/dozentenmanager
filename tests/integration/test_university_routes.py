@@ -103,13 +103,9 @@ class TestUniversityNewRoute:
 
             # Verify university was created
             from app.models.university import University
-            import app as app_module
+            from app import db
 
-            university = (
-                app_module.db_session.query(University)  # type: ignore[union-attr]
-                .filter_by(name="TH Köln")
-                .first()
-            )
+            university = db.session.query(University).filter_by(name="TH Köln").first()
             assert university is not None
             assert university.slug == "th-koeln"
 
@@ -126,13 +122,9 @@ class TestUniversityNewRoute:
 
             # Verify slug was auto-generated
             from app.models.university import University
-            import app as app_module
+            from app import db
 
-            university = (
-                app_module.db_session.query(University)  # type: ignore[union-attr]
-                .filter_by(name="TH Köln")
-                .first()
-            )
+            university = db.session.query(University).filter_by(name="TH Köln").first()
             assert university is not None
             assert university.slug == "th-koeln"
 
@@ -203,13 +195,9 @@ class TestUniversityEditRoute:
 
             # Verify update
             from app.models.university import University
-            import app as app_module
+            from app import db
 
-            updated = (
-                app_module.db_session.query(University)  # type: ignore[union-attr]
-                .filter_by(id=university.id)
-                .first()
-            )
+            updated = db.session.query(University).filter_by(id=university.id).first()
             assert updated.name == "Technische Hochschule Köln"
             assert updated.slug == "thk"
 
@@ -274,13 +262,9 @@ class TestUniversityDeleteRoute:
 
             # Verify deletion
             from app.models.university import University
-            import app as app_module
+            from app import db
 
-            deleted = (
-                app_module.db_session.query(University)  # type: ignore[union-attr]
-                .filter_by(id=university_id)
-                .first()
-            )
+            deleted = db.session.query(University).filter_by(id=university_id).first()
             assert deleted is None
 
     def test_delete_post_nonexistent(self, app, client):

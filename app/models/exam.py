@@ -7,7 +7,7 @@ This module defines the Exam model representing exams/assessments for courses.
 from datetime import date
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Index
 from sqlalchemy.orm import relationship
-from app import Base
+from app import db
 from app.models.base import TimestampMixin
 
 
@@ -77,7 +77,7 @@ def validate_exam_date(exam_date: date) -> bool:
     return exam_date is not None
 
 
-class Exam(Base, TimestampMixin):  # type: ignore[misc, valid-type]
+class Exam(db.Model, TimestampMixin):  # type: ignore[name-defined]
     """
     Exam model representing an exam/assessment for a course.
 

@@ -17,7 +17,6 @@ from cli.exam_cli import (
 from app.models.exam import validate_max_points, validate_weight, validate_exam_date
 from app.models.university import University
 from app.models.course import Course
-import app as app_module
 
 
 class TestValidationFunctions:
@@ -69,8 +68,8 @@ class TestAddExam:
         """Create a sample course for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = Course(
                 name="Introduction to Statistics",
@@ -78,8 +77,8 @@ class TestAddExam:
                 semester="2024_SoSe",
                 university_id=university.id,
             )
-            app_module.db_session.add(course)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(course)
+            db.session.commit()
             # Return the ID to avoid detached instance issues
             return course.id
 
@@ -234,8 +233,8 @@ class TestListExams:
         with app.app_context():
             # Create university and courses
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course1 = Course(
                 name="Statistics I",
@@ -249,8 +248,8 @@ class TestListExams:
                 semester="2024_SoSe",
                 university_id=university.id,
             )
-            app_module.db_session.add_all([course1, course2])  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add_all([course1, course2])
+            db.session.commit()
 
             # Store IDs
             course1_id = course1.id
@@ -293,8 +292,8 @@ class TestGetExam:
         """Create a sample exam for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = Course(
                 name="Statistics",
@@ -302,8 +301,8 @@ class TestGetExam:
                 semester="2024_SoSe",
                 university_id=university.id,
             )
-            app_module.db_session.add(course)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(course)
+            db.session.commit()
 
             exam = add_exam("Klausur", course.id, date(2024, 6, 15), 100.0)
             return exam.id
@@ -331,8 +330,8 @@ class TestUpdateExam:
         """Create a sample exam for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = Course(
                 name="Statistics",
@@ -340,8 +339,8 @@ class TestUpdateExam:
                 semester="2024_SoSe",
                 university_id=university.id,
             )
-            app_module.db_session.add(course)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(course)
+            db.session.commit()
 
             exam = add_exam("Klausur", course.id, date(2024, 6, 15), 100.0)
             return exam.id
@@ -429,8 +428,8 @@ class TestDeleteExam:
         """Create a sample exam for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(university)
+            db.session.commit()
 
             course = Course(
                 name="Statistics",
@@ -438,8 +437,8 @@ class TestDeleteExam:
                 semester="2024_SoSe",
                 university_id=university.id,
             )
-            app_module.db_session.add(course)  # type: ignore[union-attr]
-            app_module.db_session.commit()  # type: ignore[union-attr]
+            db.session.add(course)
+            db.session.commit()
 
             exam = add_exam("Klausur", course.id, date(2024, 6, 15), 100.0)
             return exam.id

@@ -7,7 +7,7 @@ This module defines the Course model representing courses offered by universitie
 import re
 from sqlalchemy import Column, Integer, String, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import relationship
-from app import Base
+from app import db
 from app.models.base import TimestampMixin
 
 
@@ -91,7 +91,7 @@ def generate_slug(name: str) -> str:
     return slug
 
 
-class Course(Base, TimestampMixin):  # type: ignore[misc, valid-type]
+class Course(db.Model, TimestampMixin):  # type: ignore[name-defined]
     """
     Course model representing a course offered by a university.
 

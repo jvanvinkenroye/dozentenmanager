@@ -12,7 +12,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import app as app_module
+from app import db
 from app import create_app
 from app.models.course import Course, validate_semester, generate_slug
 from app.models.university import University
@@ -64,11 +64,7 @@ def add_course(
 
     # Validate university exists
     try:
-        university = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .filter_by(id=university_id)
-            .first()
-        )
+        university = db.session.query(University).filter_by(id=university_id).first()
         if not university:
             raise ValueError(f"University with ID {university_id} not found")
     except SQLAlchemyError as e:
@@ -96,8 +92,8 @@ def add_course(
             university_id=university_id,
             slug=slug,
         )
-        app_module.db_session.add(course)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(course)
+        db.session.commit()
 
         logger.info(
             f"Successfully added course: {course.name} ({course.semester}) "
@@ -106,7 +102,7 @@ def add_course(
         return course
 
     except IntegrityError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         error_msg = str(e)
         if "uq_course_university_semester_slug" in error_msg.lower():
             raise IntegrityError(
@@ -118,7 +114,7 @@ def add_course(
         raise
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while adding course: {e}")
         return None
 
@@ -137,7 +133,7 @@ def list_courses(
         List of Course objects matching the filters
     """
     try:
-        query = app_module.db_session.query(Course)  # type: ignore[union-attr]
+        query = db.session.query(Course)
 
         if university_id:
             query = query.filter_by(university_id=university_id)
@@ -164,11 +160,7 @@ def get_course(course_id: int) -> Optional[Course]:
         Course object or None if not found
     """
     try:
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
         return course
 
     except SQLAlchemyError as e:
@@ -201,11 +193,7 @@ def update_course(
         IntegrityError: If update would violate unique constraint
     """
     try:
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
 
         if not course:
             raise ValueError(f"Course with ID {course_id} not found")
@@ -235,9 +223,7 @@ def update_course(
         # Update university
         if university_id:
             university = (
-                app_module.db_session.query(University)  # type: ignore[union-attr]
-                .filter_by(id=university_id)
-                .first()
+                db.session.query(University).filter_by(id=university_id).first()
             )
             if not university:
                 raise ValueError(f"University with ID {university_id} not found")
@@ -250,23 +236,23 @@ def update_course(
                 raise ValueError("Slug cannot exceed 100 characters")
             course.slug = slug
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         logger.info(f"Successfully updated course: {course.name}")
         return course
 
     except IntegrityError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         error_msg = str(e)
         if "uq_course_university_semester_slug" in error_msg.lower():
             raise IntegrityError(
-                f"Course with slug '{course.slug}' already exists for this university in semester {course.semester}",  # type: ignore[union-attr]
+                f"Course with slug '{course.slug}' already exists for this university in semester {course.semester}",
                 params=None,
                 orig=e.orig,  # type: ignore[arg-type]
             ) from e
         raise
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating course: {e}")
         return None
 
@@ -285,24 +271,20 @@ def delete_course(course_id: int) -> bool:
         ValueError: If course not found
     """
     try:
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
 
         if not course:
             raise ValueError(f"Course with ID {course_id} not found")
 
         course_name = course.name
-        app_module.db_session.delete(course)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(course)
+        db.session.commit()
 
         logger.info(f"Successfully deleted course: {course_name}")
         return True
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting course: {e}")
         return False
 

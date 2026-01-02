@@ -7,7 +7,6 @@ Tests all CRUD operations for enrollment management.
 import pytest
 from datetime import date
 
-import app as app_module
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.student import Student
@@ -28,8 +27,8 @@ class TestEnrollmentCLI:
         """Create a sample university for testing."""
         with app.app_context():
             university = University(name="Test University", slug="test-university")
-            app_module.db_session.add(university)
-            app_module.db_session.commit()
+            db.session.add(university)
+            db.session.commit()
             # Return the ID, not the object
             return university.id
 
@@ -43,8 +42,8 @@ class TestEnrollmentCLI:
                 semester="2023_SoSe",
                 university_id=sample_university,
             )
-            app_module.db_session.add(course)
-            app_module.db_session.commit()
+            db.session.add(course)
+            db.session.commit()
             # Return the ID, not the object
             return course.id
 
@@ -59,8 +58,8 @@ class TestEnrollmentCLI:
                 email="max@example.com",
                 program="Computer Science",
             )
-            app_module.db_session.add(student)
-            app_module.db_session.commit()
+            db.session.add(student)
+            db.session.commit()
             # Return both ID and student_id for testing
             return {"id": student.id, "student_id": student.student_id}
 
@@ -72,7 +71,7 @@ class TestEnrollmentCLI:
 
             # Verify enrollment was created
             enrollment = (
-                app_module.db_session.query(Enrollment)
+                db.session.query(Enrollment)
                 .filter_by(student_id=sample_student["id"], course_id=sample_course)
                 .first()
             )
@@ -113,8 +112,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # List enrollments
             result = list_enrollments(course_id=sample_course)
@@ -129,8 +128,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # List enrollments
             result = list_enrollments(student_id_str=sample_student["student_id"])
@@ -157,8 +156,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # Remove enrollment
             result = remove_enrollment(sample_student["student_id"], sample_course)
@@ -166,7 +165,7 @@ class TestEnrollmentCLI:
 
             # Verify enrollment was removed
             enrollment = (
-                app_module.db_session.query(Enrollment)
+                db.session.query(Enrollment)
                 .filter_by(student_id=sample_student["id"], course_id=sample_course)
                 .first()
             )
@@ -195,8 +194,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # Update status
             result = update_enrollment_status(
@@ -206,7 +205,7 @@ class TestEnrollmentCLI:
 
             # Verify status was updated
             enrollment = (
-                app_module.db_session.query(Enrollment)
+                db.session.query(Enrollment)
                 .filter_by(student_id=sample_student["id"], course_id=sample_course)
                 .first()
             )
@@ -223,8 +222,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # Update status to dropped
             result = update_enrollment_status(
@@ -234,7 +233,7 @@ class TestEnrollmentCLI:
 
             # Verify status and unenrollment_date were updated
             enrollment = (
-                app_module.db_session.query(Enrollment)
+                db.session.query(Enrollment)
                 .filter_by(student_id=sample_student["id"], course_id=sample_course)
                 .first()
             )
@@ -252,8 +251,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # Try to update with invalid status
             result = update_enrollment_status(
@@ -285,8 +284,8 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             assert "Enrollment" in repr(enrollment)
             assert str(sample_student["id"]) in repr(enrollment)
@@ -301,11 +300,11 @@ class TestEnrollmentCLI:
                 course_id=sample_course,
                 status="active",
             )
-            app_module.db_session.add(enrollment)
-            app_module.db_session.commit()
+            db.session.add(enrollment)
+            db.session.commit()
 
             # Refresh to load relationships
-            app_module.db_session.refresh(enrollment)
+            db.session.refresh(enrollment)
 
             # Test student relationship
             assert enrollment.student is not None
@@ -333,9 +332,9 @@ class TestEnrollmentCLI:
                 semester="2023_SoSe",
                 university_id=sample_university,
             )
-            app_module.db_session.add(course1)
-            app_module.db_session.add(course2)
-            app_module.db_session.commit()
+            db.session.add(course1)
+            db.session.add(course2)
+            db.session.commit()
 
             # Enroll in both courses
             result1 = add_enrollment(sample_student["student_id"], course1.id)
@@ -346,7 +345,7 @@ class TestEnrollmentCLI:
 
             # Verify both enrollments exist
             enrollments = (
-                app_module.db_session.query(Enrollment)
+                db.session.query(Enrollment)
                 .filter_by(student_id=sample_student["id"])
                 .all()
             )
@@ -370,9 +369,9 @@ class TestEnrollmentCLI:
                 email="student2@example.com",
                 program="CS",
             )
-            app_module.db_session.add(student1)
-            app_module.db_session.add(student2)
-            app_module.db_session.commit()
+            db.session.add(student1)
+            db.session.add(student2)
+            db.session.commit()
 
             # Enroll both students
             result1 = add_enrollment("11111111", sample_course)
@@ -383,8 +382,6 @@ class TestEnrollmentCLI:
 
             # Verify both enrollments exist
             enrollments = (
-                app_module.db_session.query(Enrollment)
-                .filter_by(course_id=sample_course)
-                .all()
+                db.session.query(Enrollment).filter_by(course_id=sample_course).all()
             )
             assert len(enrollments) == 2

@@ -13,7 +13,7 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-import app as app_module
+from app import db
 from app import create_app
 from app.models.exam import (
     Exam,
@@ -65,11 +65,7 @@ def add_exam(
 
     # Validate course exists
     try:
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
         if not course:
             raise ValueError(f"Course with ID {course_id} not found")
     except SQLAlchemyError as e:
@@ -104,8 +100,8 @@ def add_exam(
             weight=weight,
             description=description,
         )
-        app_module.db_session.add(exam)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(exam)
+        db.session.commit()
 
         logger.info(
             f"Successfully added exam: {exam.name} for course {course.name} "
@@ -114,7 +110,7 @@ def add_exam(
         return exam
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while adding exam: {e}")
         return None
 
@@ -130,7 +126,7 @@ def list_exams(course_id: Optional[int] = None) -> list[Exam]:
         List of Exam objects matching the filter
     """
     try:
-        query = app_module.db_session.query(Exam)  # type: ignore[union-attr]
+        query = db.session.query(Exam)
 
         if course_id:
             query = query.filter_by(course_id=course_id)
@@ -154,11 +150,7 @@ def get_exam(exam_id: int) -> Optional[Exam]:
         Exam object or None if not found
     """
     try:
-        exam = (
-            app_module.db_session.query(Exam)  # type: ignore[union-attr]
-            .filter_by(id=exam_id)
-            .first()
-        )
+        exam = db.session.query(Exam).filter_by(id=exam_id).first()
         return exam
 
     except SQLAlchemyError as e:
@@ -194,11 +186,7 @@ def update_exam(
         ValueError: If validation fails
     """
     try:
-        exam = (
-            app_module.db_session.query(Exam)  # type: ignore[union-attr]
-            .filter_by(id=exam_id)
-            .first()
-        )
+        exam = db.session.query(Exam).filter_by(id=exam_id).first()
 
         if not exam:
             raise ValueError(f"Exam with ID {exam_id} not found")
@@ -214,11 +202,7 @@ def update_exam(
 
         # Update course
         if course_id is not None:
-            course = (
-                app_module.db_session.query(Course)  # type: ignore[union-attr]
-                .filter_by(id=course_id)
-                .first()
-            )
+            course = db.session.query(Course).filter_by(id=course_id).first()
             if not course:
                 raise ValueError(f"Course with ID {course_id} not found")
             exam.course_id = course_id
@@ -248,12 +232,12 @@ def update_exam(
                 raise ValueError("Description cannot exceed 500 characters")
             exam.description = description
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         logger.info(f"Successfully updated exam: {exam.name}")
         return exam
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating exam: {e}")
         return None
 
@@ -272,24 +256,20 @@ def delete_exam(exam_id: int) -> bool:
         ValueError: If exam not found
     """
     try:
-        exam = (
-            app_module.db_session.query(Exam)  # type: ignore[union-attr]
-            .filter_by(id=exam_id)
-            .first()
-        )
+        exam = db.session.query(Exam).filter_by(id=exam_id).first()
 
         if not exam:
             raise ValueError(f"Exam with ID {exam_id} not found")
 
         exam_name = exam.name
-        app_module.db_session.delete(exam)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(exam)
+        db.session.commit()
 
         logger.info(f"Successfully deleted exam: {exam_name}")
         return True
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting exam: {e}")
         return False
 

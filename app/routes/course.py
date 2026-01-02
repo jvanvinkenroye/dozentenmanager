@@ -10,7 +10,7 @@ from typing import Any
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
-import app as app_module
+from app import db
 from app.models.course import Course, generate_slug, validate_semester
 from app.models.student import Student
 from app.models.university import University
@@ -40,7 +40,7 @@ def index() -> str:
     semester_filter = request.args.get("semester", "").strip()
 
     try:
-        query = app_module.db_session.query(Course)  # type: ignore[union-attr]
+        query = db.session.query(Course)
 
         if search_term:
             search_pattern = f"%{search_term}%"
@@ -55,11 +55,7 @@ def index() -> str:
         courses = query.order_by(Course.semester.desc(), Course.name).all()
 
         # Get all universities for filter dropdown
-        universities = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .order_by(University.name)
-            .all()
-        )
+        universities = db.session.query(University).order_by(University.name).all()
 
         return render_template(
             "course/list.html",
@@ -97,27 +93,19 @@ def show(course_id: int) -> str | Any:
     try:
         from app.models.enrollment import Enrollment
 
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
 
         if not course:
             flash(f"Course with ID {course_id} not found.", "error")
             return redirect(url_for("course.index"))
 
         # Get enrollments for this course
-        enrollments = (
-            app_module.db_session.query(Enrollment)  # type: ignore[union-attr]
-            .filter_by(course_id=course_id)
-            .all()
-        )
+        enrollments = db.session.query(Enrollment).filter_by(course_id=course_id).all()
 
         # Get all students for enrollment dropdown (students not already enrolled)
         enrolled_student_ids = [e.student_id for e in enrollments]
         available_students = (
-            app_module.db_session.query(Student)  # type: ignore[union-attr]
+            db.session.query(Student)
             .filter(
                 ~Student.id.in_(enrolled_student_ids) if enrolled_student_ids else True  # type: ignore[arg-type]
             )
@@ -157,11 +145,7 @@ def new() -> str | Any:
     """
     # Get universities for dropdown
     try:
-        universities = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .order_by(University.name)
-            .all()
-        )
+        universities = db.session.query(University).order_by(University.name).all()
     except SQLAlchemyError as e:
         logger.error(f"Database error while loading universities: {e}")
         flash("Error loading universities. Please try again.", "error")
@@ -241,14 +225,14 @@ def new() -> str | Any:
             university_id=university_id,
             slug=slug,
         )
-        app_module.db_session.add(course)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.add(course)
+        db.session.commit()
 
         flash(f"Course '{course.name}' created successfully.", "success")
         return redirect(url_for("course.show", course_id=course.id))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while creating course: {e}")
 
         # Check for unique constraint violations
@@ -289,22 +273,14 @@ def edit(course_id: int) -> str | Any:
         Rendered form template (GET) or redirect to detail page (POST)
     """
     try:
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
 
         if not course:
             flash(f"Course with ID {course_id} not found.", "error")
             return redirect(url_for("course.index"))
 
         # Get universities for dropdown
-        universities = (
-            app_module.db_session.query(University)  # type: ignore[union-attr]
-            .order_by(University.name)
-            .all()
-        )
+        universities = db.session.query(University).order_by(University.name).all()
 
         if request.method == "GET":
             return render_template(
@@ -379,18 +355,18 @@ def edit(course_id: int) -> str | Any:
         else:
             course.slug = generate_slug(name)
 
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.commit()
         flash(f"Course '{course.name}' updated successfully.", "success")
         return redirect(url_for("course.show", course_id=course.id))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while updating course: {e}")
 
         # Check for unique constraint violations
         if "uq_course_university_semester_slug" in str(e).lower():
             flash(
-                f"Course with slug '{course.slug}' already exists for this university in semester {semester}.",  # type: ignore[union-attr]
+                f"Course with slug '{course.slug}' already exists for this university in semester {semester}.",
                 "error",
             )
         else:
@@ -419,11 +395,7 @@ def delete(course_id: int) -> str | Any:
         Rendered confirmation template (GET) or redirect to list (POST)
     """
     try:
-        course = (
-            app_module.db_session.query(Course)  # type: ignore[union-attr]
-            .filter_by(id=course_id)
-            .first()
-        )
+        course = db.session.query(Course).filter_by(id=course_id).first()
 
         if not course:
             flash(f"Course with ID {course_id} not found.", "error")
@@ -434,14 +406,14 @@ def delete(course_id: int) -> str | Any:
 
         # POST: Delete course
         course_name = course.name
-        app_module.db_session.delete(course)  # type: ignore[union-attr]
-        app_module.db_session.commit()  # type: ignore[union-attr]
+        db.session.delete(course)
+        db.session.commit()
 
         flash(f"Course '{course_name}' deleted successfully.", "success")
         return redirect(url_for("course.index"))
 
     except SQLAlchemyError as e:
-        app_module.db_session.rollback()  # type: ignore[union-attr]
+        db.session.rollback()
         logger.error(f"Database error while deleting course: {e}")
         flash("Error deleting course. Please try again.", "error")
         return redirect(url_for("course.show", course_id=course_id))

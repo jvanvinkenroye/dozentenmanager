@@ -18,7 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from app import Base
+from app import db
 
 
 # Valid enrollment status values
@@ -38,7 +38,7 @@ def validate_status(status: str) -> bool:
     return status in VALID_STATUSES
 
 
-class Enrollment(Base):  # type: ignore[misc, valid-type]
+class Enrollment(db.Model):  # type: ignore[name-defined]
     """
     Enrollment model representing student enrollment in courses.
 

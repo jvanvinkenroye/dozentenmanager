@@ -5,7 +5,6 @@ This module provides web routes for managing exams through the Flask interface.
 """
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
@@ -13,7 +12,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.models.course import Course
-from app.models.exam import Exam, validate_max_points, validate_weight
+from app.models.exam import Exam
+from app.forms.exam import ExamForm
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -120,144 +120,38 @@ def new() -> str | Any:
         flash("Error loading courses. Please try again.", "error")
         return redirect(url_for("exam.index"))
 
-    if request.method == "GET":
-        return render_template("exam/form.html", exam=None, courses=courses)
+    form = ExamForm()
+    form.course_id.choices = [(c.id, c.name) for c in courses]
 
-    # POST: Create exam
-    name = request.form.get("name", "").strip()
-    course_id_str = request.form.get("course_id", "").strip()
-    exam_date_str = request.form.get("exam_date", "").strip()
-    max_points_str = request.form.get("max_points", "").strip()
-    weight_str = request.form.get("weight", "100").strip()
-    description = request.form.get("description", "").strip()
+    if form.validate_on_submit():
+        try:
+            # Create new exam
+            exam = Exam(
+                name=form.name.data,
+                course_id=form.course_id.data,
+                exam_date=form.exam_date.data,
+                max_points=form.max_points.data,
+                weight=form.weight.data,
+                description=form.description.data if form.description.data else None,
+            )
+            db.session.add(exam)
+            db.session.commit()
 
-    # Validate required fields
-    if not name:
-        flash("Exam name is required.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
+            logger.info(f"Created exam: {exam.name} for course {exam.course_id}")
+            flash(f"Exam '{exam.name}' created successfully.", "success")
+            return redirect(url_for("exam.show", exam_id=exam.id))
 
-    if not course_id_str:
-        flash("Course is required.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.error(f"Database error while creating exam: {e}")
+            flash("Error creating exam. Please try again.", "error")
 
-    if not exam_date_str:
-        flash("Exam date is required.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
+    # Display form validation errors
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
 
-    if not max_points_str:
-        flash("Maximum points is required.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    # Parse and validate fields
-    try:
-        course_id = int(course_id_str)
-    except ValueError:
-        flash("Invalid course selection.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    try:
-        exam_date = datetime.strptime(exam_date_str, "%Y-%m-%d").date()
-    except ValueError:
-        flash("Invalid date format. Use YYYY-MM-DD (e.g., 2024-06-15).", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    try:
-        max_points = float(max_points_str)
-    except ValueError:
-        flash("Maximum points must be a number.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    try:
-        weight = float(weight_str)
-    except ValueError:
-        flash("Weight must be a number.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    # Validate business rules
-    if not validate_max_points(max_points):
-        flash("Maximum points must be greater than 0.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    if not validate_weight(weight):
-        flash("Weight must be between 0 and 100.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
-
-    try:
-        # Create new exam
-        exam = Exam(
-            name=name,
-            course_id=course_id,
-            exam_date=exam_date,
-            max_points=max_points,
-            weight=weight,
-            description=description if description else None,
-        )
-        db.session.add(exam)
-        db.session.commit()
-
-        flash(f"Exam '{exam.name}' created successfully.", "success")
-        return redirect(url_for("exam.show", exam_id=exam.id))
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while creating exam: {e}")
-        flash("Error creating exam. Please try again.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=None,
-            courses=courses,
-            form_data=request.form,
-        )
+    return render_template("exam/form.html", exam=None, form=form, courses=courses)
 
 
 @bp.route("/<int:exam_id>/edit", methods=["GET", "POST"])
@@ -292,153 +186,42 @@ def edit(exam_id: int) -> str | Any:
         # Get courses for dropdown
         courses = db.session.query(Course).order_by(Course.name).all()
 
-        if request.method == "GET":
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-            )
+        form = ExamForm(obj=exam)
+        form.course_id.choices = [(c.id, c.name) for c in courses]
 
-        # POST: Update exam
-        name = request.form.get("name", "").strip()
-        course_id_str = request.form.get("course_id", "").strip()
-        exam_date_str = request.form.get("exam_date", "").strip()
-        max_points_str = request.form.get("max_points", "").strip()
-        weight_str = request.form.get("weight", "").strip()
-        description = request.form.get("description", "").strip()
+        if form.validate_on_submit():
+            try:
+                # Update fields
+                exam.name = form.name.data
+                exam.course_id = form.course_id.data
+                exam.exam_date = form.exam_date.data
+                exam.max_points = form.max_points.data
+                exam.weight = form.weight.data
+                exam.description = (
+                    form.description.data if form.description.data else None
+                )
 
-        # Validate required fields
-        if not name:
-            flash("Exam name is required.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
+                db.session.commit()
+                logger.info(f"Updated exam: {exam.name} for course {exam.course_id}")
+                flash(f"Exam '{exam.name}' updated successfully.", "success")
+                return redirect(url_for("exam.show", exam_id=exam.id))
 
-        if not course_id_str:
-            flash("Course is required.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                logger.error(f"Database error while updating exam: {e}")
+                flash("Error updating exam. Please try again.", "error")
 
-        if not exam_date_str:
-            flash("Exam date is required.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
+        # Display form validation errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(error, "error")
 
-        if not max_points_str:
-            flash("Maximum points is required.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        if not weight_str:
-            flash("Weight is required.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        # Parse and validate fields
-        try:
-            course_id = int(course_id_str)
-        except ValueError:
-            flash("Invalid course selection.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        try:
-            exam_date = datetime.strptime(exam_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            flash("Invalid date format. Use YYYY-MM-DD (e.g., 2024-06-15).", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        try:
-            max_points = float(max_points_str)
-        except ValueError:
-            flash("Maximum points must be a number.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        try:
-            weight = float(weight_str)
-        except ValueError:
-            flash("Weight must be a number.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        # Validate business rules
-        if not validate_max_points(max_points):
-            flash("Maximum points must be greater than 0.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        if not validate_weight(weight):
-            flash("Weight must be between 0 and 100.", "error")
-            return render_template(
-                "exam/form.html",
-                exam=exam,
-                courses=courses,
-                form_data=request.form,
-            )
-
-        # Update fields
-        exam.name = name
-        exam.course_id = course_id
-        exam.exam_date = exam_date
-        exam.max_points = max_points
-        exam.weight = weight
-        exam.description = description if description else None
-
-        db.session.commit()
-        flash(f"Exam '{exam.name}' updated successfully.", "success")
-        return redirect(url_for("exam.show", exam_id=exam.id))
+        return render_template("exam/form.html", exam=exam, form=form, courses=courses)
 
     except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while updating exam: {e}")
-        flash("Error updating exam. Please try again.", "error")
-        return render_template(
-            "exam/form.html",
-            exam=exam,
-            courses=courses,
-            form_data=request.form,
-        )
+        logger.error(f"Database error while loading exam: {e}")
+        flash("Error loading exam. Please try again.", "error")
+        return redirect(url_for("exam.index"))
 
 
 @bp.route("/<int:exam_id>/delete", methods=["GET", "POST"])

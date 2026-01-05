@@ -6,7 +6,13 @@ This module provides form validation for exam creation and editing.
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, DateField, FloatField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional, NumberRange
+from wtforms.validators import (
+    DataRequired,
+    InputRequired,
+    Length,
+    Optional,
+    NumberRange,
+)
 
 
 class ExamForm(FlaskForm):
@@ -35,20 +41,20 @@ class ExamForm(FlaskForm):
     max_points = FloatField(
         "Maximum Points",
         validators=[
-            DataRequired(message="Maximum points is required."),
-            NumberRange(min=0.01, message="Maximum points must be greater than 0."),
+            InputRequired(message="Maximum points is required."),
+            NumberRange(min=0.01, message="Maximum points must be greater than 0"),
         ],
     )
 
     weight = FloatField(
-        "Weight (%)",
+        "Weight (%%)",
         default=100.0,
         validators=[
             Optional(),
             NumberRange(
                 min=0,
                 max=100,
-                message="Weight must be between 0 and 100%.",
+                message="Weight must be between 0 and 100%%.",
             ),
         ],
     )

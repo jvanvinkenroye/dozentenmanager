@@ -142,6 +142,28 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 
 Die Anwendung ist jetzt unter `http://127.0.0.1:5009` erreichbar.
 
+### 🐳 Docker Installation (Alternative)
+
+Für eine einfachere Bereitstellung können Sie Docker verwenden:
+
+```bash
+# Development: Mit Docker Compose starten
+docker-compose up -d
+
+# Datenbank initialisieren
+docker-compose exec web alembic upgrade head
+
+# Anwendung ist verfügbar unter http://localhost:5000
+```
+
+**Produktions-Deployment:**
+```bash
+# Produktions-Image bauen und starten
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+Für detaillierte Docker-Anweisungen siehe [DOCKER.md](DOCKER.md).
+
 ## 🚀 Verwendung
 
 ### Web-Interface

@@ -108,3 +108,9 @@ playwright_*/
 
 # Project documentation (AI-generated)
 GEMINI.md
+
+# Docker
+.env.production
+.env.docker.local
+ssl/
+nginx/logs/

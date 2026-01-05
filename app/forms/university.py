@@ -6,7 +6,7 @@ This module provides form validation for university creation and editing.
 
 from flask_wtf import FlaskForm
 from wtforms import StringField
-from wtforms.validators import DataRequired, Length, Optional, ValidationError, Regexp
+from wtforms.validators import DataRequired, Length, ValidationError
 
 from cli.university_cli import generate_slug
 from app import db
@@ -27,11 +27,6 @@ class UniversityForm(FlaskForm):
     slug = StringField(
         "Slug",
         validators=[
-            Optional(),
-            Regexp(
-                r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
-                message="Invalid slug format. Slug must contain only lowercase letters, numbers, and hyphens.",
-            ),
             Length(max=255, message="Slug cannot exceed 255 characters."),
         ],
     )
@@ -68,23 +63,32 @@ class UniversityForm(FlaskForm):
 
     def validate_slug(self, field):
         """
-        Validate slug is unique.
+        Validate slug format and uniqueness.
 
         Args:
             field: WTForms field object
 
         Raises:
-            ValidationError: If slug already exists
+            ValidationError: If slug format is invalid or already exists
         """
-        # Generate slug if not provided
-        if not field.data:
+        import re
+
+        # Generate slug if not provided or empty
+        if not field.data or not field.data.strip():
             field.data = generate_slug(self.name.data)
             return
+
+        # Validate slug format if provided
+        if not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", field.data):
+            raise ValidationError(
+                "Invalid slug format. Slug must contain only lowercase letters, numbers, and hyphens."
+            )
 
         # Skip uniqueness check if editing the same university
         if self.university and field.data == self.university.slug:
             return
 
+        # Check for uniqueness
         existing = db.session.query(University).filter_by(slug=field.data).first()
         if existing:
             raise ValidationError("University with this slug already exists.")

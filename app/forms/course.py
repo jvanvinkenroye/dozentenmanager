@@ -71,8 +71,8 @@ class CourseForm(FlaskForm):
         Raises:
             ValidationError: If slug already exists in the same semester
         """
-        # Generate slug if not provided
-        if not field.data:
+        # Generate slug if not provided or empty
+        if not field.data or not field.data.strip():
             field.data = generate_slug(self.name.data)
             return
 

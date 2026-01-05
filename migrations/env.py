@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Import app configuration and models
 from config import get_config
-from app import Base
+from app import db
 
 # Import all models for autogenerate support
 from app import models  # noqa: F401
@@ -32,7 +32,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-target_metadata = Base.metadata
+target_metadata = db.Model.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

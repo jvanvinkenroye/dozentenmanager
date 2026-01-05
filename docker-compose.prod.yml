@@ -9,15 +9,15 @@ services:
     container_name: dozentenmanager-prod
     ports:
       - "8000:5000"
+    env_file:
+      - .env.docker
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=production
-      # IMPORTANT: Set these via .env file or secrets management
-      - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///instance/dozentenmanager.db}
-      - UPLOAD_FOLDER=uploads
-      - MAX_CONTENT_LENGTH=16777216
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DATABASE_URL=sqlite:////app/instance/dozentenmanager.db
+      # Override these in .env.docker for your deployment
+      # - SECRET_KEY=your-production-secret-key
+      # - LOG_LEVEL=INFO
     volumes:
       # Only mount data directories, not source code
       - dozentenmanager-instance:/app/instance

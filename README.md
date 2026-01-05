@@ -160,6 +160,8 @@ docker-compose exec web alembic upgrade head
 ```bash
 # Produktions-Image bauen und starten
 docker-compose -f docker-compose.prod.yml up -d
+
+# Anwendung ist verfügbar unter http://localhost:8888
 ```
 
 Für detaillierte Docker-Anweisungen siehe [DOCKER.md](DOCKER.md).

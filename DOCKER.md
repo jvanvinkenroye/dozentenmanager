@@ -95,8 +95,8 @@ docker-compose -f docker-compose.prod.yml exec web python cli/create_admin.py
 
 ### 4. Access the application
 
-- HTTP: http://your-server-ip
-- HTTPS: https://your-domain.com (configure SSL certificates first)
+- HTTP: http://your-server-ip:8888
+- HTTPS: https://your-domain.com:8443 (configure SSL certificates first)
 
 ## Configuration
 

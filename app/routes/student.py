@@ -11,7 +11,8 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
-from app.models.student import Student, validate_email, validate_student_id
+from app.models.student import Student
+from app.forms.student import StudentForm
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -115,92 +116,41 @@ def new() -> str | Any:
     Returns:
         Rendered form template (GET) or redirect to detail page (POST)
     """
-    if request.method == "GET":
-        return render_template("student/form.html", student=None)
+    form = StudentForm()
 
-    # POST: Create student
-    first_name = request.form.get("first_name", "").strip()
-    last_name = request.form.get("last_name", "").strip()
-    student_id_value = request.form.get("student_id", "").strip()
-    email = request.form.get("email", "").strip()
-    program = request.form.get("program", "").strip()
+    if form.validate_on_submit():
+        try:
+            # Create new student
+            student = Student(
+                first_name=form.first_name.data,
+                last_name=form.last_name.data,
+                student_id=form.student_id.data,
+                email=form.email.data.lower(),
+                program=form.program.data,
+            )
+            db.session.add(student)
+            db.session.commit()
 
-    # Validate required fields
-    if not first_name:
-        flash("First name is required.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
+            logger.info(
+                f"Created student: {student.first_name} {student.last_name} ({student.student_id})"
+            )
+            flash(
+                f"Student '{student.first_name} {student.last_name}' created successfully.",
+                "success",
+            )
+            return redirect(url_for("student.show", student_id=student.id))
 
-    if not last_name:
-        flash("Last name is required.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
-
-    if not student_id_value:
-        flash("Student ID is required.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
-
-    if not validate_student_id(student_id_value):
-        flash("Invalid student ID format. Must be exactly 8 digits.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
-
-    if not email:
-        flash("Email is required.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
-
-    if not validate_email(email):
-        flash("Invalid email format.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
-
-    if not program:
-        flash("Program is required.", "error")
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
-
-    try:
-        # Create new student
-        student = Student(
-            first_name=first_name,
-            last_name=last_name,
-            student_id=student_id_value,
-            email=email.lower(),
-            program=program,
-        )
-        db.session.add(student)
-        db.session.commit()
-
-        flash(
-            f"Student '{student.first_name} {student.last_name}' created successfully.",
-            "success",
-        )
-        return redirect(url_for("student.show", student_id=student.id))
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while creating student: {e}")
-
-        # Check for unique constraint violations
-        if "student_id" in str(e):
-            flash(f"Student with ID '{student_id_value}' already exists.", "error")
-        elif "email" in str(e):
-            flash(f"Student with email '{email}' already exists.", "error")
-        else:
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            logger.error(f"Database error while creating student: {e}")
             flash("Error creating student. Please try again.", "error")
 
-        return render_template(
-            "student/form.html", student=None, form_data=request.form
-        )
+    # Display form validation errors
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(error, "error")
+
+    return render_template("student/form.html", student=None, form=form)
 
 
 @bp.route("/<int:student_id>/edit", methods=["GET", "POST"])
@@ -231,88 +181,43 @@ def edit(student_id: int) -> str | Any:
             flash(f"Student with ID {student_id} not found.", "error")
             return redirect(url_for("student.index"))
 
-        if request.method == "GET":
-            return render_template("student/form.html", student=student)
+        form = StudentForm(student=student, obj=student)
 
-        # POST: Update student
-        first_name = request.form.get("first_name", "").strip()
-        last_name = request.form.get("last_name", "").strip()
-        student_id_value = request.form.get("student_id", "").strip()
-        email = request.form.get("email", "").strip()
-        program = request.form.get("program", "").strip()
+        if form.validate_on_submit():
+            try:
+                # Update fields
+                student.first_name = form.first_name.data
+                student.last_name = form.last_name.data
+                student.student_id = form.student_id.data
+                student.email = form.email.data.lower()
+                student.program = form.program.data
 
-        # Validate inputs
-        if not first_name:
-            flash("First name is required.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
+                db.session.commit()
+                logger.info(
+                    f"Updated student: {student.first_name} {student.last_name} ({student.student_id})"
+                )
+                flash(
+                    f"Student '{student.first_name} {student.last_name}' updated successfully.",
+                    "success",
+                )
+                return redirect(url_for("student.show", student_id=student.id))
 
-        if not last_name:
-            flash("Last name is required.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                logger.error(f"Database error while updating student: {e}")
+                flash("Error updating student. Please try again.", "error")
 
-        if not student_id_value:
-            flash("Student ID is required.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
+        # Display form validation errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(error, "error")
 
-        if not validate_student_id(student_id_value):
-            flash("Invalid student ID format. Must be exactly 8 digits.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
-
-        if not email:
-            flash("Email is required.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
-
-        if not validate_email(email):
-            flash("Invalid email format.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
-
-        if not program:
-            flash("Program is required.", "error")
-            return render_template(
-                "student/form.html", student=student, form_data=request.form
-            )
-
-        # Update fields
-        student.first_name = first_name
-        student.last_name = last_name
-        student.student_id = student_id_value
-        student.email = email.lower()
-        student.program = program
-
-        db.session.commit()
-        flash(
-            f"Student '{student.first_name} {student.last_name}' updated successfully.",
-            "success",
-        )
-        return redirect(url_for("student.show", student_id=student.id))
+        return render_template("student/form.html", student=student, form=form)
 
     except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while updating student: {e}")
-
-        # Check for unique constraint violations
-        if "student_id" in str(e):
-            flash(f"Student with ID '{student_id_value}' already exists.", "error")
-        elif "email" in str(e):
-            flash(f"Student with email '{email}' already exists.", "error")
-        else:
-            flash("Error updating student. Please try again.", "error")
-
-        return render_template(
-            "student/form.html", student=student, form_data=request.form
-        )
+        logger.error(f"Database error while loading student: {e}")
+        flash("Error loading student. Please try again.", "error")
+        return redirect(url_for("student.index"))
 
 
 @bp.route("/<int:student_id>/delete", methods=["GET", "POST"])

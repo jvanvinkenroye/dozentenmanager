@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Import-Ergebnis - E-Mail-Import - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li><a href="{{ url_for('document.email_import') }}">E-Mail-Import</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Ergebnis</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    <span class="icon">
+        <i class="fas fa-envelope-open-text"></i>
+    </span>
+    E-Mail-Import Ergebnis
+</h1>
+
+<!-- Summary Statistics -->
+<div class="columns">
+    <div class="column">
+        <div class="box has-background-info-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-info">
+                    <i class="fas fa-envelope fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-info">{{ summary.emails_processed }}</p>
+                <p class="subtitle">E-Mails verarbeitet</p>
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-background-success-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-success">
+                    <i class="fas fa-user-check fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-success">{{ summary.students_matched }}</p>
+                <p class="subtitle">Studenten erkannt</p>
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-background-primary-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-primary">
+                    <i class="fas fa-file-alt fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-primary">{{ summary.attachments_saved }}</p>
+                <p class="subtitle">Anhänge gespeichert</p>
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-background-warning-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-warning">
+                    <i class="fas fa-question-circle fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-warning">{{ summary.unmatched_emails }}</p>
+                <p class="subtitle">Nicht zugeordnet</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details -->
+{% if summary.details %}
+<div class="box">
+    <h2 class="subtitle">
+        <span class="icon">
+            <i class="fas fa-list"></i>
+        </span>
+        Verarbeitete E-Mails
+    </h2>
+
+    <div class="table-container">
+        <table class="table is-fullwidth is-hoverable">
+            <thead>
+                <tr>
+                    <th>Betreff</th>
+                    <th>Von</th>
+                    <th>Student</th>
+                    <th>Anhänge</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in summary.details %}
+                <tr>
+                    <td>{{ detail.subject[:50] }}{% if detail.subject|length > 50 %}...{% endif %}</td>
+                    <td>{{ detail.from[:30] }}{% if detail.from|length > 30 %}...{% endif %}</td>
+                    <td>
+                        {% if detail.matched_student %}
+                        <span class="tag is-success">
+                            {{ detail.matched_student.name }}
+                        </span>
+                        {% else %}
+                        <span class="tag is-warning">Nicht erkannt</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if detail.attachments %}
+                        <span class="tag is-info">{{ detail.attachments|length }}</span>
+                        {% for att in detail.attachments[:3] %}
+                        <span class="tag is-light is-small">{{ att.filename[:20] }}{% if att.filename|length > 20 %}...{% endif %}</span>
+                        {% endfor %}
+                        {% if detail.attachments|length > 3 %}
+                        <span class="tag is-light is-small">+{{ detail.attachments|length - 3 }}</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="has-text-grey">Keine</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if detail.errors %}
+                        <span class="icon has-text-danger" title="{{ detail.errors|join(', ') }}">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </span>
+                        {% elif detail.matched_student and detail.attachments %}
+                        <span class="icon has-text-success">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                        {% elif detail.matched_student %}
+                        <span class="icon has-text-info">
+                            <i class="fas fa-info-circle"></i>
+                        </span>
+                        {% else %}
+                        <span class="icon has-text-warning">
+                            <i class="fas fa-question-circle"></i>
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Errors -->
+{% if summary.errors %}
+<div class="box">
+    <h2 class="subtitle has-text-danger">
+        <span class="icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </span>
+        Fehler ({{ summary.errors|length }})
+    </h2>
+
+    <div class="content">
+        <ul>
+            {% for error in summary.errors[:10] %}
+            <li>{{ error }}</li>
+            {% endfor %}
+            {% if summary.errors|length > 10 %}
+            <li class="has-text-grey">... und {{ summary.errors|length - 10 }} weitere</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <a href="{{ url_for('document.index') }}" class="button is-primary">
+                <span class="icon">
+                    <i class="fas fa-list"></i>
+                </span>
+                <span>Zur Dokumentenliste</span>
+            </a>
+        </div>
+        <div class="level-item">
+            <a href="{{ url_for('document.email_import') }}" class="button is-info">
+                <span class="icon">
+                    <i class="fas fa-envelope"></i>
+                </span>
+                <span>Weitere E-Mails importieren</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

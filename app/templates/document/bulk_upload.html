@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk-Upload - Dokumente - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Bulk-Upload</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <div class="column is-two-thirds">
+        <h1 class="title">
+            <span class="icon">
+                <i class="fas fa-upload"></i>
+            </span>
+            Bulk-Upload
+        </h1>
+
+        <div class="box">
+            <form method="post" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <!-- Multiple File Upload -->
+                <div class="field">
+                    <label class="label">Dateien</label>
+                    <div class="control">
+                        <div class="file has-name is-fullwidth is-boxed">
+                            <label class="file-label">
+                                <input class="file-input" type="file" name="files" id="files-input" multiple accept=".pdf,.doc,.docx,.txt,.odt,.rtf">
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                                    </span>
+                                    <span class="file-label">
+                                        Dateien auswählen oder hier ablegen...
+                                    </span>
+                                </span>
+                                <span class="file-name" id="files-count">
+                                    Keine Dateien ausgewählt
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="help">Sie können mehrere Dateien auswählen. Erlaubte Typen: PDF, DOC, DOCX, TXT, ODT, RTF</p>
+                </div>
+
+                <!-- Course Selection -->
+                <div class="field">
+                    <label class="label" for="course_id">{{ form.course_id.label.text }}</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            {{ form.course_id(id="course_id") }}
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-book"></i>
+                        </span>
+                    </div>
+                    <p class="help">Studenten werden anhand des Dateinamens zugeordnet</p>
+                </div>
+
+                <!-- Submission Type -->
+                <div class="field">
+                    <label class="label" for="submission_type">{{ form.submission_type.label.text }}</label>
+                    <div class="control">
+                        <div class="select">
+                            {{ form.submission_type(id="submission_type") }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exam (optional) -->
+                <div class="field">
+                    <label class="label" for="exam_id">{{ form.exam_id.label.text }}</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            {{ form.exam_id(id="exam_id") }}
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-clipboard-check"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="field">
+                    <label class="label" for="notes">{{ form.notes.label.text }}</label>
+                    <div class="control">
+                        {{ form.notes(class="textarea", id="notes", rows="2", placeholder="Diese Notizen werden allen Dokumenten hinzugefügt...") }}
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary is-medium">
+                            <span class="icon">
+                                <i class="fas fa-upload"></i>
+                            </span>
+                            <span>Alle hochladen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('document.index') }}" class="button is-light is-medium">
+                            Abbrechen
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-info-circle"></i>
+                </span>
+                Dateinamenskonvention
+            </h2>
+
+            <div class="content">
+                <p>Dateien werden automatisch Studenten zugeordnet basierend auf dem Dateinamen:</p>
+
+                <h4>Unterstützte Formate</h4>
+                <ul>
+                    <li><code>NachnameVorname.pdf</code></li>
+                    <li><code>Nachname_Vorname.pdf</code></li>
+                    <li><code>Nachname-Vorname.pdf</code></li>
+                </ul>
+
+                <h4>Beispiele</h4>
+                <ul>
+                    <li><code>MuellerMax.pdf</code> → Max Müller</li>
+                    <li><code>Schmidt_Anna.docx</code> → Anna Schmidt</li>
+                    <li><code>Weber-Peter.pdf</code> → Peter Weber</li>
+                </ul>
+
+                <div class="notification is-warning is-light">
+                    <span class="icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </span>
+                    Dateien, die keinem Studenten zugeordnet werden können, werden als "nicht zugeordnet" markiert.
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-list-check"></i>
+                </span>
+                Voraussetzungen
+            </h2>
+
+            <div class="content">
+                <ul>
+                    <li>Studenten müssen im ausgewählten Kurs eingeschrieben sein</li>
+                    <li>Einschreibung muss den Status "aktiv" haben</li>
+                    <li>Dateinamen müssen dem Namensformat entsprechen</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('files-input').addEventListener('change', function(e) {
+        const count = e.target.files.length;
+        const text = count === 0 ? 'Keine Dateien ausgewählt' :
+                     count === 1 ? '1 Datei ausgewählt' :
+                     count + ' Dateien ausgewählt';
+        document.getElementById('files-count').textContent = text;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}E-Mail-Import - Dokumente - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li class="is-active"><a href="#" aria-current="page">E-Mail-Import</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <div class="column is-two-thirds">
+        <h1 class="title">
+            <span class="icon">
+                <i class="fas fa-envelope"></i>
+            </span>
+            E-Mail-Import
+        </h1>
+
+        <div class="box">
+            <form method="post" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <!-- File Upload -->
+                <div class="field">
+                    <label class="label">{{ form.file.label.text }}</label>
+                    <div class="control">
+                        <div class="file has-name is-fullwidth is-boxed">
+                            <label class="file-label">
+                                {{ form.file(class="file-input", id="email-file") }}
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-envelope-open fa-2x"></i>
+                                    </span>
+                                    <span class="file-label">
+                                        E-Mail-Datei auswählen...
+                                    </span>
+                                </span>
+                                <span class="file-name" id="file-name">
+                                    Keine Datei ausgewählt
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="help">Erlaubte Dateitypen: .eml (einzelne E-Mail), .mbox (E-Mail-Archiv)</p>
+                </div>
+
+                <!-- Course Filter -->
+                <div class="field">
+                    <label class="label" for="course_id">{{ form.course_id.label.text }}</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            {{ form.course_id(id="course_id") }}
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-book"></i>
+                        </span>
+                    </div>
+                    <p class="help">Optional: Beschränkt die Studenten-Zuordnung auf einen bestimmten Kurs</p>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary is-medium">
+                            <span class="icon">
+                                <i class="fas fa-upload"></i>
+                            </span>
+                            <span>E-Mails importieren</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('document.index') }}" class="button is-light is-medium">
+                            Abbrechen
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-info-circle"></i>
+                </span>
+                Wie funktioniert der Import?
+            </h2>
+
+            <div class="content">
+                <ol>
+                    <li>Laden Sie eine E-Mail-Datei (.eml) oder ein E-Mail-Archiv (.mbox) hoch</li>
+                    <li>Das System extrahiert alle Anhänge aus den E-Mails</li>
+                    <li>Studenten werden automatisch erkannt anhand von:
+                        <ul>
+                            <li>E-Mail-Adresse des Absenders</li>
+                            <li>Matrikelnummer in Betreff oder Text</li>
+                            <li>Name des Absenders</li>
+                        </ul>
+                    </li>
+                    <li>Anhänge werden dem passenden Studenten zugeordnet</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-file-export"></i>
+                </span>
+                E-Mails exportieren
+            </h2>
+
+            <div class="content">
+                <p>So exportieren Sie E-Mails aus Ihrem E-Mail-Programm:</p>
+
+                <h4>Outlook</h4>
+                <p>Datei → Speichern unter → Dateityp: "Outlook-Nachrichtenformat (.msg)" oder per Drag & Drop als .eml</p>
+
+                <h4>Thunderbird</h4>
+                <p>E-Mail auswählen → Datei → Speichern als → "Alle Dateien" auswählen</p>
+
+                <h4>Apple Mail</h4>
+                <p>E-Mail auswählen → Datei → Als → Raw-Quelle (.eml)</p>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-file-alt"></i>
+                </span>
+                Erlaubte Anhänge
+            </h2>
+
+            <div class="content">
+                <ul>
+                    <li>PDF (.pdf)</li>
+                    <li>Word (.doc, .docx)</li>
+                    <li>Text (.txt)</li>
+                    <li>OpenDocument (.odt)</li>
+                    <li>Rich Text (.rtf)</li>
+                </ul>
+                <p class="has-text-grey">Andere Dateitypen werden übersprungen.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('email-file').addEventListener('change', function(e) {
+        const fileName = e.target.files[0] ? e.target.files[0].name : 'Keine Datei ausgewählt';
+        document.getElementById('file-name').textContent = fileName;
+    });
+</script>
+{% endblock %}

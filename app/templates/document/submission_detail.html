@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Einreichung #{{ submission.id }} - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li><a href="{{ url_for('document.submissions') }}">Einreichungen</a></li>
+                <li class="is-active"><a href="#" aria-current="page">#{{ submission.id }}</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">
+                <span class="icon">
+                    <i class="fas fa-inbox"></i>
+                </span>
+                Einreichung #{{ submission.id }}
+            </h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            {% set status = submission.status %}
+            <span class="tag is-medium {% if status == 'submitted' %}is-info{% elif status == 'reviewed' %}is-warning{% elif status == 'graded' %}is-success{% else %}is-light{% endif %}">
+                {% if status == 'submitted' %}Eingereicht
+                {% elif status == 'reviewed' %}Überprüft
+                {% elif status == 'graded' %}Bewertet
+                {% elif status == 'returned' %}Zurückgegeben
+                {% else %}{{ status }}{% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <!-- Submission Details -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-info-circle"></i>
+                </span>
+                Details
+            </h2>
+
+            <table class="table is-fullwidth">
+                <tbody>
+                    <tr>
+                        <th width="200">Typ</th>
+                        <td>
+                            <span class="tag">{{ submission.submission_type }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Eingereicht am</th>
+                        <td>{{ submission.submission_date.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                    </tr>
+                    {% if submission.exam %}
+                    <tr>
+                        <th>Prüfung</th>
+                        <td>
+                            <a href="{{ url_for('exam.show', exam_id=submission.exam.id) }}">
+                                {{ submission.exam.name }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% if submission.notes %}
+                    <tr>
+                        <th>Notizen</th>
+                        <td>{{ submission.notes }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Documents -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-file-alt"></i>
+                </span>
+                Dokumente ({{ documents|length }})
+            </h2>
+
+            {% if documents %}
+            <div class="table-container">
+                <table class="table is-fullwidth is-hoverable">
+                    <thead>
+                        <tr>
+                            <th>Dateiname</th>
+                            <th>Typ</th>
+                            <th>Größe</th>
+                            <th>Hochgeladen</th>
+                            <th class="has-text-right">Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('document.show', document_id=doc.id) }}">
+                                    <span class="icon">
+                                        {% if doc.file_type == 'pdf' %}
+                                        <i class="fas fa-file-pdf has-text-danger"></i>
+                                        {% elif doc.file_type in ['doc', 'docx'] %}
+                                        <i class="fas fa-file-word has-text-info"></i>
+                                        {% else %}
+                                        <i class="fas fa-file has-text-grey"></i>
+                                        {% endif %}
+                                    </span>
+                                    {{ doc.original_filename }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="tag is-light">{{ doc.file_type|upper }}</span>
+                            </td>
+                            <td>{{ doc.file_size_human }}</td>
+                            <td>{{ doc.upload_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td class="has-text-right">
+                                <div class="buttons is-right">
+                                    <a href="{{ url_for('document.download', document_id=doc.id) }}" class="button is-small is-success" title="Herunterladen">
+                                        <span class="icon">
+                                            <i class="fas fa-download"></i>
+                                        </span>
+                                    </a>
+                                    <a href="{{ url_for('document.show', document_id=doc.id) }}" class="button is-small is-info" title="Details">
+                                        <span class="icon">
+                                            <i class="fas fa-eye"></i>
+                                        </span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="notification is-light">
+                <p class="has-text-centered">Keine Dokumente vorhanden</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Status Update Form -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-edit"></i>
+                </span>
+                Status aktualisieren
+            </h2>
+
+            <form method="post" action="{{ url_for('document.update_submission_status', submission_id=submission.id) }}">
+                {{ form.hidden_tag() }}
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label" for="status">Neuer Status</label>
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    {{ form.status(id="status") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <label class="label" for="notes">Notizen (optional)</label>
+                            <div class="control">
+                                {{ form.notes(class="input", id="notes", placeholder="Zusätzliche Notizen...") }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-narrow">
+                        <div class="field">
+                            <label class="label">&nbsp;</label>
+                            <div class="control">
+                                <button type="submit" class="button is-primary">
+                                    <span class="icon">
+                                        <i class="fas fa-save"></i>
+                                    </span>
+                                    <span>Speichern</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column">
+        <!-- Student Information -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-user-graduate"></i>
+                </span>
+                Student/in
+            </h2>
+
+            {% set student = submission.enrollment.student %}
+            <div class="content">
+                <p class="is-size-5 has-text-weight-semibold">
+                    <a href="{{ url_for('student.show', student_id=student.id) }}">
+                        {{ student.first_name }} {{ student.last_name }}
+                    </a>
+                </p>
+                <p>
+                    <span class="icon"><i class="fas fa-id-card"></i></span>
+                    Matrikel: {{ student.student_id }}
+                </p>
+                <p>
+                    <span class="icon"><i class="fas fa-envelope"></i></span>
+                    <a href="mailto:{{ student.email }}">{{ student.email }}</a>
+                </p>
+                <p>
+                    <span class="icon"><i class="fas fa-graduation-cap"></i></span>
+                    {{ student.program }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Course Information -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-book"></i>
+                </span>
+                Lehrveranstaltung
+            </h2>
+
+            {% set course = submission.enrollment.course %}
+            <div class="content">
+                <p class="is-size-5 has-text-weight-semibold">
+                    <a href="{{ url_for('course.show', course_id=course.id) }}">
+                        {{ course.name }}
+                    </a>
+                </p>
+                <p>
+                    <span class="tag is-info is-light">{{ course.semester }}</span>
+                </p>
+                <p>
+                    <span class="icon"><i class="fas fa-university"></i></span>
+                    <a href="{{ url_for('university.show', slug=course.university.slug) }}">
+                        {{ course.university.name }}
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-clock"></i>
+                </span>
+                Zeitstempel
+            </h2>
+
+            <table class="table is-fullwidth is-narrow">
+                <tbody>
+                    <tr>
+                        <th>Erstellt</th>
+                        <td>{{ submission.created_at.strftime('%d.%m.%Y %H:%M') if submission.created_at else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Aktualisiert</th>
+                        <td>{{ submission.updated_at.strftime('%d.%m.%Y %H:%M') if submission.updated_at else '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <a href="{{ url_for('document.submissions') }}" class="button is-light">
+                <span class="icon">
+                    <i class="fas fa-arrow-left"></i>
+                </span>
+                <span>Zurück zur Liste</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

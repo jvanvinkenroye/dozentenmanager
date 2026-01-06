@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Einreichungen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Einreichungen</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">
+                <span class="icon">
+                    <i class="fas fa-inbox"></i>
+                </span>
+                Einreichungen
+            </h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{{ url_for('document.upload') }}" class="button is-primary">
+                <span class="icon">
+                    <i class="fas fa-upload"></i>
+                </span>
+                <span>Dokument hochladen</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="box">
+    <form method="get" action="{{ url_for('document.submissions') }}">
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">Lehrveranstaltung</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            <select name="course_id">
+                                <option value="">Alle Lehrveranstaltungen</option>
+                                {% for c in courses %}
+                                <option value="{{ c.id }}" {% if course_id == c.id %}selected{% endif %}>
+                                    {{ c.name }} ({{ c.semester }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-book"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">Status</label>
+                    <div class="control">
+                        <div class="select">
+                            <select name="status">
+                                <option value="">Alle Status</option>
+                                <option value="submitted" {% if status == 'submitted' %}selected{% endif %}>Eingereicht</option>
+                                <option value="reviewed" {% if status == 'reviewed' %}selected{% endif %}>Überprüft</option>
+                                <option value="graded" {% if status == 'graded' %}selected{% endif %}>Bewertet</option>
+                                <option value="returned" {% if status == 'returned' %}selected{% endif %}>Zurückgegeben</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">&nbsp;</label>
+                    <div class="control">
+                        <button type="submit" class="button is-info">
+                            <span class="icon">
+                                <i class="fas fa-filter"></i>
+                            </span>
+                            <span>Filtern</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Submissions List -->
+{% if submissions %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-hoverable is-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student/in</th>
+                    <th>Kurs</th>
+                    <th>Typ</th>
+                    <th>Dokumente</th>
+                    <th>Eingereicht</th>
+                    <th>Status</th>
+                    <th class="has-text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in submissions %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('document.submission_detail', submission_id=sub.id) }}" class="has-text-weight-semibold">
+                            #{{ sub.id }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('student.show', student_id=sub.enrollment.student.id) }}">
+                            {{ sub.enrollment.student.last_name }}, {{ sub.enrollment.student.first_name }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('course.show', course_id=sub.enrollment.course.id) }}">
+                            {{ sub.enrollment.course.name }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="tag is-light">{{ sub.submission_type }}</span>
+                    </td>
+                    <td>
+                        <span class="tag is-info">{{ sub.documents.count() }}</span>
+                    </td>
+                    <td>{{ sub.submission_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td>
+                        {% set status = sub.status %}
+                        <span class="tag {% if status == 'submitted' %}is-info{% elif status == 'reviewed' %}is-warning{% elif status == 'graded' %}is-success{% else %}is-light{% endif %}">
+                            {% if status == 'submitted' %}Eingereicht
+                            {% elif status == 'reviewed' %}Überprüft
+                            {% elif status == 'graded' %}Bewertet
+                            {% elif status == 'returned' %}Zurückgegeben
+                            {% else %}{{ status }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="has-text-right">
+                        <a href="{{ url_for('document.submission_detail', submission_id=sub.id) }}" class="button is-small is-info">
+                            <span class="icon">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="has-text-dark">{{ submissions|length }} Einreichung(en) gefunden</p>
+</div>
+{% else %}
+<div class="notification is-info is-light">
+    <p class="has-text-centered">
+        <span class="icon is-large">
+            <i class="fas fa-inbox fa-2x"></i>
+        </span>
+    </p>
+    <p class="has-text-centered has-text-weight-semibold">
+        Keine Einreichungen gefunden
+    </p>
+    <p class="has-text-centered mt-2">
+        <a href="{{ url_for('document.upload') }}" class="button is-primary">
+            Erstes Dokument hochladen
+        </a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

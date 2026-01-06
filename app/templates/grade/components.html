@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Prüfungskomponenten - {{ exam.name }} - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+        <li><a href="{{ url_for('exam.show', exam_id=exam.id) }}">{{ exam.name }}</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Komponenten</a></li>
+    </ul>
+</nav>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <div>
+                <h1 class="title">Prüfungskomponenten</h1>
+                <p class="subtitle">{{ exam.name }} ({{ exam.exam_date.strftime('%d.%m.%Y') }})</p>
+            </div>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{{ url_for('grade.new_component', exam_id=exam.id) }}" class="button is-primary">
+                <span class="icon"><i class="fas fa-plus"></i></span>
+                <span>Komponente hinzufügen</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="notification {% if total_weight == 100 %}is-success{% elif total_weight > 100 %}is-danger{% else %}is-warning{% endif %} is-light">
+    <strong>Gesamtgewichtung:</strong> {{ total_weight }}%
+    {% if total_weight < 100 %}
+    <br><small>Die Komponenten ergeben noch nicht 100%. Noch {{ 100 - total_weight }}% fehlen.</small>
+    {% elif total_weight > 100 %}
+    <br><small>Die Gesamtgewichtung überschreitet 100%!</small>
+    {% else %}
+    <br><small>Alle Komponenten sind vollständig konfiguriert.</small>
+    {% endif %}
+</div>
+
+{% if components %}
+<div class="table-container">
+    <table class="table is-fullwidth is-hoverable">
+        <thead>
+            <tr>
+                <th style="width: 50px;">#</th>
+                <th>Name</th>
+                <th class="has-text-right">Gewichtung</th>
+                <th class="has-text-right">Max. Punkte</th>
+                <th>Beschreibung</th>
+                <th>Noten</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for component in components %}
+            <tr>
+                <td>{{ component.order }}</td>
+                <td><strong>{{ component.name }}</strong></td>
+                <td class="has-text-right">
+                    <span class="tag is-info">{{ component.weight }}%</span>
+                </td>
+                <td class="has-text-right">{{ component.max_points }}</td>
+                <td>{{ component.description or '-' }}</td>
+                <td>
+                    {% set grade_count = component.grades|length %}
+                    {% if grade_count > 0 %}
+                    <span class="tag is-success">{{ grade_count }}</span>
+                    {% else %}
+                    <span class="tag is-light">0</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" action="{{ url_for('grade.delete_component', component_id=component.id) }}"
+                          style="display: inline;"
+                          onsubmit="return confirm('Komponente wirklich löschen?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="button is-danger is-small is-outlined"
+                                {% if component.grades|length > 0 %}disabled title="Komponente hat Noten und kann nicht gelöscht werden"{% endif %}>
+                            <span class="icon"><i class="fas fa-trash"></i></span>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="2">Gesamt</th>
+                <th class="has-text-right">
+                    <span class="tag {% if total_weight == 100 %}is-success{% else %}is-warning{% endif %} is-medium">
+                        {{ total_weight }}%
+                    </span>
+                </th>
+                <th colspan="4"></th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class="box">
+    <h2 class="subtitle">Verwendung von Komponenten</h2>
+    <div class="content">
+        <p>Komponenten ermöglichen die Aufteilung einer Prüfung in mehrere gewichtete Teile, z.B.:</p>
+        <ul>
+            <li><strong>Schriftliche Prüfung</strong> - 60%</li>
+            <li><strong>Mündliche Prüfung</strong> - 20%</li>
+            <li><strong>Projektarbeit</strong> - 20%</li>
+        </ul>
+        <p>Bei der Benotung können Studenten dann für jede Komponente separat bewertet werden. Die Endnote berechnet sich aus dem gewichteten Durchschnitt aller Komponenten.</p>
+    </div>
+</div>
+
+{% else %}
+<div class="notification is-info">
+    <p>Diese Prüfung hat noch keine Komponenten.</p>
+    <p class="mt-3">
+        <a href="{{ url_for('grade.new_component', exam_id=exam.id) }}" class="button is-primary">
+            <span class="icon"><i class="fas fa-plus"></i></span>
+            <span>Erste Komponente hinzufügen</span>
+        </a>
+    </p>
+    <p class="mt-3 has-text-grey">
+        Ohne Komponenten wird die Prüfung als Ganzes bewertet ({{ exam.max_points }} Punkte).
+    </p>
+</div>
+{% endif %}
+{% endblock %}

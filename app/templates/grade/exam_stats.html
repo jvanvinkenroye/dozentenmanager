@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Prüfungsstatistik - {{ exam.name }} - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li><a href="{{ url_for('grade.dashboard') }}">Dashboard</a></li>
+        <li class="is-active"><a href="#" aria-current="page">{{ exam.name }}</a></li>
+    </ul>
+</nav>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <div>
+                <h1 class="title">{{ exam.name }}</h1>
+                <p class="subtitle">
+                    <a href="{{ url_for('course.show', course_id=exam.course_id) }}">{{ exam.course.name }}</a>
+                    | {{ exam.exam_date.strftime('%d.%m.%Y') }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('grade.bulk', exam_id=exam.id) }}" class="button is-primary">
+                    <span class="icon"><i class="fas fa-edit"></i></span>
+                    <span>Noten eingeben</span>
+                </a>
+                <a href="{{ url_for('grade.components', exam_id=exam.id) }}" class="button is-info">
+                    <span class="icon"><i class="fas fa-puzzle-piece"></i></span>
+                    <span>Komponenten</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if stats %}
+<!-- Summary Statistics -->
+<div class="columns">
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Teilnehmer</p>
+            <p class="title is-3">{{ stats.total_students }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Bestanden</p>
+            <p class="title is-3 has-text-success">{{ stats.passing_count }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Nicht bestanden</p>
+            <p class="title is-3 has-text-danger">{{ stats.failing_count }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Bestehensquote</p>
+            <p class="title is-3">{{ stats.pass_rate }}%</p>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <!-- Points Statistics -->
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                <span>Punktestatistik</span>
+            </h2>
+
+            <table class="table is-fullwidth">
+                <tbody>
+                    <tr>
+                        <th>Maximum</th>
+                        <td class="has-text-right">{{ stats.points.max }} / {{ exam.max_points }}</td>
+                    </tr>
+                    <tr>
+                        <th>Minimum</th>
+                        <td class="has-text-right">{{ stats.points.min }} / {{ exam.max_points }}</td>
+                    </tr>
+                    <tr>
+                        <th>Durchschnitt</th>
+                        <td class="has-text-right">{{ stats.points.avg }} / {{ exam.max_points }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Grade Statistics -->
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-graduation-cap"></i></span>
+                <span>Notenstatistik</span>
+            </h2>
+
+            <table class="table is-fullwidth">
+                <tbody>
+                    <tr>
+                        <th>Beste Note</th>
+                        <td class="has-text-right">
+                            <span class="tag is-success">{{ stats.grades.min }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Schlechteste Note</th>
+                        <td class="has-text-right">
+                            <span class="tag {% if stats.grades.max <= 4.0 %}is-warning{% else %}is-danger{% endif %}">{{ stats.grades.max }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Durchschnittsnote</th>
+                        <td class="has-text-right">
+                            <span class="tag is-info">{{ stats.grades.avg }}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Grade Distribution -->
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-chart-pie"></i></span>
+                <span>Notenverteilung</span>
+            </h2>
+
+            <table class="table is-fullwidth is-narrow">
+                <tbody>
+                    {% for label, count in stats.distribution.items() %}
+                    <tr>
+                        <td>{{ label }}</td>
+                        <td class="has-text-right">{{ count }}</td>
+                        <td style="width: 50%;">
+                            <progress class="progress is-small {% if 'sehr gut' in label %}is-success{% elif 'gut' in label %}is-info{% elif 'befriedigend' in label %}is-warning{% elif 'ausreichend' in label %}is-light{% else %}is-danger{% endif %}"
+                                      value="{{ count }}"
+                                      max="{{ stats.total_students }}">
+                            </progress>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Component Statistics -->
+{% if component_stats %}
+<div class="box">
+    <h2 class="subtitle">
+        <span class="icon"><i class="fas fa-puzzle-piece"></i></span>
+        <span>Komponenten-Statistik</span>
+    </h2>
+
+    <div class="columns is-multiline">
+        {% for cs in component_stats %}
+        <div class="column is-one-third">
+            <div class="notification is-light">
+                <p class="title is-5">{{ cs.component.name }}</p>
+                <p class="subtitle is-6">Gewichtung: {{ cs.component.weight }}%</p>
+                <table class="table is-fullwidth is-narrow">
+                    <tbody>
+                        <tr>
+                            <td>Benotet</td>
+                            <td class="has-text-right">{{ cs.count }}</td>
+                        </tr>
+                        <tr>
+                            <td>Durchschnitt</td>
+                            <td class="has-text-right">{{ cs.avg_points }} / {{ cs.component.max_points }}</td>
+                        </tr>
+                        <tr>
+                            <td>Min / Max</td>
+                            <td class="has-text-right">{{ cs.min_points }} / {{ cs.max_points }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="notification is-info">
+    <p>Noch keine Noten für diese Prüfung vorhanden.</p>
+    <p class="mt-3">
+        <a href="{{ url_for('grade.bulk', exam_id=exam.id) }}" class="button is-primary">
+            <span class="icon"><i class="fas fa-edit"></i></span>
+            <span>Jetzt Noten eingeben</span>
+        </a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

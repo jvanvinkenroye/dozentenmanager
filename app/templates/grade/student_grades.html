@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Noten - {{ student.last_name }}, {{ student.first_name }} - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li class="is-active"><a href="#" aria-current="page">{{ student.last_name }}, {{ student.first_name }}</a></li>
+    </ul>
+</nav>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <div>
+                <h1 class="title">{{ student.last_name }}, {{ student.first_name }}</h1>
+                <p class="subtitle">Matrikelnummer: {{ student.student_id }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{{ url_for('student.show', student_id=student.id) }}" class="button is-link">
+                <span class="icon"><i class="fas fa-user"></i></span>
+                <span>Studentenprofil</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if enrollments_with_grades %}
+    {% for item in enrollments_with_grades %}
+    <div class="box">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h2 class="subtitle">
+                            <a href="{{ url_for('course.show', course_id=item.enrollment.course_id) }}">
+                                {{ item.enrollment.course.name }}
+                            </a>
+                        </h2>
+                        <p class="has-text-grey">{{ item.enrollment.course.semester }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="level-right">
+                {% if item.weighted_average %}
+                <div class="level-item">
+                    <div class="has-text-centered">
+                        <p class="heading">Gewichteter Durchschnitt</p>
+                        <p>
+                            <span class="tag is-large {% if item.weighted_average.is_passing %}is-success{% else %}is-danger{% endif %}">
+                                {{ item.weighted_average.weighted_average }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if item.grades %}
+        <table class="table is-fullwidth is-hoverable">
+            <thead>
+                <tr>
+                    <th>Prüfung</th>
+                    <th>Komponente</th>
+                    <th class="has-text-right">Punkte</th>
+                    <th class="has-text-right">Prozent</th>
+                    <th class="has-text-centered">Note</th>
+                    <th>Status</th>
+                    <th>Datum</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for grade in item.grades %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('grade.exam_stats', exam_id=grade.exam_id) }}">
+                            {{ grade.exam.name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if grade.component %}
+                            {{ grade.component.name }} ({{ grade.component.weight }}%)
+                        {% else %}
+                            <span class="has-text-grey">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="has-text-right">{{ grade.points }}</td>
+                    <td class="has-text-right">{{ grade.percentage }}%</td>
+                    <td class="has-text-centered">
+                        <span class="tag {% if grade.grade_value <= 1.5 %}is-success{% elif grade.grade_value <= 2.5 %}is-info{% elif grade.grade_value <= 3.5 %}is-warning{% elif grade.grade_value <= 4.0 %}is-light{% else %}is-danger{% endif %}">
+                            {{ grade.grade_value }} ({{ grade.grade_label }})
+                        </span>
+                    </td>
+                    <td>
+                        {% if grade.is_final %}
+                            <span class="tag is-success is-light">Endnote</span>
+                        {% else %}
+                            <span class="tag is-warning is-light">Vorläufig</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ grade.graded_at.strftime('%d.%m.%Y') if grade.graded_at else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="has-text-grey">Noch keine Noten für diesen Kurs.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% else %}
+<div class="notification is-info">
+    <p>Dieser Student hat noch keine Einschreibungen oder Noten.</p>
+</div>
+{% endif %}
+{% endblock %}

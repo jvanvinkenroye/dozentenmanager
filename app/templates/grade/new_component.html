@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Komponente - {{ exam.name }} - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('exam.index') }}">Prüfungen</a></li>
+        <li><a href="{{ url_for('exam.show', exam_id=exam.id) }}">{{ exam.name }}</a></li>
+        <li><a href="{{ url_for('grade.components', exam_id=exam.id) }}">Komponenten</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Neue Komponente</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">Neue Prüfungskomponente</h1>
+<p class="subtitle">für {{ exam.name }}</p>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post" action="{{ url_for('grade.new_component', exam_id=exam.id) }}">
+                {{ form.hidden_tag() }}
+
+                <div class="field">
+                    <label class="label">{{ form.name.label.text }} *</label>
+                    <div class="control">
+                        {{ form.name(class="input", placeholder="z.B. Schriftliche Prüfung") }}
+                    </div>
+                    {% for error in form.name.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">{{ form.weight.label.text }} *</label>
+                            <div class="control has-icons-right">
+                                {{ form.weight(class="input", step="0.1", placeholder="z.B. 60") }}
+                                <span class="icon is-right">
+                                    <i class="fas fa-percent"></i>
+                                </span>
+                            </div>
+                            {% for error in form.weight.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                            <p class="help">Anteil an der Gesamtnote (0.1 - 100)</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">{{ form.max_points.label.text }} *</label>
+                            <div class="control">
+                                {{ form.max_points(class="input", step="0.5", placeholder="z.B. 100") }}
+                            </div>
+                            {% for error in form.max_points.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                            <p class="help">Erreichbare Punkte für diese Komponente</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.order.label.text }}</label>
+                    <div class="control">
+                        {{ form.order(class="input", placeholder="z.B. 1") }}
+                    </div>
+                    <p class="help">Reihenfolge für die Anzeige (optional)</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.description.label.text }}</label>
+                    <div class="control">
+                        {{ form.description(class="textarea", rows="3", placeholder="Optionale Beschreibung der Komponente...") }}
+                    </div>
+                    {% for error in form.description.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Speichern</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('grade.components', exam_id=exam.id) }}" class="button is-light">Abbrechen</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-info-circle"></i></span>
+                <span>Hinweise</span>
+            </h2>
+            <div class="content">
+                <ul>
+                    <li>Die Summe aller Komponentengewichtungen sollte 100% ergeben</li>
+                    <li>Jede Komponente kann unterschiedliche maximale Punkte haben</li>
+                    <li>Studenten werden für jede Komponente separat benotet</li>
+                    <li>Die Endnote berechnet sich aus dem gewichteten Durchschnitt</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-lightbulb"></i></span>
+                <span>Beispiele</span>
+            </h2>
+            <table class="table is-fullwidth is-narrow">
+                <thead>
+                    <tr>
+                        <th>Komponente</th>
+                        <th>Gewicht</th>
+                        <th>Punkte</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Klausur</td>
+                        <td>60%</td>
+                        <td>120</td>
+                    </tr>
+                    <tr>
+                        <td>Projektarbeit</td>
+                        <td>30%</td>
+                        <td>100</td>
+                    </tr>
+                    <tr>
+                        <td>Teilnahme</td>
+                        <td>10%</td>
+                        <td>20</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Gesamt</th>
+                        <th>100%</th>
+                        <th>-</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

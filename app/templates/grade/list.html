@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Noten - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Noten</a></li>
+    </ul>
+</nav>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">Noten</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('grade.new') }}" class="button is-primary">
+                    <span class="icon"><i class="fas fa-plus"></i></span>
+                    <span>Neue Note</span>
+                </a>
+                <a href="{{ url_for('grade.bulk') }}" class="button is-info">
+                    <span class="icon"><i class="fas fa-list"></i></span>
+                    <span>Sammelbenotung</span>
+                </a>
+                <a href="{{ url_for('grade.dashboard') }}" class="button is-link">
+                    <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="box">
+    <form method="get" action="{{ url_for('grade.index') }}">
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">Kurs</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.course_id(class="") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">Prüfung</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.exam_id(class="") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">Student</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.student_id(class="") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">Status</label>
+                    <div class="control">
+                        <div class="select">
+                            {{ form.is_final(class="") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">&nbsp;</label>
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon"><i class="fas fa-filter"></i></span>
+                            <span>Filtern</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Grades Table -->
+{% if grades.items %}
+<div class="table-container">
+    <table class="table is-fullwidth is-hoverable is-striped">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Prüfung</th>
+                <th>Komponente</th>
+                <th class="has-text-right">Punkte</th>
+                <th class="has-text-right">Prozent</th>
+                <th class="has-text-centered">Note</th>
+                <th>Status</th>
+                <th>Benotet am</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for grade in grades.items %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('grade.student_grades', student_id=grade.enrollment.student_id) }}">
+                        {{ grade.enrollment.student.last_name }}, {{ grade.enrollment.student.first_name }}
+                    </a>
+                </td>
+                <td>
+                    <a href="{{ url_for('grade.exam_stats', exam_id=grade.exam_id) }}">
+                        {{ grade.exam.name }}
+                    </a>
+                </td>
+                <td>
+                    {% if grade.component %}
+                        {{ grade.component.name }}
+                    {% else %}
+                        <span class="has-text-grey">-</span>
+                    {% endif %}
+                </td>
+                <td class="has-text-right">{{ grade.points }}</td>
+                <td class="has-text-right">{{ grade.percentage }}%</td>
+                <td class="has-text-centered">
+                    <span class="tag {% if grade.grade_value <= 1.5 %}is-success{% elif grade.grade_value <= 2.5 %}is-info{% elif grade.grade_value <= 3.5 %}is-warning{% elif grade.grade_value <= 4.0 %}is-light{% else %}is-danger{% endif %}">
+                        {{ grade.grade_value }} ({{ grade.grade_label }})
+                    </span>
+                </td>
+                <td>
+                    {% if grade.is_final %}
+                        <span class="tag is-success">Endnote</span>
+                    {% else %}
+                        <span class="tag is-warning">Vorläufig</span>
+                    {% endif %}
+                </td>
+                <td>{{ grade.graded_at.strftime('%d.%m.%Y %H:%M') if grade.graded_at else '-' }}</td>
+                <td>
+                    <div class="buttons are-small">
+                        <a href="{{ url_for('grade.show', grade_id=grade.id) }}" class="button is-info is-outlined">
+                            <span class="icon"><i class="fas fa-eye"></i></span>
+                        </a>
+                        <a href="{{ url_for('grade.edit', grade_id=grade.id) }}" class="button is-warning is-outlined">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                        </a>
+                        <a href="{{ url_for('grade.delete', grade_id=grade.id) }}" class="button is-danger is-outlined">
+                            <span class="icon"><i class="fas fa-trash"></i></span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if grades.pages > 1 %}
+<nav class="pagination is-centered" role="navigation" aria-label="pagination">
+    {% if grades.has_prev %}
+    <a class="pagination-previous" href="{{ url_for('grade.index', page=grades.prev_num, course_id=course_id, exam_id=exam_id, student_id=student_id, is_final=is_final) }}">Zurück</a>
+    {% else %}
+    <a class="pagination-previous" disabled>Zurück</a>
+    {% endif %}
+
+    {% if grades.has_next %}
+    <a class="pagination-next" href="{{ url_for('grade.index', page=grades.next_num, course_id=course_id, exam_id=exam_id, student_id=student_id, is_final=is_final) }}">Weiter</a>
+    {% else %}
+    <a class="pagination-next" disabled>Weiter</a>
+    {% endif %}
+
+    <ul class="pagination-list">
+        {% for page_num in grades.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == grades.page %}
+                <li><a class="pagination-link is-current" aria-current="page">{{ page_num }}</a></li>
+                {% else %}
+                <li><a class="pagination-link" href="{{ url_for('grade.index', page=page_num, course_id=course_id, exam_id=exam_id, student_id=student_id, is_final=is_final) }}">{{ page_num }}</a></li>
+                {% endif %}
+            {% else %}
+                <li><span class="pagination-ellipsis">&hellip;</span></li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="notification is-info">
+    <p>Keine Noten gefunden.</p>
+    <p class="mt-3">
+        <a href="{{ url_for('grade.new') }}" class="button is-primary">
+            <span class="icon"><i class="fas fa-plus"></i></span>
+            <span>Erste Note hinzufügen</span>
+        </a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Upload-Ergebnis - Dokumente - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li><a href="{{ url_for('document.bulk_upload') }}">Bulk-Upload</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Ergebnis</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">
+    <span class="icon">
+        <i class="fas fa-check-circle"></i>
+    </span>
+    Upload-Ergebnis
+</h1>
+
+<!-- Summary -->
+<div class="columns">
+    <div class="column">
+        <div class="box has-background-success-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-success">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-success">{{ results.success|length }}</p>
+                <p class="subtitle">Erfolgreich</p>
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-background-warning-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-warning">
+                    <i class="fas fa-question-circle fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-warning">{{ results.unmatched|length }}</p>
+                <p class="subtitle">Nicht zugeordnet</p>
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-background-danger-light">
+            <div class="has-text-centered">
+                <span class="icon is-large has-text-danger">
+                    <i class="fas fa-times-circle fa-3x"></i>
+                </span>
+                <p class="title is-1 has-text-danger">{{ results.failed|length }}</p>
+                <p class="subtitle">Fehlgeschlagen</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Successful Uploads -->
+{% if results.success %}
+<div class="box">
+    <h2 class="subtitle has-text-success">
+        <span class="icon">
+            <i class="fas fa-check"></i>
+        </span>
+        Erfolgreich hochgeladen ({{ results.success|length }})
+    </h2>
+
+    <div class="table-container">
+        <table class="table is-fullwidth is-hoverable">
+            <thead>
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Zugeordnet zu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in results.success %}
+                <tr>
+                    <td>
+                        <span class="icon has-text-success">
+                            <i class="fas fa-file"></i>
+                        </span>
+                        {{ item.filename }}
+                    </td>
+                    <td>{{ item.student }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Unmatched Files -->
+{% if results.unmatched %}
+<div class="box">
+    <h2 class="subtitle has-text-warning">
+        <span class="icon">
+            <i class="fas fa-question"></i>
+        </span>
+        Nicht zugeordnet ({{ results.unmatched|length }})
+    </h2>
+
+    <div class="notification is-warning is-light">
+        <p>Diese Dateien konnten keinem Studenten zugeordnet werden. Bitte prüfen Sie die Dateinamen oder laden Sie die Dateien einzeln hoch.</p>
+    </div>
+
+    <div class="table-container">
+        <table class="table is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Dateiname</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for filename in results.unmatched %}
+                <tr>
+                    <td>
+                        <span class="icon has-text-warning">
+                            <i class="fas fa-file"></i>
+                        </span>
+                        {{ filename }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Failed Uploads -->
+{% if results.failed %}
+<div class="box">
+    <h2 class="subtitle has-text-danger">
+        <span class="icon">
+            <i class="fas fa-times"></i>
+        </span>
+        Fehlgeschlagen ({{ results.failed|length }})
+    </h2>
+
+    <div class="table-container">
+        <table class="table is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Fehler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in results.failed %}
+                <tr>
+                    <td>
+                        <span class="icon has-text-danger">
+                            <i class="fas fa-file"></i>
+                        </span>
+                        {{ item.filename }}
+                    </td>
+                    <td>
+                        <span class="tag is-danger is-light">{{ item.reason }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <a href="{{ url_for('document.index') }}" class="button is-primary">
+                <span class="icon">
+                    <i class="fas fa-list"></i>
+                </span>
+                <span>Zur Dokumentenliste</span>
+            </a>
+        </div>
+        <div class="level-item">
+            <a href="{{ url_for('document.bulk_upload') }}" class="button is-info">
+                <span class="icon">
+                    <i class="fas fa-upload"></i>
+                </span>
+                <span>Weitere Dateien hochladen</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

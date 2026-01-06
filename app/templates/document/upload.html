@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Dokument hochladen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Hochladen</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="columns">
+    <div class="column is-two-thirds">
+        <h1 class="title">
+            <span class="icon">
+                <i class="fas fa-upload"></i>
+            </span>
+            Dokument hochladen
+        </h1>
+
+        <div class="box">
+            <form method="post" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <!-- File Upload -->
+                <div class="field">
+                    <label class="label" for="file">{{ form.file.label.text }}</label>
+                    <div class="control">
+                        <div class="file has-name is-fullwidth">
+                            <label class="file-label">
+                                {{ form.file(class="file-input", id="file-input") }}
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-upload"></i>
+                                    </span>
+                                    <span class="file-label">
+                                        Datei auswählen...
+                                    </span>
+                                </span>
+                                <span class="file-name" id="file-name">
+                                    Keine Datei ausgewählt
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="help">Erlaubte Dateitypen: PDF, DOC, DOCX, TXT, ODT, RTF</p>
+                </div>
+
+                <!-- Enrollment Selection -->
+                <div class="field">
+                    <label class="label" for="enrollment_id">{{ form.enrollment_id.label.text }}</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            {{ form.enrollment_id(id="enrollment_id") }}
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-user-graduate"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Submission Type -->
+                <div class="field">
+                    <label class="label" for="submission_type">{{ form.submission_type.label.text }}</label>
+                    <div class="control">
+                        <div class="select">
+                            {{ form.submission_type(id="submission_type") }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Exam (optional) -->
+                <div class="field">
+                    <label class="label" for="exam_id">{{ form.exam_id.label.text }}</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            {{ form.exam_id(id="exam_id") }}
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-clipboard-check"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="field">
+                    <label class="label" for="notes">{{ form.notes.label.text }}</label>
+                    <div class="control">
+                        {{ form.notes(class="textarea", id="notes", rows="3", placeholder="Optionale Notizen zur Einreichung...") }}
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon">
+                                <i class="fas fa-upload"></i>
+                            </span>
+                            <span>Hochladen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('document.index') }}" class="button is-light">
+                            Abbrechen
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-info-circle"></i>
+                </span>
+                Hinweise
+            </h2>
+
+            <div class="content">
+                <ul>
+                    <li>Maximale Dateigröße: <strong>16 MB</strong></li>
+                    <li>Erlaubte Dateitypen: PDF, DOC, DOCX, TXT, ODT, RTF</li>
+                    <li>Die Datei wird automatisch im korrekten Ordner gespeichert</li>
+                    <li>Dateinamen werden automatisch bereinigt</li>
+                </ul>
+
+                <h4>Ordnerstruktur</h4>
+                <p>Dateien werden nach folgendem Schema organisiert:</p>
+                <pre>uploads/{Hochschule}/{Semester}/{Kurs}/{StudentName}/</pre>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon">
+                    <i class="fas fa-lightbulb"></i>
+                </span>
+                Bulk-Upload
+            </h2>
+
+            <div class="content">
+                <p>Möchten Sie mehrere Dateien gleichzeitig hochladen?</p>
+                <a href="{{ url_for('document.bulk_upload') }}" class="button is-info is-fullwidth">
+                    <span class="icon">
+                        <i class="fas fa-upload"></i>
+                    </span>
+                    <span>Zum Bulk-Upload</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const fileName = e.target.files[0] ? e.target.files[0].name : 'Keine Datei ausgewählt';
+        document.getElementById('file-name').textContent = fileName;
+    });
+</script>
+{% endblock %}

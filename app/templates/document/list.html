@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Dokumente - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Dokumente</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">Dokumente</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('document.upload') }}" class="button is-primary">
+                    <span class="icon">
+                        <i class="fas fa-upload"></i>
+                    </span>
+                    <span>Hochladen</span>
+                </a>
+                <a href="{{ url_for('document.bulk_upload') }}" class="button is-info">
+                    <span class="icon">
+                        <i class="fas fa-upload"></i>
+                    </span>
+                    <span>Bulk-Upload</span>
+                </a>
+                <a href="{{ url_for('document.submissions') }}" class="button is-link">
+                    <span class="icon">
+                        <i class="fas fa-inbox"></i>
+                    </span>
+                    <span>Einreichungen</span>
+                </a>
+                <a href="{{ url_for('document.email_import') }}" class="button is-warning">
+                    <span class="icon">
+                        <i class="fas fa-envelope"></i>
+                    </span>
+                    <span>E-Mail-Import</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="box">
+    <form method="get" action="{{ url_for('document.index') }}">
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">Lehrveranstaltung</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            <select name="course_id">
+                                {% for choice in form.course_id.choices %}
+                                <option value="{{ choice[0] }}" {% if request.args.get('course_id')|string == choice[0]|string %}selected{% endif %}>
+                                    {{ choice[1] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-book"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">Studierende/r</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth">
+                            <select name="student_id">
+                                {% for choice in form.student_id.choices %}
+                                <option value="{{ choice[0] }}" {% if request.args.get('student_id')|string == choice[0]|string %}selected{% endif %}>
+                                    {{ choice[1] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <span class="icon is-left">
+                            <i class="fas fa-user-graduate"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">Dateityp</label>
+                    <div class="control">
+                        <div class="select">
+                            <select name="file_type">
+                                {% for choice in form.file_type.choices %}
+                                <option value="{{ choice[0] }}" {% if request.args.get('file_type') == choice[0] %}selected{% endif %}>
+                                    {{ choice[1] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">Status</label>
+                    <div class="control">
+                        <div class="select">
+                            <select name="status">
+                                {% for choice in form.status.choices %}
+                                <option value="{{ choice[0] }}" {% if request.args.get('status') == choice[0] %}selected{% endif %}>
+                                    {{ choice[1] }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">&nbsp;</label>
+                    <div class="control">
+                        <button type="submit" class="button is-info">
+                            <span class="icon">
+                                <i class="fas fa-filter"></i>
+                            </span>
+                            <span>Filtern</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Document List -->
+{% if documents %}
+<div class="box">
+    <div class="table-container">
+        <table class="table is-fullwidth is-hoverable is-striped">
+            <thead>
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Student/in</th>
+                    <th>Kurs</th>
+                    <th>Typ</th>
+                    <th>Größe</th>
+                    <th>Hochgeladen</th>
+                    <th>Status</th>
+                    <th class="has-text-right">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('document.show', document_id=doc.id) }}" class="has-text-weight-semibold">
+                            <span class="icon">
+                                {% if doc.file_type == 'pdf' %}
+                                <i class="fas fa-file-pdf has-text-danger"></i>
+                                {% elif doc.file_type in ['doc', 'docx'] %}
+                                <i class="fas fa-file-word has-text-info"></i>
+                                {% else %}
+                                <i class="fas fa-file has-text-grey"></i>
+                                {% endif %}
+                            </span>
+                            {{ doc.original_filename }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('student.show', student_id=doc.submission.enrollment.student.id) }}">
+                            {{ doc.submission.enrollment.student.last_name }}, {{ doc.submission.enrollment.student.first_name }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('course.show', course_id=doc.submission.enrollment.course.id) }}">
+                            {{ doc.submission.enrollment.course.name }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="tag is-light">{{ doc.file_type|upper }}</span>
+                    </td>
+                    <td>{{ doc.file_size_human }}</td>
+                    <td>{{ doc.upload_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td>
+                        {% set status = doc.submission.status %}
+                        <span class="tag {% if status == 'submitted' %}is-info{% elif status == 'reviewed' %}is-warning{% elif status == 'graded' %}is-success{% else %}is-light{% endif %}">
+                            {{ status|capitalize }}
+                        </span>
+                    </td>
+                    <td class="has-text-right">
+                        <div class="buttons is-right">
+                            <a href="{{ url_for('document.download', document_id=doc.id) }}" class="button is-small is-success" title="Herunterladen">
+                                <span class="icon">
+                                    <i class="fas fa-download"></i>
+                                </span>
+                            </a>
+                            <a href="{{ url_for('document.show', document_id=doc.id) }}" class="button is-small is-info" title="Details">
+                                <span class="icon">
+                                    <i class="fas fa-eye"></i>
+                                </span>
+                            </a>
+                            <a href="{{ url_for('document.delete', document_id=doc.id) }}" class="button is-small is-danger" title="Löschen">
+                                <span class="icon">
+                                    <i class="fas fa-trash"></i>
+                                </span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="has-text-dark">{{ documents|length }} Dokument(e) gefunden</p>
+</div>
+{% else %}
+<div class="notification is-info is-light">
+    <p class="has-text-centered">
+        <span class="icon is-large">
+            <i class="fas fa-file-alt fa-2x"></i>
+        </span>
+    </p>
+    <p class="has-text-centered has-text-weight-semibold">
+        Keine Dokumente gefunden
+    </p>
+    <p class="has-text-centered mt-2">
+        <a href="{{ url_for('document.upload') }}" class="button is-primary">
+            Erstes Dokument hochladen
+        </a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

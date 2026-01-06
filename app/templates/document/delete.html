@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Dokument löschen - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li><a href="{{ url_for('document.show', document_id=document.id) }}">{{ document.original_filename }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Löschen</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="columns is-centered">
+    <div class="column is-half">
+        <div class="box">
+            <h1 class="title has-text-danger">
+                <span class="icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </span>
+                Dokument löschen
+            </h1>
+
+            <div class="notification is-danger is-light">
+                <p class="has-text-weight-semibold">Sind Sie sicher, dass Sie dieses Dokument löschen möchten?</p>
+                <p>Diese Aktion kann nicht rückgängig gemacht werden!</p>
+            </div>
+
+            <div class="content">
+                <table class="table is-fullwidth">
+                    <tbody>
+                        <tr>
+                            <th width="150">Dateiname</th>
+                            <td>
+                                <span class="icon">
+                                    {% if document.file_type == 'pdf' %}
+                                    <i class="fas fa-file-pdf has-text-danger"></i>
+                                    {% elif document.file_type in ['doc', 'docx'] %}
+                                    <i class="fas fa-file-word has-text-info"></i>
+                                    {% else %}
+                                    <i class="fas fa-file has-text-grey"></i>
+                                    {% endif %}
+                                </span>
+                                {{ document.original_filename }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Student/in</th>
+                            <td>{{ document.submission.enrollment.student.first_name }} {{ document.submission.enrollment.student.last_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Kurs</th>
+                            <td>{{ document.submission.enrollment.course.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Hochgeladen</th>
+                            <td>{{ document.upload_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Größe</th>
+                            <td>{{ document.file_size_human }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="field is-grouped is-grouped-centered">
+                    <div class="control">
+                        <button type="submit" class="button is-danger">
+                            <span class="icon">
+                                <i class="fas fa-trash"></i>
+                            </span>
+                            <span>Ja, Dokument löschen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('document.show', document_id=document.id) }}" class="button is-light">
+                            <span class="icon">
+                                <i class="fas fa-arrow-left"></i>
+                            </span>
+                            <span>Abbrechen</span>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

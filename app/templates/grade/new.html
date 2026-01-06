@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Note - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Neue Note</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">Neue Note hinzufügen</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post" action="{{ url_for('grade.new') }}">
+                {{ form.hidden_tag() }}
+
+                <div class="field">
+                    <label class="label">{{ form.enrollment_id.label.text }}</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.enrollment_id(class="") }}
+                        </div>
+                    </div>
+                    {% for error in form.enrollment_id.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.exam_id.label.text }}</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.exam_id(class="", id="exam_id") }}
+                        </div>
+                    </div>
+                    {% for error in form.exam_id.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.component_id.label.text }}</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.component_id(class="", id="component_id") }}
+                        </div>
+                    </div>
+                    <p class="help">Nur für Prüfungen mit mehreren Komponenten</p>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">{{ form.points.label.text }}</label>
+                            <div class="control">
+                                {{ form.points(class="input", id="points_input", step="0.5") }}
+                            </div>
+                            {% for error in form.points.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                            <p class="help" id="max_points_hint">Max. Punkte: -</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="field">
+                            <label class="label">Berechnete Note</label>
+                            <div class="control">
+                                <div class="tags has-addons are-medium">
+                                    <span class="tag is-dark" id="calc_percentage">--%</span>
+                                    <span class="tag is-info" id="calc_grade">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.graded_by.label.text }}</label>
+                    <div class="control">
+                        {{ form.graded_by(class="input") }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.notes.label.text }}</label>
+                    <div class="control">
+                        {{ form.notes(class="textarea", rows="3") }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <label class="checkbox">
+                            {{ form.is_final() }}
+                            {{ form.is_final.label.text }}
+                        </label>
+                    </div>
+                    <p class="help">Endnoten werden in die Durchschnittsberechnung einbezogen</p>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Speichern</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('grade.index') }}" class="button is-light">Abbrechen</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const examSelect = document.getElementById('exam_id');
+    const componentSelect = document.getElementById('component_id');
+    const pointsInput = document.getElementById('points_input');
+    const maxPointsHint = document.getElementById('max_points_hint');
+    const calcPercentage = document.getElementById('calc_percentage');
+    const calcGrade = document.getElementById('calc_grade');
+
+    let maxPoints = 100;
+
+    examSelect.addEventListener('change', function() {
+        const examId = this.value;
+        if (examId) {
+            fetch(`/grades/api/exam/${examId}/components`)
+                .then(response => response.json())
+                .then(data => {
+                    componentSelect.innerHTML = '<option value="0">--- Keine Komponente ---</option>';
+                    data.components.forEach(c => {
+                        const option = document.createElement('option');
+                        option.value = c.id;
+                        option.textContent = `${c.name} (${c.weight}%)`;
+                        componentSelect.appendChild(option);
+                    });
+                    maxPoints = data.exam_max_points;
+                    maxPointsHint.textContent = `Max. Punkte: ${maxPoints}`;
+                    calculateGrade();
+                });
+        }
+    });
+
+    componentSelect.addEventListener('change', function() {
+        const componentId = this.value;
+        if (componentId && componentId !== '0') {
+            const examId = examSelect.value;
+            fetch(`/grades/api/exam/${examId}/components`)
+                .then(response => response.json())
+                .then(data => {
+                    const component = data.components.find(c => c.id == componentId);
+                    if (component) {
+                        maxPoints = component.max_points;
+                        maxPointsHint.textContent = `Max. Punkte: ${maxPoints}`;
+                        calculateGrade();
+                    }
+                });
+        } else {
+            // Reset to exam max points
+            const examId = examSelect.value;
+            if (examId) {
+                fetch(`/grades/api/exam/${examId}/components`)
+                    .then(response => response.json())
+                    .then(data => {
+                        maxPoints = data.exam_max_points;
+                        maxPointsHint.textContent = `Max. Punkte: ${maxPoints}`;
+                        calculateGrade();
+                    });
+            }
+        }
+    });
+
+    pointsInput.addEventListener('input', calculateGrade);
+
+    function calculateGrade() {
+        const points = parseFloat(pointsInput.value) || 0;
+        if (maxPoints > 0) {
+            fetch('/grades/api/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                },
+                body: JSON.stringify({ points: points, max_points: maxPoints })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.error) {
+                    calcPercentage.textContent = `${data.percentage}%`;
+                    calcGrade.textContent = `${data.grade_value} (${data.grade_label})`;
+                    calcGrade.className = 'tag ' + (data.is_passing ? 'is-success' : 'is-danger');
+                }
+            });
+        }
+    }
+
+    // Trigger initial load if exam is preselected
+    if (examSelect.value) {
+        examSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Sammelbenotung - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Sammelbenotung</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">Sammelbenotung</h1>
+<p class="subtitle">Noten für mehrere Studenten gleichzeitig eingeben</p>
+
+<div class="box">
+    <form method="get" action="{{ url_for('grade.bulk') }}">
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">Prüfung auswählen</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.exam_id(class="", id="exam_select") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column">
+                <div class="field">
+                    <label class="label">Komponente (optional)</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.component_id(class="", id="component_select") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">&nbsp;</label>
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon"><i class="fas fa-search"></i></span>
+                            <span>Laden</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if exam_id and enrollments %}
+<form method="post" action="{{ url_for('grade.bulk') }}">
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="exam_id" value="{{ exam_id }}">
+    <input type="hidden" name="component_id" value="{{ request.args.get('component_id', 0) }}">
+
+    <div class="box">
+        <div class="columns">
+            <div class="column">
+                <div class="field">
+                    <label class="label">{{ form.graded_by.label.text }}</label>
+                    <div class="control">
+                        {{ form.graded_by(class="input") }}
+                    </div>
+                </div>
+            </div>
+            <div class="column is-narrow">
+                <div class="field">
+                    <label class="label">&nbsp;</label>
+                    <div class="control">
+                        <label class="checkbox">
+                            {{ form.is_final() }}
+                            {{ form.is_final.label.text }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="notification is-info is-light">
+            <strong>Max. Punkte:</strong> {{ max_points }}
+        </div>
+
+        <table class="table is-fullwidth is-hoverable">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Matrikelnummer</th>
+                    <th style="width: 150px;">Punkte</th>
+                    <th style="width: 200px;">Berechnete Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                <tr>
+                    <td>{{ enrollment.student.last_name }}, {{ enrollment.student.first_name }}</td>
+                    <td>{{ enrollment.student.student_id }}</td>
+                    <td>
+                        <input type="number"
+                               name="points_{{ enrollment.id }}"
+                               class="input points-input"
+                               step="0.5"
+                               min="0"
+                               max="{{ max_points }}"
+                               data-enrollment-id="{{ enrollment.id }}">
+                    </td>
+                    <td>
+                        <span class="calculated-grade" id="grade_{{ enrollment.id }}">
+                            <span class="tag">--</span>
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="field is-grouped">
+            <div class="control">
+                <button type="submit" class="button is-primary is-large">
+                    <span class="icon"><i class="fas fa-save"></i></span>
+                    <span>Alle Noten speichern</span>
+                </button>
+            </div>
+            <div class="control">
+                <a href="{{ url_for('grade.index') }}" class="button is-light is-large">Abbrechen</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const maxPoints = {{ max_points }};
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    document.querySelectorAll('.points-input').forEach(input => {
+        input.addEventListener('input', function() {
+            const enrollmentId = this.dataset.enrollmentId;
+            const points = parseFloat(this.value) || 0;
+            const gradeSpan = document.getElementById(`grade_${enrollmentId}`);
+
+            if (points >= 0 && points <= maxPoints) {
+                fetch('/grades/api/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ points: points, max_points: maxPoints })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        gradeSpan.innerHTML = `<span class="tag ${data.is_passing ? 'is-success' : 'is-danger'}">${data.grade_value} (${data.grade_label})</span>`;
+                    }
+                });
+            } else {
+                gradeSpan.innerHTML = '<span class="tag is-warning">Ungültig</span>';
+            }
+        });
+    });
+});
+</script>
+
+{% elif exam_id %}
+<div class="notification is-warning">
+    Keine aktiven Einschreibungen für diese Prüfung gefunden.
+</div>
+{% else %}
+<div class="notification is-info">
+    Bitte wählen Sie eine Prüfung aus, um die Benotung zu starten.
+</div>
+{% endif %}
+{% endblock %}

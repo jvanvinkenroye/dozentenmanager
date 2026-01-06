@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Note bearbeiten - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li><a href="{{ url_for('grade.show', grade_id=grade.id) }}">Details</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Bearbeiten</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">Note bearbeiten</h1>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <div class="notification is-info is-light">
+                <p><strong>Student:</strong> {{ grade.enrollment.student.last_name }}, {{ grade.enrollment.student.first_name }}</p>
+                <p><strong>Prüfung:</strong> {{ grade.exam.name }}</p>
+                {% if grade.component %}
+                <p><strong>Komponente:</strong> {{ grade.component.name }}</p>
+                {% endif %}
+            </div>
+
+            <form method="post" action="{{ url_for('grade.edit', grade_id=grade.id) }}">
+                {{ form.hidden_tag() }}
+
+                <div class="field">
+                    <label class="label">{{ form.points.label.text }}</label>
+                    <div class="control">
+                        {{ form.points(class="input", step="0.5") }}
+                    </div>
+                    {% for error in form.points.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                    <p class="help">
+                        Max. Punkte:
+                        {% if grade.component %}
+                            {{ grade.component.max_points }}
+                        {% else %}
+                            {{ grade.exam.max_points }}
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.graded_by.label.text }}</label>
+                    <div class="control">
+                        {{ form.graded_by(class="input") }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.notes.label.text }}</label>
+                    <div class="control">
+                        {{ form.notes(class="textarea", rows="3") }}
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <label class="checkbox">
+                            {{ form.is_final() }}
+                            {{ form.is_final.label.text }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Speichern</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('grade.show', grade_id=grade.id) }}" class="button is-light">Abbrechen</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

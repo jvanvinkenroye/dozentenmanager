@@ -13,16 +13,28 @@ from app.forms.document import (
 )
 from app.forms.email import EmailImportForm
 from app.forms.exam import ExamForm
+from app.forms.grade import (
+    BulkGradeForm,
+    ExamComponentForm,
+    GradeFilterForm,
+    GradeForm,
+    GradeSearchForm,
+)
 from app.forms.student import StudentForm
 from app.forms.university import UniversityForm
 
 __all__ = [
     "BulkDocumentUploadForm",
+    "BulkGradeForm",
     "CourseForm",
     "DocumentSearchForm",
     "DocumentUploadForm",
     "EmailImportForm",
+    "ExamComponentForm",
     "ExamForm",
+    "GradeFilterForm",
+    "GradeForm",
+    "GradeSearchForm",
     "StudentForm",
     "SubmissionStatusForm",
     "UniversityForm",

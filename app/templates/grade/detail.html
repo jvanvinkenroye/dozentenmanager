@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Note Details - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Details</a></li>
+    </ul>
+</nav>
+
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">Note Details</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <div class="buttons">
+                <a href="{{ url_for('grade.edit', grade_id=grade.id) }}" class="button is-warning">
+                    <span class="icon"><i class="fas fa-edit"></i></span>
+                    <span>Bearbeiten</span>
+                </a>
+                <a href="{{ url_for('grade.delete', grade_id=grade.id) }}" class="button is-danger">
+                    <span class="icon"><i class="fas fa-trash"></i></span>
+                    <span>Löschen</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-graduation-cap"></i></span>
+                <span>Noteninformationen</span>
+            </h2>
+
+            <div class="columns">
+                <div class="column">
+                    <table class="table is-fullwidth">
+                        <tbody>
+                            <tr>
+                                <th>Student</th>
+                                <td>
+                                    <a href="{{ url_for('student.show', student_id=grade.enrollment.student_id) }}">
+                                        {{ grade.enrollment.student.last_name }}, {{ grade.enrollment.student.first_name }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Matrikelnummer</th>
+                                <td>{{ grade.enrollment.student.student_id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Kurs</th>
+                                <td>
+                                    <a href="{{ url_for('course.show', course_id=grade.enrollment.course_id) }}">
+                                        {{ grade.enrollment.course.name }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Prüfung</th>
+                                <td>
+                                    <a href="{{ url_for('exam.show', exam_id=grade.exam_id) }}">
+                                        {{ grade.exam.name }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% if grade.component %}
+                            <tr>
+                                <th>Komponente</th>
+                                <td>{{ grade.component.name }} ({{ grade.component.weight }}%)</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-chart-line"></i></span>
+                <span>Bewertung</span>
+            </h2>
+
+            <div class="columns has-text-centered">
+                <div class="column">
+                    <p class="heading">Punkte</p>
+                    <p class="title is-4">{{ grade.points }}</p>
+                </div>
+                <div class="column">
+                    <p class="heading">Prozent</p>
+                    <p class="title is-4">{{ grade.percentage }}%</p>
+                </div>
+                <div class="column">
+                    <p class="heading">Note</p>
+                    <p class="title is-4">
+                        <span class="tag is-large {% if grade.grade_value <= 1.5 %}is-success{% elif grade.grade_value <= 2.5 %}is-info{% elif grade.grade_value <= 3.5 %}is-warning{% elif grade.grade_value <= 4.0 %}is-light{% else %}is-danger{% endif %}">
+                            {{ grade.grade_value }}
+                        </span>
+                    </p>
+                </div>
+                <div class="column">
+                    <p class="heading">Bewertung</p>
+                    <p class="title is-5">{{ grade.grade_label }}</p>
+                </div>
+            </div>
+
+            <div class="has-text-centered mt-4">
+                {% if grade.is_final %}
+                <span class="tag is-success is-medium">
+                    <span class="icon"><i class="fas fa-check"></i></span>
+                    <span>Endnote</span>
+                </span>
+                {% else %}
+                <span class="tag is-warning is-medium">
+                    <span class="icon"><i class="fas fa-clock"></i></span>
+                    <span>Vorläufige Note</span>
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if grade.notes %}
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-comment"></i></span>
+                <span>Anmerkungen</span>
+            </h2>
+            <div class="content">
+                <p>{{ grade.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-info-circle"></i></span>
+                <span>Metadaten</span>
+            </h2>
+
+            <table class="table is-fullwidth is-narrow">
+                <tbody>
+                    <tr>
+                        <th>Benotet von</th>
+                        <td>{{ grade.graded_by or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Benotet am</th>
+                        <td>{{ grade.graded_at.strftime('%d.%m.%Y %H:%M') if grade.graded_at else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Erstellt</th>
+                        <td>{{ grade.created_at.strftime('%d.%m.%Y %H:%M') if grade.created_at else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Aktualisiert</th>
+                        <td>{{ grade.updated_at.strftime('%d.%m.%Y %H:%M') if grade.updated_at else '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="box">
+            <h2 class="subtitle">
+                <span class="icon"><i class="fas fa-link"></i></span>
+                <span>Schnellzugriff</span>
+            </h2>
+
+            <div class="buttons is-flex is-flex-direction-column">
+                <a href="{{ url_for('grade.student_grades', student_id=grade.enrollment.student_id) }}" class="button is-fullwidth is-link is-outlined">
+                    <span class="icon"><i class="fas fa-user"></i></span>
+                    <span>Alle Noten des Studenten</span>
+                </a>
+                <a href="{{ url_for('grade.exam_stats', exam_id=grade.exam_id) }}" class="button is-fullwidth is-info is-outlined">
+                    <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                    <span>Prüfungsstatistik</span>
+                </a>
+                <a href="{{ url_for('grade.components', exam_id=grade.exam_id) }}" class="button is-fullwidth is-warning is-outlined">
+                    <span class="icon"><i class="fas fa-puzzle-piece"></i></span>
+                    <span>Prüfungskomponenten</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Note löschen - Dozentenmanager{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('grade.index') }}">Noten</a></li>
+        <li class="is-active"><a href="#" aria-current="page">Löschen</a></li>
+    </ul>
+</nav>
+
+<h1 class="title">Note löschen</h1>
+
+<div class="columns">
+    <div class="column is-half">
+        <div class="notification is-danger is-light">
+            <h2 class="subtitle">Sind Sie sicher, dass Sie diese Note löschen möchten?</h2>
+        </div>
+
+        <div class="box">
+            <table class="table is-fullwidth">
+                <tbody>
+                    <tr>
+                        <th>Student</th>
+                        <td>{{ grade.enrollment.student.last_name }}, {{ grade.enrollment.student.first_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Prüfung</th>
+                        <td>{{ grade.exam.name }}</td>
+                    </tr>
+                    {% if grade.component %}
+                    <tr>
+                        <th>Komponente</th>
+                        <td>{{ grade.component.name }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Punkte</th>
+                        <td>{{ grade.points }}</td>
+                    </tr>
+                    <tr>
+                        <th>Note</th>
+                        <td>{{ grade.grade_value }} ({{ grade.grade_label }})</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <form method="post" action="{{ url_for('grade.delete', grade_id=grade.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="field is-grouped">
+                    <div class="control">
+                        <button type="submit" class="button is-danger">
+                            <span class="icon"><i class="fas fa-trash"></i></span>
+                            <span>Endgültig löschen</span>
+                        </button>
+                    </div>
+                    <div class="control">
+                        <a href="{{ url_for('grade.index') }}" class="button is-light">Abbrechen</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

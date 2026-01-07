@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Seite nicht gefunden{% endblock %}
+
+{% block content %}
+<section class="hero is-danger is-fullheight-with-navbar">
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <h1 class="title is-1">
+                <span class="icon is-large">
+                    <i class="fas fa-exclamation-triangle fa-3x"></i>
+                </span>
+            </h1>
+            <h1 class="title is-1">404</h1>
+            <h2 class="subtitle is-3">Seite nicht gefunden</h2>
+            <p class="mb-5">Die angeforderte Seite existiert nicht.</p>
+            <div class="buttons is-centered">
+                <a href="{{ url_for('index') }}" class="button is-primary is-large">
+                    <span class="icon">
+                        <i class="fas fa-home"></i>
+                    </span>
+                    <span>Zur Startseite</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

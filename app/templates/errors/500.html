@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}500 - Interner Serverfehler{% endblock %}
+
+{% block content %}
+<section class="hero is-danger is-fullheight-with-navbar">
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <h1 class="title is-1">
+                <span class="icon is-large">
+                    <i class="fas fa-exclamation-circle fa-3x"></i>
+                </span>
+            </h1>
+            <h1 class="title is-1">500</h1>
+            <h2 class="subtitle is-3">Interner Serverfehler</h2>
+            <p class="mb-5">
+                Ein interner Fehler ist aufgetreten. Das Problem wurde protokolliert und
+                wird so schnell wie möglich behoben.
+            </p>
+            <div class="buttons is-centered">
+                <a href="{{ url_for('index') }}" class="button is-primary is-large">
+                    <span class="icon">
+                        <i class="fas fa-home"></i>
+                    </span>
+                    <span>Zur Startseite</span>
+                </a>
+                <button onclick="history.back()" class="button is-light is-large">
+                    <span class="icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </span>
+                    <span>Zurück</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

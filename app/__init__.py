@@ -9,7 +9,6 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Optional
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -181,38 +180,19 @@ def register_error_handlers(app: Flask) -> None:
     Args:
         app: Flask application instance
     """
+    from flask import render_template
 
     @app.errorhandler(404)
     def not_found_error(error):
-        return (
-            """
-        <html>
-            <head><title>404 - Not Found</title></head>
-            <body>
-                <h1>404 - Page Not Found</h1>
-                <p>The page you are looking for does not exist.</p>
-            </body>
-        </html>
-        """,
-            404,
-        )
+        """Handle 404 Not Found errors."""
+        return render_template("errors/404.html"), 404
 
     @app.errorhandler(500)
     def internal_error(error):
+        """Handle 500 Internal Server errors."""
         db.session.rollback()
         app.logger.error(f"Internal server error: {error}")
-        return (
-            """
-        <html>
-            <head><title>500 - Internal Server Error</title></head>
-            <body>
-                <h1>500 - Internal Server Error</h1>
-                <p>An internal server error occurred.</p>
-            </body>
-        </html>
-        """,
-            500,
-        )
+        return render_template("errors/500.html"), 500
 
 
 def register_context_processors(app: Flask) -> None:
@@ -226,4 +206,4 @@ def register_context_processors(app: Flask) -> None:
     @app.context_processor
     def utility_processor():
         """Make utility functions available in templates."""
-        return dict()
+        return {}

@@ -346,14 +346,14 @@ VALUES ('submission', 1, 'UPDATE', 'grade', '2.0', '1.7', 'admin@example.com');
 ```python
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, DateTime
-from datetime import datetime
+from datetime import datetime, timezone
 
 Base = declarative_base()
 
 class TimestampMixin:
-    """Mixin for adding timestamp columns"""
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    """Mixin for adding timezone-aware timestamp columns"""
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 ```
 
 ### Example Model Implementation

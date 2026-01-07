@@ -10,7 +10,7 @@ from wtforms.validators import DataRequired, Length, ValidationError
 
 from app import db
 from app.models.university import University
-from cli.university_cli import generate_slug
+from app.services.university_service import UniversityService
 
 
 class UniversityForm(FlaskForm):
@@ -75,7 +75,7 @@ class UniversityForm(FlaskForm):
 
         # Generate slug if not provided or empty
         if not field.data or not field.data.strip():
-            field.data = generate_slug(self.name.data)
+            field.data = UniversityService.generate_slug(self.name.data)
             return
 
         # Validate slug format if provided

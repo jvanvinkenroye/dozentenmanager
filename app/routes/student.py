@@ -10,9 +10,9 @@ from typing import Any
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import db
 from app.forms.student import StudentForm
 from app.models.student import Student
+from app.services.student_service import StudentService
 from app.utils.pagination import paginate_query
 
 # Configure logging
@@ -37,9 +37,11 @@ def index() -> str:
     """
     search_term = request.args.get("search", "").strip()
     program_filter = request.args.get("program", "").strip()
+    service = StudentService()
 
     try:
-        query = db.session.query(Student)
+        # Build query using service's query method
+        query = service.query(Student)
 
         if search_term:
             search_pattern = f"%{search_term}%"
@@ -88,8 +90,10 @@ def show(student_id: int) -> str | Any:
     Returns:
         Rendered template with student details or redirect
     """
+    service = StudentService()
+
     try:
-        student = db.session.query(Student).filter_by(id=student_id).first()
+        student = service.get_student(student_id)
 
         if not student:
             flash(f"Student with ID {student_id} not found.", "error")
@@ -122,19 +126,18 @@ def new() -> str | Any:
         Rendered form template (GET) or redirect to detail page (POST)
     """
     form = StudentForm()
+    service = StudentService()
 
     if form.validate_on_submit():
         try:
-            # Create new student
-            student = Student(
+            # Create new student using service
+            student = service.add_student(
                 first_name=form.first_name.data,
                 last_name=form.last_name.data,
                 student_id=form.student_id.data,
-                email=form.email.data.lower(),
+                email=form.email.data,
                 program=form.program.data,
             )
-            db.session.add(student)
-            db.session.commit()
 
             logger.info(
                 f"Created student: {student.first_name} {student.last_name} ({student.student_id})"
@@ -145,8 +148,11 @@ def new() -> str | Any:
             )
             return redirect(url_for("student.show", student_id=student.id))
 
+        except ValueError as e:
+            logger.error(f"Validation error while creating student: {e}")
+            flash(str(e), "error")
+
         except SQLAlchemyError as e:
-            db.session.rollback()
             logger.error(f"Database error while creating student: {e}")
             flash("Error creating student. Please try again.", "error")
 
@@ -179,8 +185,10 @@ def edit(student_id: int) -> str | Any:
     Returns:
         Rendered form template (GET) or redirect to detail page (POST)
     """
+    service = StudentService()
+
     try:
-        student = db.session.query(Student).filter_by(id=student_id).first()
+        student = service.get_student(student_id)
 
         if not student:
             flash(f"Student with ID {student_id} not found.", "error")
@@ -190,25 +198,31 @@ def edit(student_id: int) -> str | Any:
 
         if form.validate_on_submit():
             try:
-                # Update fields
-                student.first_name = form.first_name.data
-                student.last_name = form.last_name.data
-                student.student_id = form.student_id.data
-                student.email = form.email.data.lower()
-                student.program = form.program.data
+                # Update using service
+                student = service.update_student(
+                    student_id=student_id,
+                    first_name=form.first_name.data,
+                    last_name=form.last_name.data,
+                    student_number=form.student_id.data,
+                    email=form.email.data,
+                    program=form.program.data,
+                )
 
-                db.session.commit()
-                logger.info(
-                    f"Updated student: {student.first_name} {student.last_name} ({student.student_id})"
-                )
-                flash(
-                    f"Student '{student.first_name} {student.last_name}' updated successfully.",
-                    "success",
-                )
-                return redirect(url_for("student.show", student_id=student.id))
+                if student:
+                    logger.info(
+                        f"Updated student: {student.first_name} {student.last_name} ({student.student_id})"
+                    )
+                    flash(
+                        f"Student '{student.first_name} {student.last_name}' updated successfully.",
+                        "success",
+                    )
+                    return redirect(url_for("student.show", student_id=student.id))
+
+            except ValueError as e:
+                logger.error(f"Validation error while updating student: {e}")
+                flash(str(e), "error")
 
             except SQLAlchemyError as e:
-                db.session.rollback()
                 logger.error(f"Database error while updating student: {e}")
                 flash("Error updating student. Please try again.", "error")
 
@@ -239,8 +253,10 @@ def delete(student_id: int) -> str | Any:
     Returns:
         Rendered confirmation template (GET) or redirect to list (POST)
     """
+    service = StudentService()
+
     try:
-        student = db.session.query(Student).filter_by(id=student_id).first()
+        student = service.get_student(student_id)
 
         if not student:
             flash(f"Student with ID {student_id} not found.", "error")
@@ -249,16 +265,16 @@ def delete(student_id: int) -> str | Any:
         if request.method == "GET":
             return render_template("student/delete.html", student=student)
 
-        # POST: Delete student
+        # POST: Delete student using service
         student_name = f"{student.first_name} {student.last_name}"
-        db.session.delete(student)
-        db.session.commit()
+        if service.delete_student(student_id):
+            flash(f"Student '{student_name}' deleted successfully.", "success")
+            return redirect(url_for("student.index"))
 
-        flash(f"Student '{student_name}' deleted successfully.", "success")
-        return redirect(url_for("student.index"))
+        flash(f"Error deleting student '{student_name}'.", "error")
+        return redirect(url_for("student.show", student_id=student_id))
 
     except SQLAlchemyError as e:
-        db.session.rollback()
         logger.error(f"Database error while deleting student: {e}")
         flash("Error deleting student. Please try again.", "error")
         return redirect(url_for("student.show", student_id=student_id))

@@ -9,321 +9,16 @@ import argparse
 import logging
 import sys
 
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 
-from app import create_app, db
-from app.models.student import Student, validate_email, validate_student_id
+from app import create_app
+from app.services.student_service import StudentService
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-def add_student(
-    first_name: str,
-    last_name: str,
-    student_id: str,
-    email: str,
-    program: str,
-) -> Student | None:
-    """
-    Add a new student to the database.
-
-    Args:
-        first_name: Student's first name
-        last_name: Student's last name
-        student_id: Student ID (8 digits)
-        email: Email address
-        program: Study program/major
-
-    Returns:
-        Created Student object or None if failed
-
-    Raises:
-        ValueError: If validation fails
-        IntegrityError: If student with same student_id or email already exists
-    """
-    # Validate first name
-    if not first_name or not first_name.strip():
-        raise ValueError("First name cannot be empty")
-
-    first_name = first_name.strip()
-    if len(first_name) > 100:
-        raise ValueError("First name cannot exceed 100 characters")
-
-    # Validate last name
-    if not last_name or not last_name.strip():
-        raise ValueError("Last name cannot be empty")
-
-    last_name = last_name.strip()
-    if len(last_name) > 100:
-        raise ValueError("Last name cannot exceed 100 characters")
-
-    # Validate student ID
-    student_id = student_id.strip()
-    if not validate_student_id(student_id):
-        raise ValueError(
-            f"Invalid student ID format: {student_id}. "
-            "Student ID must be exactly 8 digits."
-        )
-
-    # Validate email
-    email = email.strip().lower()
-    if not validate_email(email):
-        raise ValueError(f"Invalid email format: {email}")
-
-    if len(email) > 255:
-        raise ValueError("Email cannot exceed 255 characters")
-
-    # Validate program
-    if not program or not program.strip():
-        raise ValueError("Program cannot be empty")
-
-    program = program.strip()
-    if len(program) > 200:
-        raise ValueError("Program cannot exceed 200 characters")
-
-    try:
-        # Create new student
-        student = Student(
-            first_name=first_name,
-            last_name=last_name,
-            student_id=student_id,
-            email=email,
-            program=program,
-        )
-        db.session.add(student)
-        db.session.commit()
-
-        logger.info(f"Successfully created student: {student}")
-        return student
-
-    except IntegrityError as e:
-        db.session.rollback()
-        if "student_id" in str(e):
-            raise ValueError(f"Student with ID '{student_id}' already exists") from e
-        if "email" in str(e):
-            raise ValueError(f"Student with email '{email}' already exists") from e
-        raise
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while adding student: {e}")
-        raise
-
-
-def list_students(
-    search: str | None = None, program: str | None = None
-) -> list[Student]:
-    """
-    List all students, optionally filtered by search term or program.
-
-    Args:
-        search: Optional search term to filter by name, student_id, or email
-        program: Optional program filter
-
-    Returns:
-        List of Student objects
-    """
-    try:
-        query = db.session.query(Student)
-
-        if search:
-            search_term = f"%{search}%"
-            query = query.filter(
-                (Student.first_name.ilike(search_term))
-                | (Student.last_name.ilike(search_term))
-                | (Student.student_id.ilike(search_term))
-                | (Student.email.ilike(search_term))
-            )
-
-        if program:
-            program_term = f"%{program}%"
-            query = query.filter(Student.program.ilike(program_term))
-
-        students = query.order_by(Student.last_name, Student.first_name).all()
-        logger.info(f"Found {len(students)} students")
-        return students
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while listing students: {e}")
-        raise
-
-
-def get_student(student_db_id: int) -> Student | None:
-    """
-    Get a student by database ID.
-
-    Args:
-        student_db_id: Database ID
-
-    Returns:
-        Student object or None if not found
-    """
-    try:
-        student = db.session.query(Student).filter_by(id=student_db_id).first()
-
-        if student:
-            logger.info(f"Found student: {student}")
-        else:
-            logger.warning(f"Student with ID {student_db_id} not found")
-
-        return student
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while fetching student: {e}")
-        raise
-
-
-def get_student_by_student_id(student_id: str) -> Student | None:
-    """
-    Get a student by student ID.
-
-    Args:
-        student_id: Student ID (8 digits)
-
-    Returns:
-        Student object or None if not found
-    """
-    try:
-        student = db.session.query(Student).filter_by(student_id=student_id).first()
-
-        if student:
-            logger.info(f"Found student: {student}")
-        else:
-            logger.warning(f"Student with student ID {student_id} not found")
-
-        return student
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while fetching student: {e}")
-        raise
-
-
-def update_student(
-    student_db_id: int,
-    first_name: str | None = None,
-    last_name: str | None = None,
-    student_id: str | None = None,
-    email: str | None = None,
-    program: str | None = None,
-) -> Student | None:
-    """
-    Update a student's information.
-
-    Args:
-        student_db_id: Database ID
-        first_name: New first name (optional)
-        last_name: New last name (optional)
-        student_id: New student ID (optional)
-        email: New email (optional)
-        program: New program (optional)
-
-    Returns:
-        Updated Student object or None if not found
-
-    Raises:
-        ValueError: If validation fails
-        IntegrityError: If updated values conflict with existing records
-    """
-    if all(v is None for v in [first_name, last_name, student_id, email, program]):
-        raise ValueError("At least one field must be provided for update")
-
-    try:
-        student = db.session.query(Student).filter_by(id=student_db_id).first()
-
-        if not student:
-            logger.warning(f"Student with ID {student_db_id} not found")
-            return None
-
-        # Update fields if provided
-        if first_name is not None:
-            first_name = first_name.strip()
-            if not first_name:
-                raise ValueError("First name cannot be empty")
-            if len(first_name) > 100:
-                raise ValueError("First name cannot exceed 100 characters")
-            student.first_name = first_name
-
-        if last_name is not None:
-            last_name = last_name.strip()
-            if not last_name:
-                raise ValueError("Last name cannot be empty")
-            if len(last_name) > 100:
-                raise ValueError("Last name cannot exceed 100 characters")
-            student.last_name = last_name
-
-        if student_id is not None:
-            student_id = student_id.strip()
-            if not validate_student_id(student_id):
-                raise ValueError(
-                    f"Invalid student ID format: {student_id}. "
-                    "Student ID must be exactly 8 digits."
-                )
-            student.student_id = student_id
-
-        if email is not None:
-            email = email.strip().lower()
-            if not validate_email(email):
-                raise ValueError(f"Invalid email format: {email}")
-            if len(email) > 255:
-                raise ValueError("Email cannot exceed 255 characters")
-            student.email = email
-
-        if program is not None:
-            program = program.strip()
-            if not program:
-                raise ValueError("Program cannot be empty")
-            if len(program) > 200:
-                raise ValueError("Program cannot exceed 200 characters")
-            student.program = program
-
-        db.session.commit()
-        logger.info(f"Successfully updated student: {student}")
-        return student
-
-    except IntegrityError as e:
-        db.session.rollback()
-        if "student_id" in str(e):
-            raise ValueError(f"Student with ID '{student_id}' already exists") from e
-        if "email" in str(e):
-            raise ValueError(f"Student with email '{email}' already exists") from e
-        raise
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while updating student: {e}")
-        raise
-
-
-def delete_student(student_db_id: int) -> bool:
-    """
-    Delete a student by database ID.
-
-    Args:
-        student_db_id: Database ID
-
-    Returns:
-        True if deleted, False if not found
-    """
-    try:
-        student = db.session.query(Student).filter_by(id=student_db_id).first()
-
-        if not student:
-            logger.warning(f"Student with ID {student_db_id} not found")
-            return False
-
-        db.session.delete(student)
-        db.session.commit()
-        logger.info(f"Successfully deleted student: {student}")
-        return True
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while deleting student: {e}")
-        raise
 
 
 def main() -> int:
@@ -380,26 +75,28 @@ def main() -> int:
     app = create_app()
 
     with app.app_context():
+        # Initialize service
+        service = StudentService()
+
         try:
             if args.command == "add":
-                student = add_student(
+                student = service.add_student(
                     args.first_name,
                     args.last_name,
                     args.student_id,
                     args.email,
                     args.program,
                 )
-                if student:
-                    print(
-                        f"Created student: ID={student.id}, "
-                        f"Name={student.first_name} {student.last_name}, "
-                        f"Student ID={student.student_id}, "
-                        f"Email={student.email}"
-                    )
+                print(
+                    f"Created student: ID={student.id}, "
+                    f"Name={student.first_name} {student.last_name}, "
+                    f"Student ID={student.student_id}, "
+                    f"Email={student.email}"
+                )
                 return 0
 
             if args.command == "list":
-                students = list_students(args.search, args.program)
+                students = service.list_students(args.search, args.program)
                 if students:
                     print(f"\nFound {len(students)} students:\n")
                     print(
@@ -416,7 +113,7 @@ def main() -> int:
                 return 0
 
             if args.command == "show":
-                student = get_student(args.id)
+                student = service.get_student(args.id)
                 if student:
                     print("\nStudent Details:")
                     print(f"  Database ID: {student.id}")
@@ -432,7 +129,7 @@ def main() -> int:
                 return 0
 
             if args.command == "update":
-                student = update_student(
+                student = service.update_student(
                     args.id,
                     args.first_name,
                     args.last_name,
@@ -452,7 +149,7 @@ def main() -> int:
                 return 1
 
             if args.command == "delete":
-                if delete_student(args.id):
+                if service.delete_student(args.id):
                     print(f"Student with ID {args.id} deleted successfully")
                     return 0
                 print(f"Student with ID {args.id} not found")
@@ -463,9 +160,19 @@ def main() -> int:
             print(f"Error: {e}", file=sys.stderr)
             return 1
 
+        except SQLAlchemyError as e:
+            logger.error(f"Database error: {e}", exc_info=True)
+            print("Database error. Please try again.", file=sys.stderr)
+            return 1
+
+        except KeyboardInterrupt:
+            logger.info("Operation cancelled by user")
+            print("\nOperation cancelled.", file=sys.stderr)
+            return 130
+
         except Exception as e:
             logger.error(f"Unexpected error: {e}", exc_info=True)
-            print(f"Error: {e}", file=sys.stderr)
+            print(f"Unexpected error: {e}", file=sys.stderr)
             return 1
 
     return 0

@@ -1,18 +1,19 @@
 """
-Unit tests for student CLI tool.
+Unit tests for student service and CLI.
 
-This module tests all student management CLI functions.
+This module tests all student management functions.
 """
 
+import pytest
+
 from app.models.student import validate_email, validate_student_id
-from cli.student_cli import (
-    add_student,
-    delete_student,
-    get_student,
-    get_student_by_student_id,
-    list_students,
-    update_student,
-)
+from app.services.student_service import StudentService
+
+
+@pytest.fixture
+def service():
+    """Return a StudentService instance."""
+    return StudentService()
 
 
 class TestValidationFunctions:
@@ -48,10 +49,10 @@ class TestValidationFunctions:
 class TestAddStudent:
     """Test add_student function."""
 
-    def test_add_student_success(self, app, db):
+    def test_add_student_success(self, app, db, service):
         """Test adding a student successfully."""
         with app.app_context():
-            student = add_student(
+            student = service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
                 student_id="12345678",
@@ -67,10 +68,10 @@ class TestAddStudent:
             assert student.email == "max@example.com"
             assert student.program == "Computer Science"
 
-    def test_add_student_email_lowercase(self, app, db):
+    def test_add_student_email_lowercase(self, app, db, service):
         """Test that email is converted to lowercase."""
         with app.app_context():
-            student = add_student(
+            student = service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
                 student_id="12345678",
@@ -80,10 +81,10 @@ class TestAddStudent:
 
             assert student.email == "max@example.com"
 
-    def test_add_student_strips_whitespace(self, app, db):
+    def test_add_student_strips_whitespace(self, app, db, service):
         """Test that whitespace is stripped from fields."""
         with app.app_context():
-            student = add_student(
+            student = service.add_student(
                 first_name="  Max  ",
                 last_name="  Mustermann  ",
                 student_id=" 12345678 ",
@@ -97,13 +98,13 @@ class TestAddStudent:
             assert student.email == "max@example.com"
             assert student.program == "Computer Science"
 
-    def test_add_student_empty_first_name(self, app, db):
+    def test_add_student_empty_first_name(self, app, db, service):
         """Test that empty first name raises ValueError."""
         with app.app_context():
             import pytest
 
             with pytest.raises(ValueError, match="First name cannot be empty"):
-                add_student(
+                service.add_student(
                     first_name="",
                     last_name="Mustermann",
                     student_id="12345678",
@@ -111,13 +112,13 @@ class TestAddStudent:
                     program="Computer Science",
                 )
 
-    def test_add_student_empty_last_name(self, app, db):
+    def test_add_student_empty_last_name(self, app, db, service):
         """Test that empty last name raises ValueError."""
         with app.app_context():
             import pytest
 
             with pytest.raises(ValueError, match="Last name cannot be empty"):
-                add_student(
+                service.add_student(
                     first_name="Max",
                     last_name="",
                     student_id="12345678",
@@ -125,13 +126,13 @@ class TestAddStudent:
                     program="Computer Science",
                 )
 
-    def test_add_student_invalid_student_id(self, app, db):
+    def test_add_student_invalid_student_id(self, app, db, service):
         """Test that invalid student ID raises ValueError."""
         with app.app_context():
             import pytest
 
             with pytest.raises(ValueError, match="Invalid student ID format"):
-                add_student(
+                service.add_student(
                     first_name="Max",
                     last_name="Mustermann",
                     student_id="123",
@@ -139,13 +140,13 @@ class TestAddStudent:
                     program="Computer Science",
                 )
 
-    def test_add_student_invalid_email(self, app, db):
+    def test_add_student_invalid_email(self, app, db, service):
         """Test that invalid email raises ValueError."""
         with app.app_context():
             import pytest
 
             with pytest.raises(ValueError, match="Invalid email format"):
-                add_student(
+                service.add_student(
                     first_name="Max",
                     last_name="Mustermann",
                     student_id="12345678",
@@ -153,13 +154,13 @@ class TestAddStudent:
                     program="Computer Science",
                 )
 
-    def test_add_student_empty_program(self, app, db):
+    def test_add_student_empty_program(self, app, db, service):
         """Test that empty program raises ValueError."""
         with app.app_context():
             import pytest
 
             with pytest.raises(ValueError, match="Program cannot be empty"):
-                add_student(
+                service.add_student(
                     first_name="Max",
                     last_name="Mustermann",
                     student_id="12345678",
@@ -167,12 +168,12 @@ class TestAddStudent:
                     program="",
                 )
 
-    def test_add_student_duplicate_student_id(self, app, db):
+    def test_add_student_duplicate_student_id(self, app, db, service):
         """Test that duplicate student ID raises ValueError."""
         with app.app_context():
             import pytest
 
-            add_student(
+            service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
                 student_id="12345678",
@@ -181,7 +182,7 @@ class TestAddStudent:
             )
 
             with pytest.raises(ValueError, match="already exists"):
-                add_student(
+                service.add_student(
                     first_name="Anna",
                     last_name="Schmidt",
                     student_id="12345678",
@@ -189,12 +190,12 @@ class TestAddStudent:
                     program="Mathematics",
                 )
 
-    def test_add_student_duplicate_email(self, app, db):
+    def test_add_student_duplicate_email(self, app, db, service):
         """Test that duplicate email raises ValueError."""
         with app.app_context():
             import pytest
 
-            add_student(
+            service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
                 student_id="12345678",
@@ -203,7 +204,7 @@ class TestAddStudent:
             )
 
             with pytest.raises(ValueError, match="already exists"):
-                add_student(
+                service.add_student(
                     first_name="Anna",
                     last_name="Schmidt",
                     student_id="87654321",
@@ -215,142 +216,142 @@ class TestAddStudent:
 class TestListStudents:
     """Test list_students function."""
 
-    def test_list_students_empty(self, app, db):
+    def test_list_students_empty(self, app, db, service):
         """Test listing students when none exist."""
         with app.app_context():
-            students = list_students()
+            students = service.list_students()
             assert students == []
 
-    def test_list_students_multiple(self, app, db):
+    def test_list_students_multiple(self, app, db, service):
         """Test listing multiple students."""
         with app.app_context():
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
-            add_student("Tom", "Müller", "11111111", "tom@example.com", "CS")
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student("Tom", "Müller", "11111111", "tom@example.com", "CS")
 
-            students = list_students()
+            students = service.list_students()
             assert len(students) == 3
 
             # Check alphabetical ordering by last name
             names = [f"{s.last_name}, {s.first_name}" for s in students]
             assert names == sorted(names)
 
-    def test_list_students_search_by_name(self, app, db):
+    def test_list_students_search_by_name(self, app, db, service):
         """Test searching students by name."""
         with app.app_context():
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
-            add_student("Maria", "Müller", "11111111", "maria@example.com", "CS")
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student("Maria", "Müller", "11111111", "maria@example.com", "CS")
 
-            students = list_students(search="Max")
+            students = service.list_students(search="Max")
             assert len(students) == 1
             assert students[0].first_name == "Max"
 
-    def test_list_students_search_by_student_id(self, app, db):
+    def test_list_students_search_by_student_id(self, app, db, service):
         """Test searching students by student ID."""
         with app.app_context():
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
 
-            students = list_students(search="87654321")
+            students = service.list_students(search="87654321")
             assert len(students) == 1
             assert students[0].student_id == "87654321"
 
-    def test_list_students_search_by_email(self, app, db):
+    def test_list_students_search_by_email(self, app, db, service):
         """Test searching students by email."""
         with app.app_context():
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
 
-            students = list_students(search="anna")
+            students = service.list_students(search="anna")
             assert len(students) == 1
             assert students[0].email == "anna@example.com"
 
-    def test_list_students_filter_by_program(self, app, db):
+    def test_list_students_filter_by_program(self, app, db, service):
         """Test filtering students by program."""
         with app.app_context():
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
-            add_student("Tom", "Müller", "11111111", "tom@example.com", "CS")
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student("Tom", "Müller", "11111111", "tom@example.com", "CS")
 
-            students = list_students(program="CS")
+            students = service.list_students(program="CS")
             assert len(students) == 2
 
-            students = list_students(program="Math")
+            students = service.list_students(program="Math")
             assert len(students) == 1
 
 
 class TestGetStudent:
     """Test get_student and get_student_by_student_id functions."""
 
-    def test_get_student_exists(self, app, db):
+    def test_get_student_exists(self, app, db, service):
         """Test getting an existing student by database ID."""
         with app.app_context():
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
-            student = get_student(created.id)
+            student = service.get_student(created.id)
 
             assert student is not None
             assert student.id == created.id
             assert student.first_name == "Max"
 
-    def test_get_student_not_found(self, app, db):
+    def test_get_student_not_found(self, app, db, service):
         """Test getting a non-existent student."""
         with app.app_context():
-            student = get_student(999)
+            student = service.get_student(999)
             assert student is None
 
-    def test_get_student_by_student_id_exists(self, app, db):
+    def test_get_student_by_student_id_exists(self, app, db, service):
         """Test getting a student by student ID."""
         with app.app_context():
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            student = get_student_by_student_id("12345678")
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            student = service.get_student_by_student_id("12345678")
 
             assert student is not None
             assert student.student_id == "12345678"
             assert student.first_name == "Max"
 
-    def test_get_student_by_student_id_not_found(self, app, db):
+    def test_get_student_by_student_id_not_found(self, app, db, service):
         """Test getting a non-existent student by student ID."""
         with app.app_context():
-            student = get_student_by_student_id("99999999")
+            student = service.get_student_by_student_id("99999999")
             assert student is None
 
 
 class TestUpdateStudent:
     """Test update_student function."""
 
-    def test_update_student_first_name(self, app, db):
+    def test_update_student_first_name(self, app, db, service):
         """Test updating student's first name."""
         with app.app_context():
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
-            updated = update_student(created.id, first_name="Maximilian")
+            updated = service.update_student(created.id, first_name="Maximilian")
 
             assert updated is not None
             assert updated.first_name == "Maximilian"
             assert updated.last_name == "Mustermann"  # Unchanged
 
-    def test_update_student_email(self, app, db):
+    def test_update_student_email(self, app, db, service):
         """Test updating student's email."""
         with app.app_context():
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
-            updated = update_student(created.id, email="new@example.com")
+            updated = service.update_student(created.id, email="new@example.com")
 
             assert updated is not None
             assert updated.email == "new@example.com"
 
-    def test_update_student_multiple_fields(self, app, db):
+    def test_update_student_multiple_fields(self, app, db, service):
         """Test updating multiple fields."""
         with app.app_context():
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
-            updated = update_student(
+            updated = service.update_student(
                 created.id,
                 first_name="Maximilian",
                 last_name="Meyer",
@@ -362,69 +363,69 @@ class TestUpdateStudent:
             assert updated.last_name == "Meyer"
             assert updated.program == "Mathematics"
 
-    def test_update_student_not_found(self, app, db):
+    def test_update_student_not_found(self, app, db, service):
         """Test updating non-existent student."""
         with app.app_context():
-            result = update_student(999, first_name="Test")
+            result = service.update_student(999, first_name="Test")
             assert result is None
 
-    def test_update_student_no_fields(self, app, db):
+    def test_update_student_no_fields(self, app, db, service):
         """Test that updating without fields raises ValueError."""
         with app.app_context():
             import pytest
 
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
 
             with pytest.raises(ValueError, match="At least one field"):
-                update_student(created.id)
+                service.update_student(created.id)
 
-    def test_update_student_invalid_email(self, app, db):
+    def test_update_student_invalid_email(self, app, db, service):
         """Test that invalid email raises ValueError."""
         with app.app_context():
             import pytest
 
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
 
             with pytest.raises(ValueError, match="Invalid email format"):
-                update_student(created.id, email="invalid-email")
+                service.update_student(created.id, email="invalid-email")
 
-    def test_update_student_duplicate_email(self, app, db):
+    def test_update_student_duplicate_email(self, app, db, service):
         """Test that duplicate email raises ValueError."""
         with app.app_context():
             import pytest
 
-            add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            student2 = add_student(
+            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            student2 = service.add_student(
                 "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
             )
 
             with pytest.raises(ValueError, match="already exists"):
-                update_student(student2.id, email="max@example.com")
+                service.update_student(student2.id, email="max@example.com")
 
 
 class TestDeleteStudent:
     """Test delete_student function."""
 
-    def test_delete_student_success(self, app, db):
+    def test_delete_student_success(self, app, db, service):
         """Test deleting a student successfully."""
         with app.app_context():
-            created = add_student(
+            created = service.add_student(
                 "Max", "Mustermann", "12345678", "max@example.com", "CS"
             )
-            result = delete_student(created.id)
+            result = service.delete_student(created.id)
 
             assert result is True
 
             # Verify it's deleted
-            student = get_student(created.id)
+            student = service.get_student(created.id)
             assert student is None
 
-    def test_delete_student_not_found(self, app, db):
+    def test_delete_student_not_found(self, app, db, service):
         """Test deleting non-existent student."""
         with app.app_context():
-            result = delete_student(999)
+            result = service.delete_student(999)
             assert result is False

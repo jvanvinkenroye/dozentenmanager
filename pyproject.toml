@@ -18,6 +18,7 @@ dev = [
     "mypy>=1.18.2",
     "pre-commit>=4.3.0",
     "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
     "ruff>=0.14.3",
 ]
 
@@ -72,3 +73,50 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "playwright.*"
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+# Pytest configuration for Dozentenmanager
+# https://docs.pytest.org/en/stable/reference/customize.html
+
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "--cov=app",
+    "--cov=cli",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=40",
+    "-v",
+]
+
+[tool.coverage.run]
+# Coverage.py configuration
+# https://coverage.readthedocs.io/en/latest/config.html
+
+source = ["app", "cli"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/migrations/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+# Exclude common patterns from coverage reporting
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+precision = 2
+show_missing = true

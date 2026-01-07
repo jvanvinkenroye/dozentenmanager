@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pagination.html" import render_pagination %}
 
 {% block title %}Hochschulen - Dozentenmanager{% endblock %}
 
@@ -113,8 +114,17 @@
         </tbody>
     </table>
 
-    <div class="has-text-dark">
+    <!-- Pagination Controls -->
+    {% if pagination %}
+    {{ render_pagination(pagination, 'university.index', search_term) }}
+    {% endif %}
+
+    <div class="has-text-dark mt-3">
+        {% if pagination %}
+        <p><strong>{{ pagination.total }}</strong> Hochschule(n) gefunden</p>
+        {% else %}
         <p><strong>{{ universities|length }}</strong> Hochschule(n) gefunden</p>
+        {% endif %}
     </div>
 </div>
 {% else %}

@@ -13,6 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.forms.university import UniversityForm
 from app.models.university import University
+from app.utils.pagination import paginate_query
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -24,13 +25,14 @@ bp = Blueprint("university", __name__, url_prefix="/universities")
 @bp.route("/")
 def index() -> str:
     """
-    List all universities with optional search.
+    List all universities with optional search and pagination.
 
     Query parameters:
         search: Optional search term to filter by name or slug
+        page: Page number (default: 1)
 
     Returns:
-        Rendered template with list of universities
+        Rendered template with paginated list of universities
     """
     search_term = request.args.get("search", "").strip()
 
@@ -44,18 +46,22 @@ def index() -> str:
                 | (University.slug.ilike(search_pattern))
             )
 
-        universities = query.order_by(University.name).all()
+        query = query.order_by(University.name)
+        pagination = paginate_query(query, per_page=20)
 
         return render_template(
             "university/list.html",
-            universities=universities,
+            universities=pagination.items,
+            pagination=pagination,
             search_term=search_term,
         )
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while listing universities: {e}")
         flash("Error loading universities. Please try again.", "error")
-        return render_template("university/list.html", universities=[], search_term="")
+        return render_template(
+            "university/list.html", universities=[], pagination=None, search_term=""
+        )
 
 
 @bp.route("/<int:university_id>")

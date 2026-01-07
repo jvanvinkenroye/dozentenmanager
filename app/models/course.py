@@ -5,8 +5,10 @@ This module defines the Course model representing courses offered by universitie
 """
 
 import re
-from sqlalchemy import Column, Integer, String, ForeignKey, Index, UniqueConstraint
+
+from sqlalchemy import Column, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
+
 from app import db
 from app.models.base import TimestampMixin
 

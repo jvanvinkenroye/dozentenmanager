@@ -5,21 +5,22 @@ This module defines the Submission model representing student submissions
 for enrollments (documents, assignments, exam answers, etc.).
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import (
+    CheckConstraint,
     Column,
-    Integer,
-    String,
     DateTime,
     ForeignKey,
-    Text,
-    CheckConstraint,
     Index,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.orm import relationship
+
 from app import db
 from app.models.base import TimestampMixin
-
 
 # Valid submission types
 VALID_SUBMISSION_TYPES = ["document", "assignment", "exam_answer", "email_attachment"]
@@ -96,7 +97,7 @@ class Submission(db.Model, TimestampMixin):  # type: ignore[name-defined]
     submission_date = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     status = Column(String(20), nullable=False, default="submitted", index=True)
     notes = Column(Text, nullable=True)

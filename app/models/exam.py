@@ -5,8 +5,10 @@ This module defines the Exam model representing exams/assessments for courses.
 """
 
 from datetime import date
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Index
+
+from sqlalchemy import Column, Date, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
+
 from app import db
 from app.models.base import TimestampMixin
 

@@ -5,17 +5,16 @@ This module provides form validation for document upload and submission manageme
 """
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired, FileAllowed
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import (
+    MultipleFileField,
     SelectField,
     TextAreaField,
-    HiddenField,
-    MultipleFileField,
 )
-from wtforms.validators import DataRequired, Optional, Length
+from wtforms.validators import DataRequired, Length, Optional
 
 from app.models.document import ALLOWED_EXTENSIONS
-from app.models.submission import VALID_SUBMISSION_TYPES, VALID_SUBMISSION_STATUSES
+from app.models.submission import VALID_SUBMISSION_STATUSES
 
 
 class DocumentUploadForm(FlaskForm):

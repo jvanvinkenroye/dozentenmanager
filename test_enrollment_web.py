@@ -10,6 +10,7 @@ This script demonstrates the enrollment functionality by:
 
 import asyncio
 import logging
+
 from playwright.async_api import async_playwright
 
 # Configure logging
@@ -27,8 +28,8 @@ async def test_enrollment():
     async with async_playwright() as p:
         # Launch browser with persistent context
         logger.info("Launching browser...")
-        import tempfile
         import os
+        import tempfile
 
         # Create a user temp directory for playwright
         temp_dir = tempfile.mkdtemp(prefix="playwright_", dir=os.path.expanduser("~"))

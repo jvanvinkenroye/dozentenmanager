@@ -9,12 +9,10 @@ import argparse
 import logging
 import re
 import sys
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import db
-from app import create_app
+from app import create_app, db
 from app.models.university import University
 
 # Configure logging
@@ -87,7 +85,7 @@ def generate_slug(name: str) -> str:
     return slug
 
 
-def add_university(name: str, slug: Optional[str] = None) -> Optional[University]:
+def add_university(name: str, slug: str | None = None) -> University | None:
     """
     Add a new university to the database.
 
@@ -133,10 +131,9 @@ def add_university(name: str, slug: Optional[str] = None) -> Optional[University
         db.session.rollback()
         if "name" in str(e):
             raise ValueError(f"University with name '{name}' already exists") from e
-        elif "slug" in str(e):
+        if "slug" in str(e):
             raise ValueError(f"University with slug '{slug}' already exists") from e
-        else:
-            raise
+        raise
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -144,7 +141,7 @@ def add_university(name: str, slug: Optional[str] = None) -> Optional[University
         raise
 
 
-def list_universities(search: Optional[str] = None) -> list[University]:
+def list_universities(search: str | None = None) -> list[University]:
     """
     List all universities, optionally filtered by search term.
 
@@ -173,7 +170,7 @@ def list_universities(search: Optional[str] = None) -> list[University]:
         raise
 
 
-def get_university(university_id: int) -> Optional[University]:
+def get_university(university_id: int) -> University | None:
     """
     Get a university by ID.
 
@@ -199,8 +196,8 @@ def get_university(university_id: int) -> Optional[University]:
 
 
 def update_university(
-    university_id: int, name: Optional[str] = None, slug: Optional[str] = None
-) -> Optional[University]:
+    university_id: int, name: str | None = None, slug: str | None = None
+) -> University | None:
     """
     Update a university's information.
 
@@ -252,10 +249,9 @@ def update_university(
         db.session.rollback()
         if "name" in str(e):
             raise ValueError(f"University with name '{name}' already exists") from e
-        elif "slug" in str(e):
+        if "slug" in str(e):
             raise ValueError(f"University with slug '{slug}' already exists") from e
-        else:
-            raise
+        raise
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -349,7 +345,7 @@ def main() -> int:
                     )
                 return 0
 
-            elif args.command == "list":
+            if args.command == "list":
                 universities = list_universities(args.search)
                 if universities:
                     print(f"\nFound {len(universities)} universities:\n")
@@ -361,7 +357,7 @@ def main() -> int:
                     print("No universities found")
                 return 0
 
-            elif args.command == "show":
+            if args.command == "show":
                 university = get_university(args.id)
                 if university:
                     print("\nUniversity Details:")
@@ -375,24 +371,22 @@ def main() -> int:
                     return 1
                 return 0
 
-            elif args.command == "update":
+            if args.command == "update":
                 university = update_university(args.id, args.name, args.slug)
                 if university:
                     print(
                         f"Updated university: ID={university.id}, Name={university.name}, Slug={university.slug}"
                     )
                     return 0
-                else:
-                    print(f"University with ID {args.id} not found")
-                    return 1
+                print(f"University with ID {args.id} not found")
+                return 1
 
-            elif args.command == "delete":
+            if args.command == "delete":
                 if delete_university(args.id):
                     print(f"University with ID {args.id} deleted successfully")
                     return 0
-                else:
-                    print(f"University with ID {args.id} not found")
-                    return 1
+                print(f"University with ID {args.id} not found")
+                return 1
 
         except ValueError as e:
             logger.error(f"Validation error: {e}")

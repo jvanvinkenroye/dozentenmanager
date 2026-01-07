@@ -8,12 +8,10 @@ including adding, updating, listing, and deleting students.
 import argparse
 import logging
 import sys
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import db
-from app import create_app
+from app import create_app, db
 from app.models.student import Student, validate_email, validate_student_id
 
 # Configure logging
@@ -29,7 +27,7 @@ def add_student(
     student_id: str,
     email: str,
     program: str,
-) -> Optional[Student]:
+) -> Student | None:
     """
     Add a new student to the database.
 
@@ -106,10 +104,9 @@ def add_student(
         db.session.rollback()
         if "student_id" in str(e):
             raise ValueError(f"Student with ID '{student_id}' already exists") from e
-        elif "email" in str(e):
+        if "email" in str(e):
             raise ValueError(f"Student with email '{email}' already exists") from e
-        else:
-            raise
+        raise
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -118,7 +115,7 @@ def add_student(
 
 
 def list_students(
-    search: Optional[str] = None, program: Optional[str] = None
+    search: str | None = None, program: str | None = None
 ) -> list[Student]:
     """
     List all students, optionally filtered by search term or program.
@@ -155,7 +152,7 @@ def list_students(
         raise
 
 
-def get_student(student_db_id: int) -> Optional[Student]:
+def get_student(student_db_id: int) -> Student | None:
     """
     Get a student by database ID.
 
@@ -180,7 +177,7 @@ def get_student(student_db_id: int) -> Optional[Student]:
         raise
 
 
-def get_student_by_student_id(student_id: str) -> Optional[Student]:
+def get_student_by_student_id(student_id: str) -> Student | None:
     """
     Get a student by student ID.
 
@@ -207,12 +204,12 @@ def get_student_by_student_id(student_id: str) -> Optional[Student]:
 
 def update_student(
     student_db_id: int,
-    first_name: Optional[str] = None,
-    last_name: Optional[str] = None,
-    student_id: Optional[str] = None,
-    email: Optional[str] = None,
-    program: Optional[str] = None,
-) -> Optional[Student]:
+    first_name: str | None = None,
+    last_name: str | None = None,
+    student_id: str | None = None,
+    email: str | None = None,
+    program: str | None = None,
+) -> Student | None:
     """
     Update a student's information.
 
@@ -291,10 +288,9 @@ def update_student(
         db.session.rollback()
         if "student_id" in str(e):
             raise ValueError(f"Student with ID '{student_id}' already exists") from e
-        elif "email" in str(e):
+        if "email" in str(e):
             raise ValueError(f"Student with email '{email}' already exists") from e
-        else:
-            raise
+        raise
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -402,7 +398,7 @@ def main() -> int:
                     )
                 return 0
 
-            elif args.command == "list":
+            if args.command == "list":
                 students = list_students(args.search, args.program)
                 if students:
                     print(f"\nFound {len(students)} students:\n")
@@ -419,7 +415,7 @@ def main() -> int:
                     print("No students found")
                 return 0
 
-            elif args.command == "show":
+            if args.command == "show":
                 student = get_student(args.id)
                 if student:
                     print("\nStudent Details:")
@@ -435,7 +431,7 @@ def main() -> int:
                     return 1
                 return 0
 
-            elif args.command == "update":
+            if args.command == "update":
                 student = update_student(
                     args.id,
                     args.first_name,
@@ -452,17 +448,15 @@ def main() -> int:
                         f"Email={student.email}"
                     )
                     return 0
-                else:
-                    print(f"Student with ID {args.id} not found")
-                    return 1
+                print(f"Student with ID {args.id} not found")
+                return 1
 
-            elif args.command == "delete":
+            if args.command == "delete":
                 if delete_student(args.id):
                     print(f"Student with ID {args.id} deleted successfully")
                     return 0
-                else:
-                    print(f"Student with ID {args.id} not found")
-                    return 1
+                print(f"Student with ID {args.id} not found")
+                return 1
 
         except ValueError as e:
             logger.error(f"Validation error: {e}")

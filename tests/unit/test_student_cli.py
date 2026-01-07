@@ -4,6 +4,7 @@ Unit tests for student CLI tool.
 This module tests all student management CLI functions.
 """
 
+from app.models.student import validate_email, validate_student_id
 from cli.student_cli import (
     add_student,
     delete_student,
@@ -12,7 +13,6 @@ from cli.student_cli import (
     list_students,
     update_student,
 )
-from app.models.student import validate_email, validate_student_id
 
 
 class TestValidationFunctions:

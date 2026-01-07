@@ -11,8 +11,8 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
-from app.models.university import University
 from app.forms.university import UniversityForm
+from app.models.university import University
 
 # Configure logging
 logger = logging.getLogger(__name__)

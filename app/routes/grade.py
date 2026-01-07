@@ -6,15 +6,16 @@ and viewing grade statistics/analytics.
 """
 
 import logging
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import func
 
 from app import db
 from app.forms.grade import (
-    GradeForm,
     BulkGradeForm,
     ExamComponentForm,
     GradeFilterForm,
+    GradeForm,
 )
 from app.models import (
     Course,
@@ -22,24 +23,20 @@ from app.models import (
     Exam,
     ExamComponent,
     Grade,
-    GradingScale,
     Student,
 )
 from app.models.grade import (
     calculate_percentage,
     percentage_to_german_grade,
-    validate_points,
 )
 from cli.grade_cli import (
-    add_grade,
-    update_grade,
-    delete_grade,
-    get_grade,
-    list_grades,
-    calculate_weighted_average,
-    get_exam_statistics,
     add_exam_component,
+    add_grade,
+    calculate_weighted_average,
+    delete_grade,
+    get_exam_statistics,
     list_exam_components,
+    update_grade,
 )
 
 logger = logging.getLogger(__name__)
@@ -162,8 +159,7 @@ def new():
                     "success",
                 )
                 return redirect(url_for("grade.show", grade_id=grade.id))
-            else:
-                flash("Fehler beim Hinzufügen der Note", "danger")
+            flash("Fehler beim Hinzufügen der Note", "danger")
 
         except ValueError as e:
             flash(f"Fehler: {e}", "danger")
@@ -202,8 +198,7 @@ def edit(grade_id: int):
             if updated:
                 flash("Note erfolgreich aktualisiert", "success")
                 return redirect(url_for("grade.show", grade_id=grade_id))
-            else:
-                flash("Fehler beim Aktualisieren der Note", "danger")
+            flash("Fehler beim Aktualisieren der Note", "danger")
 
         except ValueError as e:
             flash(f"Fehler: {e}", "danger")
@@ -221,8 +216,7 @@ def delete(grade_id: int):
             if delete_grade(grade_id):
                 flash("Note erfolgreich gelöscht", "success")
                 return redirect(url_for("grade.index"))
-            else:
-                flash("Fehler beim Löschen der Note", "danger")
+            flash("Fehler beim Löschen der Note", "danger")
         except ValueError as e:
             flash(f"Fehler: {e}", "danger")
 
@@ -491,8 +485,7 @@ def new_component(exam_id: int):
             if component:
                 flash(f"Komponente '{component.name}' erfolgreich hinzugefügt", "success")
                 return redirect(url_for("grade.components", exam_id=exam_id))
-            else:
-                flash("Fehler beim Hinzufügen der Komponente", "danger")
+            flash("Fehler beim Hinzufügen der Komponente", "danger")
 
         except ValueError as e:
             flash(f"Fehler: {e}", "danger")

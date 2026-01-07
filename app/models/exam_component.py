@@ -7,15 +7,16 @@ practical project).
 """
 
 from sqlalchemy import (
+    CheckConstraint,
     Column,
-    Integer,
-    String,
     Float,
     ForeignKey,
     Index,
-    CheckConstraint,
+    Integer,
+    String,
 )
 from sqlalchemy.orm import relationship
+
 from app import db
 from app.models.base import TimestampMixin
 

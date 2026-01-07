@@ -6,6 +6,8 @@ This module tests all course management CLI functions.
 
 import pytest
 
+from app.models.course import generate_slug, validate_semester
+from app.models.university import University
 from cli.course_cli import (
     add_course,
     delete_course,
@@ -13,8 +15,6 @@ from cli.course_cli import (
     list_courses,
     update_course,
 )
-from app.models.course import validate_semester, generate_slug
-from app.models.university import University
 
 
 class TestValidationFunctions:

@@ -4,7 +4,8 @@ University model for Dozentenmanager.
 This module defines the University model representing educational institutions.
 """
 
-from sqlalchemy import Column, Integer, String, Index
+from sqlalchemy import Column, Index, Integer, String
+
 from app import db
 from app.models.base import TimestampMixin
 

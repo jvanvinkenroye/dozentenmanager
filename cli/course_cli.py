@@ -8,13 +8,11 @@ including adding, updating, listing, and deleting courses.
 import argparse
 import logging
 import sys
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import db
-from app import create_app
-from app.models.course import Course, validate_semester, generate_slug
+from app import create_app, db
+from app.models.course import Course, generate_slug, validate_semester
 from app.models.university import University
 
 # Configure logging
@@ -28,8 +26,8 @@ def add_course(
     name: str,
     semester: str,
     university_id: int,
-    slug: Optional[str] = None,
-) -> Optional[Course]:
+    slug: str | None = None,
+) -> Course | None:
     """
     Add a new course to the database.
 
@@ -120,7 +118,7 @@ def add_course(
 
 
 def list_courses(
-    university_id: Optional[int] = None, semester: Optional[str] = None
+    university_id: int | None = None, semester: str | None = None
 ) -> list[Course]:
     """
     List all courses with optional filters.
@@ -149,7 +147,7 @@ def list_courses(
         return []
 
 
-def get_course(course_id: int) -> Optional[Course]:
+def get_course(course_id: int) -> Course | None:
     """
     Get a course by ID.
 
@@ -170,11 +168,11 @@ def get_course(course_id: int) -> Optional[Course]:
 
 def update_course(
     course_id: int,
-    name: Optional[str] = None,
-    semester: Optional[str] = None,
-    university_id: Optional[int] = None,
-    slug: Optional[str] = None,
-) -> Optional[Course]:
+    name: str | None = None,
+    semester: str | None = None,
+    university_id: int | None = None,
+    slug: str | None = None,
+) -> Course | None:
     """
     Update an existing course.
 
@@ -366,11 +364,10 @@ def main() -> int:
                     print(f"Semester: {course.semester}")
                     print(f"University: {course.university.name}")
                     return 0
-                else:
-                    print("Error: Failed to add course")
-                    return 1
+                print("Error: Failed to add course")
+                return 1
 
-            elif args.command == "list":
+            if args.command == "list":
                 courses = list_courses(
                     university_id=args.university_id, semester=args.semester
                 )
@@ -387,7 +384,7 @@ def main() -> int:
                     print()
                 return 0
 
-            elif args.command == "show":
+            if args.command == "show":
                 course = get_course(args.course_id)
                 if not course:
                     print(f"Error: Course with ID {args.course_id} not found")
@@ -403,7 +400,7 @@ def main() -> int:
                 print(f"Updated: {course.updated_at}")
                 return 0
 
-            elif args.command == "update":
+            if args.command == "update":
                 course = update_course(
                     course_id=args.course_id,
                     name=args.name,
@@ -419,11 +416,10 @@ def main() -> int:
                     print(f"Semester: {course.semester}")
                     print(f"University: {course.university.name}")
                     return 0
-                else:
-                    print("Error: Failed to update course")
-                    return 1
+                print("Error: Failed to update course")
+                return 1
 
-            elif args.command == "delete":
+            if args.command == "delete":
                 course = get_course(args.course_id)
                 if not course:
                     print(f"Error: Course with ID {args.course_id} not found")
@@ -442,9 +438,8 @@ def main() -> int:
                 if delete_course(args.course_id):
                     print("Course deleted successfully")
                     return 0
-                else:
-                    print("Error: Failed to delete course")
-                    return 1
+                print("Error: Failed to delete course")
+                return 1
 
         except ValueError as e:
             print(f"Validation error: {e}")

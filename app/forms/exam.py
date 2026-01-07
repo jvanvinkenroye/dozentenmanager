@@ -5,13 +5,13 @@ This module provides form validation for exam creation and editing.
 """
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, DateField, FloatField, TextAreaField
+from wtforms import DateField, FloatField, SelectField, StringField, TextAreaField
 from wtforms.validators import (
     DataRequired,
     InputRequired,
     Length,
-    Optional,
     NumberRange,
+    Optional,
 )
 
 

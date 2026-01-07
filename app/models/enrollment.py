@@ -20,7 +20,6 @@ from sqlalchemy.orm import relationship
 
 from app import db
 
-
 # Valid enrollment status values
 VALID_STATUSES = ["active", "completed", "dropped"]
 

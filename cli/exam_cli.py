@@ -9,19 +9,17 @@ import argparse
 import logging
 import sys
 from datetime import date, datetime
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import db
-from app import create_app
+from app import create_app, db
+from app.models.course import Course
 from app.models.exam import (
     Exam,
+    validate_exam_date,
     validate_max_points,
     validate_weight,
-    validate_exam_date,
 )
-from app.models.course import Course
 
 # Configure logging
 logging.basicConfig(
@@ -36,8 +34,8 @@ def add_exam(
     exam_date: date,
     max_points: float,
     weight: float = 100.0,
-    description: Optional[str] = None,
-) -> Optional[Exam]:
+    description: str | None = None,
+) -> Exam | None:
     """
     Add a new exam to the database.
 
@@ -115,7 +113,7 @@ def add_exam(
         return None
 
 
-def list_exams(course_id: Optional[int] = None) -> list[Exam]:
+def list_exams(course_id: int | None = None) -> list[Exam]:
     """
     List all exams with optional course filter.
 
@@ -139,7 +137,7 @@ def list_exams(course_id: Optional[int] = None) -> list[Exam]:
         return []
 
 
-def get_exam(exam_id: int) -> Optional[Exam]:
+def get_exam(exam_id: int) -> Exam | None:
     """
     Get an exam by ID.
 
@@ -160,13 +158,13 @@ def get_exam(exam_id: int) -> Optional[Exam]:
 
 def update_exam(
     exam_id: int,
-    name: Optional[str] = None,
-    course_id: Optional[int] = None,
-    exam_date: Optional[date] = None,
-    max_points: Optional[float] = None,
-    weight: Optional[float] = None,
-    description: Optional[str] = None,
-) -> Optional[Exam]:
+    name: str | None = None,
+    course_id: int | None = None,
+    exam_date: date | None = None,
+    max_points: float | None = None,
+    weight: float | None = None,
+    description: str | None = None,
+) -> Exam | None:
     """
     Update an existing exam.
 
@@ -368,11 +366,10 @@ def main() -> int:
                     if exam.description:
                         print(f"Description: {exam.description}")
                     return 0
-                else:
-                    print("Error: Failed to add exam")
-                    return 1
+                print("Error: Failed to add exam")
+                return 1
 
-            elif args.command == "list":
+            if args.command == "list":
                 exams = list_exams(course_id=args.course_id)
                 if not exams:
                     print("No exams found")
@@ -390,7 +387,7 @@ def main() -> int:
                     print()
                 return 0
 
-            elif args.command == "show":
+            if args.command == "show":
                 exam = get_exam(args.exam_id)
                 if not exam:
                     print(f"Error: Exam with ID {args.exam_id} not found")
@@ -409,7 +406,7 @@ def main() -> int:
                 print(f"Updated: {exam.updated_at}")
                 return 0
 
-            elif args.command == "update":
+            if args.command == "update":
                 # Parse exam date if provided
                 exam_date = None
                 if args.exam_date:
@@ -440,11 +437,10 @@ def main() -> int:
                     if exam.description:
                         print(f"Description: {exam.description}")
                     return 0
-                else:
-                    print("Error: Failed to update exam")
-                    return 1
+                print("Error: Failed to update exam")
+                return 1
 
-            elif args.command == "delete":
+            if args.command == "delete":
                 exam = get_exam(args.exam_id)
                 if not exam:
                     print(f"Error: Exam with ID {args.exam_id} not found")
@@ -463,9 +459,8 @@ def main() -> int:
                 if delete_exam(args.exam_id):
                     print("Exam deleted successfully")
                     return 0
-                else:
-                    print("Error: Failed to delete exam")
-                    return 1
+                print("Error: Failed to delete exam")
+                return 1
 
         except ValueError as e:
             print(f"Validation error: {e}")

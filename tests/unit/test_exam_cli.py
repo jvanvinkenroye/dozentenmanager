@@ -4,9 +4,13 @@ Unit tests for exam CLI tool.
 This module tests all exam management CLI functions.
 """
 
-import pytest
 from datetime import date
 
+import pytest
+
+from app.models.course import Course
+from app.models.exam import validate_exam_date, validate_max_points, validate_weight
+from app.models.university import University
 from cli.exam_cli import (
     add_exam,
     delete_exam,
@@ -14,9 +18,6 @@ from cli.exam_cli import (
     list_exams,
     update_exam,
 )
-from app.models.exam import validate_max_points, validate_weight, validate_exam_date
-from app.models.university import University
-from app.models.course import Course
 
 
 class TestValidationFunctions:
@@ -185,16 +186,15 @@ class TestAddExam:
 
     def test_add_exam_invalid_max_points(self, app, db, sample_course):
         """Test that invalid max points raises ValueError."""
-        with app.app_context():
-            with pytest.raises(
-                ValueError, match="Maximum points must be greater than 0"
-            ):
-                add_exam(
-                    name="Klausur",
-                    course_id=sample_course,
-                    exam_date=date(2024, 6, 15),
-                    max_points=0.0,
-                )
+        with app.app_context(), pytest.raises(
+            ValueError, match="Maximum points must be greater than 0"
+        ):
+            add_exam(
+                name="Klausur",
+                course_id=sample_course,
+                exam_date=date(2024, 6, 15),
+                max_points=0.0,
+            )
 
     def test_add_exam_invalid_weight(self, app, db, sample_course):
         """Test that invalid weight raises ValueError."""
@@ -407,11 +407,10 @@ class TestUpdateExam:
 
     def test_update_exam_invalid_max_points(self, app, db, sample_exam):
         """Test that invalid max points raises ValueError."""
-        with app.app_context():
-            with pytest.raises(
-                ValueError, match="Maximum points must be greater than 0"
-            ):
-                update_exam(sample_exam, max_points=0.0)
+        with app.app_context(), pytest.raises(
+            ValueError, match="Maximum points must be greater than 0"
+        ):
+            update_exam(sample_exam, max_points=0.0)
 
     def test_update_exam_invalid_weight(self, app, db, sample_exam):
         """Test that invalid weight raises ValueError."""

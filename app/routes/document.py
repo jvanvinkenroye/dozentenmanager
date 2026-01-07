@@ -7,7 +7,7 @@ This module provides web routes for managing documents through the Flask interfa
 import logging
 import mimetypes
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -302,7 +302,7 @@ def upload() -> str | Any:
                 submission_type=form.submission_type.data,
                 exam_id=form.exam_id.data if form.exam_id.data else None,
                 notes=form.notes.data if form.notes.data else None,
-                submission_date=datetime.now(timezone.utc),
+                submission_date=datetime.now(UTC),
                 status="submitted",
             )
             db.session.add(submission)
@@ -317,7 +317,7 @@ def upload() -> str | Any:
                 file_type=file_type,
                 file_size=file_size,
                 mime_type=mime_type,
-                upload_date=datetime.now(timezone.utc),
+                upload_date=datetime.now(UTC),
             )
             db.session.add(document)
             db.session.commit()
@@ -409,7 +409,7 @@ def bulk_upload() -> str | Any:
                         submission_type=submission_type,
                         exam_id=exam_id,
                         notes=notes,
-                        submission_date=datetime.now(timezone.utc),
+                        submission_date=datetime.now(UTC),
                         status="submitted",
                     )
                     db.session.add(submission)
@@ -424,7 +424,7 @@ def bulk_upload() -> str | Any:
                         file_type=file_type,
                         file_size=file_size,
                         mime_type=mime_type,
-                        upload_date=datetime.now(timezone.utc),
+                        upload_date=datetime.now(UTC),
                     )
                     db.session.add(document)
 
@@ -699,9 +699,10 @@ def email_import() -> str | Any:
     Returns:
         Rendered form template (GET) or results page (POST)
     """
+    import tempfile
+
     from app.forms.email import EmailImportForm
     from cli.email_cli import import_emails
-    import tempfile
 
     try:
         courses = db.session.query(Course).order_by(Course.name).all()

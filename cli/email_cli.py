@@ -9,21 +9,19 @@ import argparse
 import email
 import logging
 import mailbox
-import mimetypes
 import os
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.header import decode_header
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import create_app, db
 from app.models.course import Course
 from app.models.document import (
-    ALLOWED_EXTENSIONS,
+    Document,
     allowed_file,
     get_file_extension,
     sanitize_filename,
@@ -31,7 +29,6 @@ from app.models.document import (
 from app.models.enrollment import Enrollment
 from app.models.student import Student
 from app.models.submission import Submission
-from app.models.document import Document
 
 # Configure logging
 logging.basicConfig(
@@ -89,7 +86,7 @@ def extract_email_address(from_header: str) -> str:
     return from_header.lower()
 
 
-def extract_student_id_from_text(text: str) -> Optional[str]:
+def extract_student_id_from_text(text: str) -> str | None:
     """
     Extract student ID (Matrikelnummer) from text.
 
@@ -108,7 +105,7 @@ def extract_student_id_from_text(text: str) -> Optional[str]:
     return None
 
 
-def match_student_by_email(email_address: str, course_id: Optional[int] = None) -> Optional[Enrollment]:
+def match_student_by_email(email_address: str, course_id: int | None = None) -> Enrollment | None:
     """
     Try to match a student by their email address.
 
@@ -132,7 +129,7 @@ def match_student_by_email(email_address: str, course_id: Optional[int] = None) 
     return query.first()
 
 
-def match_student_by_id(student_id: str, course_id: Optional[int] = None) -> Optional[Enrollment]:
+def match_student_by_id(student_id: str, course_id: int | None = None) -> Enrollment | None:
     """
     Try to match a student by their student ID.
 
@@ -156,7 +153,7 @@ def match_student_by_id(student_id: str, course_id: Optional[int] = None) -> Opt
     return query.first()
 
 
-def match_student_by_name(name: str, course_id: Optional[int] = None) -> Optional[Enrollment]:
+def match_student_by_name(name: str, course_id: int | None = None) -> Enrollment | None:
     """
     Try to match a student by name using fuzzy matching.
 
@@ -245,7 +242,7 @@ def process_attachment(
     enrollment: Enrollment,
     email_subject: str,
     email_date: datetime,
-) -> Optional[Document]:
+) -> Document | None:
     """
     Process an email attachment and save it.
 
@@ -294,7 +291,7 @@ def process_attachment(
             enrollment_id=enrollment.id,
             submission_type="email_attachment",
             notes=f"Importiert aus E-Mail: {email_subject}",
-            submission_date=email_date or datetime.now(timezone.utc),
+            submission_date=email_date or datetime.now(UTC),
             status="submitted",
         )
         db.session.add(submission)
@@ -309,7 +306,7 @@ def process_attachment(
             file_type=file_type,
             file_size=file_size,
             mime_type=mime_type,
-            upload_date=datetime.now(timezone.utc),
+            upload_date=datetime.now(UTC),
         )
         db.session.add(document)
 
@@ -323,7 +320,7 @@ def process_attachment(
 
 def process_email_message(
     msg: email.message.Message,
-    course_id: Optional[int] = None,
+    course_id: int | None = None,
 ) -> dict:
     """
     Process a single email message and extract attachments.
@@ -357,9 +354,9 @@ def process_email_message(
         try:
             result["date"] = email.utils.parsedate_to_datetime(date_str)
         except (ValueError, TypeError):
-            result["date"] = datetime.now(timezone.utc)
+            result["date"] = datetime.now(UTC)
     else:
-        result["date"] = datetime.now(timezone.utc)
+        result["date"] = datetime.now(UTC)
 
     # Try to match student
     enrollment = None
@@ -425,7 +422,7 @@ def process_email_message(
     return result
 
 
-def parse_eml_file(file_path: str, course_id: Optional[int] = None) -> list[dict]:
+def parse_eml_file(file_path: str, course_id: int | None = None) -> list[dict]:
     """
     Parse an .eml file and process it.
 
@@ -454,7 +451,7 @@ def parse_eml_file(file_path: str, course_id: Optional[int] = None) -> list[dict
     return results
 
 
-def parse_mbox_file(file_path: str, course_id: Optional[int] = None) -> list[dict]:
+def parse_mbox_file(file_path: str, course_id: int | None = None) -> list[dict]:
     """
     Parse an .mbox file and process all messages.
 
@@ -485,7 +482,7 @@ def parse_mbox_file(file_path: str, course_id: Optional[int] = None) -> list[dic
 
 def import_emails(
     file_path: str,
-    course_id: Optional[int] = None,
+    course_id: int | None = None,
 ) -> dict:
     """
     Import documents from email file(s).
@@ -624,7 +621,7 @@ def main() -> int:
 
                 return 0
 
-            elif args.command == "parse":
+            if args.command == "parse":
                 path = Path(args.file)
                 if not path.exists():
                     print(f"Error: File not found: {args.file}")
@@ -653,7 +650,7 @@ def main() -> int:
 
                 return 0
 
-            elif args.command == "list-courses":
+            if args.command == "list-courses":
                 courses = db.session.query(Course).order_by(Course.name).all()
                 if not courses:
                     print("No courses found")

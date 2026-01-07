@@ -6,6 +6,7 @@ updating, and deleting grades, as well as the dashboard and statistics.
 """
 
 import pytest
+
 from app import db
 from app.models import (
     Course,
@@ -193,7 +194,7 @@ class TestGradeComponentsRoute:
         """Test components page with no components."""
         response = client.get(f"/grades/components/{sample_data['exam'].id}")
         assert response.status_code == 200
-        assert "Prüfungskomponenten".encode("utf-8") in response.data
+        assert "Prüfungskomponenten".encode() in response.data
 
     def test_components_with_data(self, client, sample_data):
         """Test components page with components."""
@@ -220,7 +221,7 @@ class TestGradeNewComponentRoute:
         """Test new component form page."""
         response = client.get(f"/grades/components/{sample_data['exam'].id}/new")
         assert response.status_code == 200
-        assert "Neue Prüfungskomponente".encode("utf-8") in response.data
+        assert "Neue Prüfungskomponente".encode() in response.data
 
 
 class TestGradeBulkRoute:
@@ -332,4 +333,4 @@ class TestGradeDeleteRoute:
 
         response = client.get(f"/grades/{grade.id}/delete")
         assert response.status_code == 200
-        assert "Note löschen".encode("utf-8") in response.data
+        assert "Note löschen".encode() in response.data

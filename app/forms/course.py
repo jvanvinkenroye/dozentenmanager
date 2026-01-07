@@ -5,12 +5,11 @@ This module provides form validation for course creation and editing.
 """
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField
-from wtforms.validators import DataRequired, Length, Optional, ValidationError, Regexp
+from wtforms import SelectField, StringField
+from wtforms.validators import DataRequired, Length, Optional, Regexp, ValidationError
 
-from app.models.course import generate_slug
 from app import db
-from app.models.course import Course
+from app.models.course import Course, generate_slug
 
 
 class CourseForm(FlaskForm):

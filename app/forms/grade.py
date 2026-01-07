@@ -7,20 +7,19 @@ exam components.
 
 from flask_wtf import FlaskForm
 from wtforms import (
-    FloatField,
-    SelectField,
-    TextAreaField,
     BooleanField,
-    StringField,
-    IntegerField,
+    FloatField,
     HiddenField,
+    IntegerField,
+    SelectField,
+    StringField,
+    TextAreaField,
 )
 from wtforms.validators import (
     DataRequired,
+    Length,
     NumberRange,
     Optional,
-    Length,
-    ValidationError,
 )
 
 

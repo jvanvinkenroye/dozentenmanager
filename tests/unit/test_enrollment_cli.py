@@ -4,8 +4,9 @@ Unit tests for enrollment CLI tool.
 Tests all CRUD operations for enrollment management.
 """
 
-import pytest
 from datetime import date
+
+import pytest
 
 from app.models.course import Course
 from app.models.enrollment import Enrollment

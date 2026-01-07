@@ -7,11 +7,12 @@ associated with submissions.
 
 import os
 import re
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, BigInteger, Index
+from datetime import UTC, datetime
+
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, Integer, String
+
 from app import db
 from app.models.base import TimestampMixin
-
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "txt", "odt", "rtf"}
@@ -161,7 +162,7 @@ class Document(db.Model, TimestampMixin):  # type: ignore[name-defined]
     upload_date = Column(
         DateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     # Indexes for common queries

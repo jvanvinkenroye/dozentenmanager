@@ -102,8 +102,8 @@ class TestUniversityNewRoute:
             assert b"/universities/" in response.data
 
             # Verify university was created
-            from app.models.university import University
             from app import db
+            from app.models.university import University
 
             university = db.session.query(University).filter_by(name="TH Köln").first()
             assert university is not None
@@ -121,8 +121,8 @@ class TestUniversityNewRoute:
             assert response.status_code == 302
 
             # Verify slug was auto-generated
-            from app.models.university import University
             from app import db
+            from app.models.university import University
 
             university = db.session.query(University).filter_by(name="TH Köln").first()
             assert university is not None
@@ -194,8 +194,8 @@ class TestUniversityEditRoute:
             assert response.status_code == 302
 
             # Verify update
-            from app.models.university import University
             from app import db
+            from app.models.university import University
 
             updated = db.session.query(University).filter_by(id=university.id).first()
             assert updated.name == "Technische Hochschule Köln"
@@ -261,8 +261,8 @@ class TestUniversityDeleteRoute:
             assert b"/universities/" in response.data
 
             # Verify deletion
-            from app.models.university import University
             from app import db
+            from app.models.university import University
 
             deleted = db.session.query(University).filter_by(id=university_id).first()
             assert deleted is None

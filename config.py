@@ -9,7 +9,7 @@ This module provides configuration classes for different environments:
 
 import os
 from pathlib import Path
-from typing import Optional
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -98,7 +98,7 @@ config = {
 }
 
 
-def get_config(config_name: Optional[str] = None) -> type[Config]:
+def get_config(config_name: str | None = None) -> type[Config]:
     """
     Get configuration class for the specified environment.
 

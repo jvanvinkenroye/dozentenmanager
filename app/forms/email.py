@@ -5,9 +5,9 @@ This module provides form validation for email file import.
 """
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired, FileAllowed
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import SelectField
-from wtforms.validators import DataRequired, Optional
+from wtforms.validators import Optional
 
 
 class EmailImportForm(FlaskForm):

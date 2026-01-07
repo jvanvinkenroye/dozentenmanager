@@ -6,25 +6,26 @@ and exam components, as well as the GradingScale model for defining
 grade thresholds.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Optional
+
 from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
     Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
     Integer,
     String,
-    Float,
-    DateTime,
-    ForeignKey,
     Text,
-    Boolean,
-    Index,
-    CheckConstraint,
     UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
+
 from app import db
 from app.models.base import TimestampMixin
-
 
 # German grading scale (default)
 GERMAN_GRADES = {
@@ -275,7 +276,7 @@ class Grade(db.Model, TimestampMixin):  # type: ignore[name-defined]
     grade_value = Column(Float, nullable=True)
     grade_label = Column(String(50), nullable=True)
     graded_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+        DateTime, nullable=False, default=lambda: datetime.now(UTC)
     )
     graded_by = Column(String(100), nullable=True)
     is_final = Column(Boolean, nullable=False, default=False)
@@ -338,11 +339,11 @@ class Grade(db.Model, TimestampMixin):  # type: ignore[name-defined]
         exam_id: int,
         points: float,
         max_points: float,
-        component_id: Optional[int] = None,
-        graded_by: Optional[str] = None,
+        component_id: int | None = None,
+        graded_by: str | None = None,
         is_final: bool = False,
-        notes: Optional[str] = None,
-        grading_scale: Optional[GradingScale] = None,
+        notes: str | None = None,
+        grading_scale: GradingScale | None = None,
     ) -> "Grade":
         """
         Create a Grade with automatic percentage and grade calculation.

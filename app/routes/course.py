@@ -11,10 +11,10 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
+from app.forms.course import CourseForm
 from app.models.course import Course
 from app.models.student import Student
 from app.models.university import University
-from app.forms.course import CourseForm
 
 # Configure logging
 logger = logging.getLogger(__name__)

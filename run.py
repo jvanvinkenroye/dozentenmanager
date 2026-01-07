@@ -9,6 +9,7 @@ Use this file to run the application:
 """
 
 import os
+
 from app import create_app
 
 # Create the application instance

@@ -14,6 +14,7 @@ import asyncio
 import logging
 import os
 import tempfile
+
 from playwright.async_api import async_playwright
 
 # Configure logging
@@ -112,7 +113,7 @@ async def test_document_upload_page(page):
     # Verify page heading
     heading = await page.locator("h1.title").text_content()
     logger.info(f"Page heading: {heading}")
-    assert "Dokument hochladen" in heading, f"Expected 'Dokument hochladen' in heading"
+    assert "Dokument hochladen" in heading, "Expected 'Dokument hochladen' in heading"
 
     # Verify form elements exist
     file_input = await page.locator("input[type='file']").count()
@@ -158,7 +159,7 @@ async def test_bulk_upload_page(page):
     # Verify page heading
     heading = await page.locator("h1.title").text_content()
     logger.info(f"Page heading: {heading}")
-    assert "Bulk-Upload" in heading, f"Expected 'Bulk-Upload' in heading"
+    assert "Bulk-Upload" in heading, "Expected 'Bulk-Upload' in heading"
 
     # Verify multiple file input exists
     file_input = await page.locator("input[type='file']").count()
@@ -196,7 +197,7 @@ async def test_submissions_page(page):
     # Verify page heading
     heading = await page.locator("h1.title").text_content()
     logger.info(f"Page heading: {heading}")
-    assert "Einreichungen" in heading, f"Expected 'Einreichungen' in heading"
+    assert "Einreichungen" in heading, "Expected 'Einreichungen' in heading"
 
     # Check if submissions exist or "no submissions" message is shown
     submission_table = await page.locator("table tbody tr").count()
@@ -231,7 +232,7 @@ async def test_email_import_page(page):
     # Verify page heading
     heading = await page.locator("h1.title").text_content()
     logger.info(f"Page heading: {heading}")
-    assert "E-Mail-Import" in heading, f"Expected 'E-Mail-Import' in heading"
+    assert "E-Mail-Import" in heading, "Expected 'E-Mail-Import' in heading"
 
     # Verify file input exists
     file_input = await page.locator("input[type='file']").count()
@@ -275,7 +276,7 @@ async def test_navigation_from_navbar(page):
     # Verify page heading
     heading = await page.locator("h1.title").text_content()
     logger.info(f"Page heading: {heading}")
-    assert "Dokumente" in heading, f"Expected 'Dokumente' in heading"
+    assert "Dokumente" in heading, "Expected 'Dokumente' in heading"
 
     logger.info("✓ Navigation from navbar test passed!")
     return True
@@ -452,9 +453,8 @@ async def main():
     if all(r == "PASSED" for r in results.values()):
         logger.info("\nAll tests passed!")
         return 0
-    else:
-        logger.error("\nSome tests failed!")
-        return 1
+    logger.error("\nSome tests failed!")
+    return 1
 
 
 if __name__ == "__main__":

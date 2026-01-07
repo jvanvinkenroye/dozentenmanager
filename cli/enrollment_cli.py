@@ -15,7 +15,6 @@ import argparse
 import logging
 import sys
 from datetime import date
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -85,8 +84,8 @@ def add_enrollment(student_id_str: str, course_id: int) -> int:
 
 
 def list_enrollments(
-    course_id: Optional[int] = None,
-    student_id_str: Optional[str] = None,
+    course_id: int | None = None,
+    student_id_str: str | None = None,
 ) -> int:
     """
     List enrollments by course or student.
@@ -365,14 +364,14 @@ Examples:
     with app.app_context():
         if args.command == "add":
             return add_enrollment(args.student_id, args.course_id)
-        elif args.command == "list":
+        if args.command == "list":
             return list_enrollments(
                 course_id=args.course_id,
                 student_id_str=args.student_id,
             )
-        elif args.command == "remove":
+        if args.command == "remove":
             return remove_enrollment(args.student_id, args.course_id)
-        elif args.command == "status":
+        if args.command == "status":
             return update_enrollment_status(
                 args.student_id, args.course_id, args.status
             )

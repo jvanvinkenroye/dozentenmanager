@@ -10,23 +10,22 @@ import logging
 import mimetypes
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import create_app, db
 from app.models.document import (
+    ALLOWED_EXTENSIONS,
     Document,
     allowed_file,
     get_file_extension,
     sanitize_filename,
-    ALLOWED_EXTENSIONS,
 )
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
-from app.models.submission import Submission, VALID_SUBMISSION_TYPES
+from app.models.submission import VALID_SUBMISSION_TYPES, Submission
 
 # Configure logging
 logging.basicConfig(
@@ -81,9 +80,9 @@ def get_upload_path(
 def create_submission(
     enrollment_id: int,
     submission_type: str = "document",
-    exam_id: Optional[int] = None,
-    notes: Optional[str] = None,
-) -> Optional[Submission]:
+    exam_id: int | None = None,
+    notes: str | None = None,
+) -> Submission | None:
     """
     Create a new submission record.
 
@@ -122,7 +121,7 @@ def create_submission(
             submission_type=submission_type,
             exam_id=exam_id,
             notes=notes,
-            submission_date=datetime.now(timezone.utc),
+            submission_date=datetime.now(UTC),
             status="submitted",
         )
         db.session.add(submission)
@@ -141,9 +140,9 @@ def upload_document(
     file_path: str,
     enrollment_id: int,
     submission_type: str = "document",
-    exam_id: Optional[int] = None,
-    notes: Optional[str] = None,
-) -> Optional[Document]:
+    exam_id: int | None = None,
+    notes: str | None = None,
+) -> Document | None:
     """
     Upload a document for a student enrollment.
 
@@ -213,7 +212,7 @@ def upload_document(
             file_type=file_type,
             file_size=file_size,
             mime_type=mime_type,
-            upload_date=datetime.now(timezone.utc),
+            upload_date=datetime.now(UTC),
         )
         db.session.add(document)
         db.session.commit()
@@ -231,9 +230,9 @@ def upload_document(
 
 
 def list_documents(
-    enrollment_id: Optional[int] = None,
-    submission_id: Optional[int] = None,
-    file_type: Optional[str] = None,
+    enrollment_id: int | None = None,
+    submission_id: int | None = None,
+    file_type: str | None = None,
 ) -> list[Document]:
     """
     List documents with optional filters.
@@ -266,7 +265,7 @@ def list_documents(
         return []
 
 
-def get_document(document_id: int) -> Optional[Document]:
+def get_document(document_id: int) -> Document | None:
     """
     Get a document by ID.
 
@@ -329,9 +328,9 @@ def delete_document(document_id: int, delete_file: bool = True) -> bool:
 
 
 def list_submissions(
-    enrollment_id: Optional[int] = None,
-    exam_id: Optional[int] = None,
-    status: Optional[str] = None,
+    enrollment_id: int | None = None,
+    exam_id: int | None = None,
+    status: str | None = None,
 ) -> list[Submission]:
     """
     List submissions with optional filters.
@@ -364,7 +363,7 @@ def list_submissions(
         return []
 
 
-def update_submission_status(submission_id: int, status: str) -> Optional[Submission]:
+def update_submission_status(submission_id: int, status: str) -> Submission | None:
     """
     Update the status of a submission.
 
@@ -499,11 +498,10 @@ def main() -> int:
                     print(f"Size: {document.file_size_human}")
                     print(f"Submission ID: {document.submission_id}")
                     return 0
-                else:
-                    print("Error: Failed to upload document")
-                    return 1
+                print("Error: Failed to upload document")
+                return 1
 
-            elif args.command == "list":
+            if args.command == "list":
                 documents = list_documents(
                     enrollment_id=args.enrollment_id,
                     submission_id=args.submission_id,
@@ -523,7 +521,7 @@ def main() -> int:
                     print()
                 return 0
 
-            elif args.command == "show":
+            if args.command == "show":
                 document = get_document(args.document_id)
                 if not document:
                     print(f"Error: Document with ID {args.document_id} not found")
@@ -543,7 +541,7 @@ def main() -> int:
                 print(f"Updated: {document.updated_at}")
                 return 0
 
-            elif args.command == "delete":
+            if args.command == "delete":
                 document = get_document(args.document_id)
                 if not document:
                     print(f"Error: Document with ID {args.document_id} not found")
@@ -561,11 +559,10 @@ def main() -> int:
                 if delete_document(args.document_id, delete_file=not args.keep_file):
                     print("Document deleted successfully")
                     return 0
-                else:
-                    print("Error: Failed to delete document")
-                    return 1
+                print("Error: Failed to delete document")
+                return 1
 
-            elif args.command == "submissions":
+            if args.command == "submissions":
                 submissions = list_submissions(
                     enrollment_id=args.enrollment_id,
                     exam_id=args.exam_id,
@@ -593,7 +590,7 @@ def main() -> int:
                     print()
                 return 0
 
-            elif args.command == "update-status":
+            if args.command == "update-status":
                 submission = update_submission_status(
                     submission_id=args.submission_id,
                     status=args.status,
@@ -603,9 +600,8 @@ def main() -> int:
                     print(f"ID: {submission.id}")
                     print(f"Status: {submission.status}")
                     return 0
-                else:
-                    print("Error: Failed to update submission status")
-                    return 1
+                print("Error: Failed to update submission status")
+                return 1
 
         except ValueError as e:
             print(f"Validation error: {e}")

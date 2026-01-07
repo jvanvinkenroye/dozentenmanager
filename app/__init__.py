@@ -5,8 +5,8 @@ This module creates and configures the Flask application instance using
 the application factory pattern for better testability and flexibility.
 """
 
-import os
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional
@@ -24,7 +24,7 @@ db = SQLAlchemy()
 csrf = CSRFProtect()
 
 
-def create_app(config_name: Optional[str] = None) -> Flask:
+def create_app(config_name: str | None = None) -> Flask:
     """
     Create and configure the Flask application.
 
@@ -160,7 +160,8 @@ def register_blueprints(app: Flask) -> None:
             Rendered home template with statistics
         """
         from flask import render_template
-        from app.models import University, Student, Course, Enrollment
+
+        from app.models import Course, Enrollment, Student, University
 
         # Get statistics from database
         stats = {

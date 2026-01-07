@@ -9,27 +9,23 @@ managing grading scales.
 import argparse
 import logging
 import sys
-from datetime import datetime
-from typing import Optional
 
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import create_app, db
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
 from app.models.exam_component import ExamComponent
 from app.models.grade import (
+    GERMAN_GRADES,
     Grade,
-    GradingScale,
     GradeThreshold,
+    GradingScale,
     calculate_percentage,
     percentage_to_german_grade,
     validate_points,
-    GERMAN_GRADES,
 )
-from app.models.course import Course
-from app.models.student import Student
 
 # Configure logging
 logging.basicConfig(
@@ -42,11 +38,11 @@ def add_grade(
     enrollment_id: int,
     exam_id: int,
     points: float,
-    component_id: Optional[int] = None,
-    graded_by: Optional[str] = None,
+    component_id: int | None = None,
+    graded_by: str | None = None,
     is_final: bool = False,
-    notes: Optional[str] = None,
-) -> Optional[Grade]:
+    notes: str | None = None,
+) -> Grade | None:
     """
     Add a grade for a student's exam/component.
 
@@ -98,8 +94,8 @@ def add_grade(
     ).first()
     if existing:
         raise ValueError(
-            f"Grade already exists for this enrollment/exam/component combination. "
-            f"Use update_grade to modify."
+            "Grade already exists for this enrollment/exam/component combination. "
+            "Use update_grade to modify."
         )
 
     try:
@@ -130,11 +126,11 @@ def add_grade(
 
 def update_grade(
     grade_id: int,
-    points: Optional[float] = None,
-    is_final: Optional[bool] = None,
-    notes: Optional[str] = None,
-    graded_by: Optional[str] = None,
-) -> Optional[Grade]:
+    points: float | None = None,
+    is_final: bool | None = None,
+    notes: str | None = None,
+    graded_by: str | None = None,
+) -> Grade | None:
     """
     Update an existing grade.
 
@@ -224,16 +220,16 @@ def delete_grade(grade_id: int) -> bool:
         return False
 
 
-def get_grade(grade_id: int) -> Optional[Grade]:
+def get_grade(grade_id: int) -> Grade | None:
     """Get a grade by ID."""
     return db.session.query(Grade).filter_by(id=grade_id).first()
 
 
 def list_grades(
-    enrollment_id: Optional[int] = None,
-    exam_id: Optional[int] = None,
-    course_id: Optional[int] = None,
-    is_final: Optional[bool] = None,
+    enrollment_id: int | None = None,
+    exam_id: int | None = None,
+    course_id: int | None = None,
+    is_final: bool | None = None,
 ) -> list[Grade]:
     """
     List grades with optional filters.
@@ -265,8 +261,8 @@ def list_grades(
 
 
 def calculate_weighted_average(
-    enrollment_id: int, course_id: Optional[int] = None
-) -> Optional[dict]:
+    enrollment_id: int, course_id: int | None = None
+) -> dict | None:
     """
     Calculate weighted average grade for an enrollment.
 
@@ -360,7 +356,7 @@ def calculate_weighted_average(
     }
 
 
-def get_exam_statistics(exam_id: int) -> Optional[dict]:
+def get_exam_statistics(exam_id: int) -> dict | None:
     """
     Calculate statistics for an exam.
 
@@ -426,8 +422,8 @@ def add_exam_component(
     weight: float,
     max_points: float,
     order: int = 0,
-    description: Optional[str] = None,
-) -> Optional[ExamComponent]:
+    description: str | None = None,
+) -> ExamComponent | None:
     """
     Add a component to an exam.
 
@@ -497,7 +493,7 @@ def list_exam_components(exam_id: int) -> list[ExamComponent]:
     )
 
 
-def create_default_grading_scale(university_id: Optional[int] = None) -> GradingScale:
+def create_default_grading_scale(university_id: int | None = None) -> GradingScale:
     """
     Create the default German grading scale.
 
@@ -630,7 +626,7 @@ def main() -> int:
                     return 0
                 return 1
 
-            elif args.command == "update":
+            if args.command == "update":
                 is_final = None
                 if args.final:
                     is_final = True
@@ -652,7 +648,7 @@ def main() -> int:
                     return 0
                 return 1
 
-            elif args.command == "delete":
+            if args.command == "delete":
                 grade = get_grade(args.grade_id)
                 if not grade:
                     print(f"Error: Grade {args.grade_id} not found")
@@ -671,7 +667,7 @@ def main() -> int:
                     return 0
                 return 1
 
-            elif args.command == "list":
+            if args.command == "list":
                 grades = list_grades(
                     enrollment_id=args.enrollment_id,
                     exam_id=args.exam_id,
@@ -691,7 +687,7 @@ def main() -> int:
                     print()
                 return 0
 
-            elif args.command == "show":
+            if args.command == "show":
                 grade = get_grade(args.grade_id)
                 if not grade:
                     print(f"Error: Grade {args.grade_id} not found")
@@ -714,7 +710,7 @@ def main() -> int:
                     print(f"Notes: {grade.notes}")
                 return 0
 
-            elif args.command == "average":
+            if args.command == "average":
                 result = calculate_weighted_average(
                     enrollment_id=args.enrollment_id,
                     course_id=args.course_id,
@@ -729,7 +725,7 @@ def main() -> int:
                 print(f"Passing: {'Yes' if result['is_passing'] else 'No'}")
                 return 0
 
-            elif args.command == "stats":
+            if args.command == "stats":
                 stats = get_exam_statistics(args.exam_id)
                 if not stats:
                     print("No grades found for this exam")
@@ -748,7 +744,7 @@ def main() -> int:
                     print(f"  {label}: {count}")
                 return 0
 
-            elif args.command == "add-component":
+            if args.command == "add-component":
                 component = add_exam_component(
                     exam_id=args.exam_id,
                     name=args.name,
@@ -766,7 +762,7 @@ def main() -> int:
                     return 0
                 return 1
 
-            elif args.command == "list-components":
+            if args.command == "list-components":
                 components = list_exam_components(args.exam_id)
                 if not components:
                     print("No components found")
@@ -783,7 +779,7 @@ def main() -> int:
                 print(f"Total Weight: {total_weight}%")
                 return 0
 
-            elif args.command == "create-scale":
+            if args.command == "create-scale":
                 scale = create_default_grading_scale(args.university_id)
                 print(f"\nCreated grading scale: {scale.name} (ID: {scale.id})")
                 print("Thresholds:")

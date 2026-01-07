@@ -83,8 +83,7 @@ def enroll() -> Any:
         # Redirect based on redirect_to parameter
         if redirect_to == "student":
             return redirect(url_for("student.show", student_id=student.student_id))
-        else:
-            return redirect(url_for("course.show", course_id=course.id))
+        return redirect(url_for("course.show", course_id=course.id))
 
     except IntegrityError:
         db.session.rollback()
@@ -158,8 +157,7 @@ def unenroll() -> Any:
         # Redirect based on redirect_to parameter
         if redirect_to == "student":
             return redirect(url_for("student.show", student_id=student_student_id))
-        else:
-            return redirect(url_for("course.show", course_id=course_id_int))
+        return redirect(url_for("course.show", course_id=course_id_int))
 
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -234,8 +232,7 @@ def update_status() -> Any:
             return redirect(
                 url_for("student.show", student_id=enrollment.student.student_id)
             )
-        else:
-            return redirect(url_for("course.show", course_id=course_id_int))
+        return redirect(url_for("course.show", course_id=course_id_int))
 
     except SQLAlchemyError as e:
         db.session.rollback()

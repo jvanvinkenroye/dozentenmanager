@@ -8,9 +8,9 @@ from flask_wtf import FlaskForm
 from wtforms import StringField
 from wtforms.validators import DataRequired, Length, ValidationError
 
-from cli.university_cli import generate_slug
 from app import db
 from app.models.university import University
+from cli.university_cli import generate_slug
 
 
 class UniversityForm(FlaskForm):

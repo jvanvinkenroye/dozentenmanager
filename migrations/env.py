@@ -1,21 +1,20 @@
-from logging.config import fileConfig
 import os
 import sys
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import app configuration and models
-from config import get_config
-from app import db
-
 # Import all models for autogenerate support
-from app import models  # noqa: F401
+from app import (
+    db,
+    models,  # noqa: F401
+)
+from config import get_config
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

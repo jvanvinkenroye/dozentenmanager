@@ -6,11 +6,11 @@ document upload, listing, and deletion functionality.
 """
 
 import io
+
 import pytest
-from flask import url_for
 
 from app import create_app, db
-from app.models import Course, Document, Enrollment, Student, Submission, University
+from app.models import Course, Enrollment, Student, University
 
 
 @pytest.fixture

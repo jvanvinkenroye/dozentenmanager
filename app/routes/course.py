@@ -15,6 +15,7 @@ from app.forms.course import CourseForm
 from app.models.course import Course
 from app.models.student import Student
 from app.models.university import University
+from app.utils.pagination import paginate_query
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -26,15 +27,16 @@ bp = Blueprint("course", __name__, url_prefix="/courses")
 @bp.route("/")
 def index() -> str:
     """
-    List all courses with optional search and filters.
+    List all courses with optional search, filters, and pagination.
 
     Query parameters:
         search: Optional search term to filter by name
         university_id: Optional university filter
         semester: Optional semester filter
+        page: Page number (default: 1)
 
     Returns:
-        Rendered template with list of courses
+        Rendered template with paginated list of courses
     """
     search_term = request.args.get("search", "").strip()
     university_id = request.args.get("university_id", "").strip()
@@ -53,14 +55,16 @@ def index() -> str:
         if semester_filter:
             query = query.filter_by(semester=semester_filter)
 
-        courses = query.order_by(Course.semester.desc(), Course.name).all()
+        query = query.order_by(Course.semester.desc(), Course.name)
+        pagination = paginate_query(query, per_page=20)
 
         # Get all universities for filter dropdown
         universities = db.session.query(University).order_by(University.name).all()
 
         return render_template(
             "course/list.html",
-            courses=courses,
+            courses=pagination.items,
+            pagination=pagination,
             universities=universities,
             search_term=search_term,
             university_id=university_id,
@@ -73,6 +77,7 @@ def index() -> str:
         return render_template(
             "course/list.html",
             courses=[],
+            pagination=None,
             universities=[],
             search_term="",
             university_id="",
@@ -177,7 +182,7 @@ def new() -> str | Any:
             flash("Error creating course. Please try again.", "error")
 
     # Display form validation errors
-    for field, errors in form.errors.items():
+    for _field, errors in form.errors.items():
         for error in errors:
             flash(error, "error")
 
@@ -238,7 +243,7 @@ def edit(course_id: int) -> str | Any:
                 flash("Error updating course. Please try again.", "error")
 
         # Display form validation errors
-        for field, errors in form.errors.items():
+        for _field, errors in form.errors.items():
             for error in errors:
                 flash(error, "error")
 

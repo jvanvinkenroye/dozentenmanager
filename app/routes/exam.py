@@ -14,6 +14,7 @@ from app import db
 from app.forms.exam import ExamForm
 from app.models.course import Course
 from app.models.exam import Exam
+from app.utils.pagination import paginate_query
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -25,13 +26,14 @@ bp = Blueprint("exam", __name__, url_prefix="/exams")
 @bp.route("/")
 def index() -> str:
     """
-    List all exams with optional course filter.
+    List all exams with optional course filter and pagination.
 
     Query parameters:
         course_id: Optional course filter
+        page: Page number (default: 1)
 
     Returns:
-        Rendered template with list of exams
+        Rendered template with paginated list of exams
     """
     course_id_param = request.args.get("course_id", "").strip()
 
@@ -41,14 +43,16 @@ def index() -> str:
         if course_id_param:
             query = query.filter_by(course_id=int(course_id_param))
 
-        exams = query.order_by(Exam.exam_date.desc(), Exam.name).all()
+        query = query.order_by(Exam.exam_date.desc(), Exam.name)
+        pagination = paginate_query(query, per_page=20)
 
         # Get all courses for filter dropdown
         courses = db.session.query(Course).order_by(Course.name).all()
 
         return render_template(
             "exam/list.html",
-            exams=exams,
+            exams=pagination.items,
+            pagination=pagination,
             courses=courses,
             course_id=course_id_param,
         )
@@ -59,6 +63,7 @@ def index() -> str:
         return render_template(
             "exam/list.html",
             exams=[],
+            pagination=None,
             courses=[],
             course_id="",
         )
@@ -147,7 +152,7 @@ def new() -> str | Any:
             flash("Error creating exam. Please try again.", "error")
 
     # Display form validation errors
-    for field, errors in form.errors.items():
+    for _field, errors in form.errors.items():
         for error in errors:
             flash(error, "error")
 
@@ -212,7 +217,7 @@ def edit(exam_id: int) -> str | Any:
                 flash("Error updating exam. Please try again.", "error")
 
         # Display form validation errors
-        for field, errors in form.errors.items():
+        for _field, errors in form.errors.items():
             for error in errors:
                 flash(error, "error")
 

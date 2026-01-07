@@ -13,6 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.forms.student import StudentForm
 from app.models.student import Student
+from app.utils.pagination import paginate_query
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -24,14 +25,15 @@ bp = Blueprint("student", __name__, url_prefix="/students")
 @bp.route("/")
 def index() -> str:
     """
-    List all students with optional search and program filter.
+    List all students with optional search, program filter, and pagination.
 
     Query parameters:
         search: Optional search term to filter by name, student_id, or email
         program: Optional program filter
+        page: Page number (default: 1)
 
     Returns:
-        Rendered template with list of students
+        Rendered template with paginated list of students
     """
     search_term = request.args.get("search", "").strip()
     program_filter = request.args.get("program", "").strip()
@@ -52,11 +54,13 @@ def index() -> str:
             program_pattern = f"%{program_filter}%"
             query = query.filter(Student.program.ilike(program_pattern))
 
-        students = query.order_by(Student.last_name, Student.first_name).all()
+        query = query.order_by(Student.last_name, Student.first_name)
+        pagination = paginate_query(query, per_page=20)
 
         return render_template(
             "student/list.html",
-            students=students,
+            students=pagination.items,
+            pagination=pagination,
             search_term=search_term,
             program_filter=program_filter,
         )
@@ -67,6 +71,7 @@ def index() -> str:
         return render_template(
             "student/list.html",
             students=[],
+            pagination=None,
             search_term="",
             program_filter="",
         )
@@ -146,7 +151,7 @@ def new() -> str | Any:
             flash("Error creating student. Please try again.", "error")
 
     # Display form validation errors
-    for field, errors in form.errors.items():
+    for _field, errors in form.errors.items():
         for error in errors:
             flash(error, "error")
 
@@ -208,7 +213,7 @@ def edit(student_id: int) -> str | Any:
                 flash("Error updating student. Please try again.", "error")
 
         # Display form validation errors
-        for field, errors in form.errors.items():
+        for _field, errors in form.errors.items():
             for error in errors:
                 flash(error, "error")
 

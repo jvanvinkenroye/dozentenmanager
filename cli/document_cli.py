@@ -127,7 +127,9 @@ def create_submission(
         db.session.add(submission)
         db.session.commit()
 
-        logger.info(f"Created submission ID {submission.id} for enrollment {enrollment_id}")
+        logger.info(
+            f"Created submission ID {submission.id} for enrollment {enrollment_id}"
+        )
         return submission
 
     except SQLAlchemyError as e:
@@ -201,6 +203,7 @@ def upload_document(
 
         # Copy file to destination
         import shutil
+
         shutil.copy2(str(source_path), dest_path)
 
         # Create document record
@@ -449,9 +452,7 @@ def main() -> int:
     )
 
     # List submissions
-    submissions_parser = subparsers.add_parser(
-        "submissions", help="List submissions"
-    )
+    submissions_parser = subparsers.add_parser("submissions", help="List submissions")
     submissions_parser.add_argument(
         "--enrollment-id", type=int, help="Filter by enrollment"
     )
@@ -604,17 +605,35 @@ def main() -> int:
                 return 1
 
         except ValueError as e:
-            print(f"Validation error: {e}")
+            logger.error(f"Validation error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
             return 1
+
         except FileNotFoundError as e:
-            print(f"File error: {e}")
+            logger.error(f"File error: {e}")
+            print(f"File error: {e}", file=sys.stderr)
             return 1
+
         except IntegrityError as e:
-            print(f"Database constraint error: {e}")
+            logger.error(f"Database constraint error: {e}")
+            print(
+                "Database constraint error. Please check your input.", file=sys.stderr
+            )
             return 1
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error: {e}", exc_info=True)
+            print("Database error. Please try again.", file=sys.stderr)
+            return 1
+
+        except KeyboardInterrupt:
+            logger.info("Operation cancelled by user")
+            print("\nOperation cancelled.", file=sys.stderr)
+            return 130
+
         except Exception as e:
-            logger.exception("Unexpected error")
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}", exc_info=True)
+            print(f"Unexpected error: {e}", file=sys.stderr)
             return 1
 
     return 1

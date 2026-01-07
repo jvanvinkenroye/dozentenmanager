@@ -77,7 +77,9 @@ def add_grade(
         if not component:
             raise ValueError(f"ExamComponent with ID {component_id} not found")
         if component.exam_id != exam_id:
-            raise ValueError(f"Component {component_id} does not belong to exam {exam_id}")
+            raise ValueError(
+                f"Component {component_id} does not belong to exam {exam_id}"
+            )
         max_points = component.max_points
     else:
         max_points = exam.max_points
@@ -87,11 +89,15 @@ def add_grade(
         raise ValueError(f"Points must be between 0 and {max_points}")
 
     # Check for existing grade
-    existing = db.session.query(Grade).filter_by(
-        enrollment_id=enrollment_id,
-        exam_id=exam_id,
-        component_id=component_id,
-    ).first()
+    existing = (
+        db.session.query(Grade)
+        .filter_by(
+            enrollment_id=enrollment_id,
+            exam_id=exam_id,
+            component_id=component_id,
+        )
+        .first()
+    )
     if existing:
         raise ValueError(
             "Grade already exists for this enrollment/exam/component combination. "
@@ -155,9 +161,11 @@ def update_grade(
         if points is not None:
             # Get max points
             if grade.component_id:
-                component = db.session.query(ExamComponent).filter_by(
-                    id=grade.component_id
-                ).first()
+                component = (
+                    db.session.query(ExamComponent)
+                    .filter_by(id=grade.component_id)
+                    .first()
+                )
                 max_points = component.max_points
             else:
                 exam = db.session.query(Exam).filter_by(id=grade.exam_id).first()
@@ -322,12 +330,14 @@ def calculate_weighted_average(
             }
 
         if grade.component_id:
-            exam_grades[exam.id]["components"].append({
-                "component_name": grade.component.name,
-                "points": grade.points,
-                "percentage": grade.percentage,
-                "grade": grade.grade_value,
-            })
+            exam_grades[exam.id]["components"].append(
+                {
+                    "component_name": grade.component.name,
+                    "points": grade.points,
+                    "percentage": grade.percentage,
+                    "grade": grade.grade_value,
+                }
+            )
         else:
             exam_grades[exam.id]["final_grade"] = {
                 "points": grade.points,
@@ -370,10 +380,14 @@ def get_exam_statistics(exam_id: int) -> dict | None:
     if not exam:
         return None
 
-    grades = db.session.query(Grade).filter(
-        Grade.exam_id == exam_id,
-        Grade.component_id == None,  # noqa: E711 - Only exam-level grades
-    ).all()
+    grades = (
+        db.session.query(Grade)
+        .filter(
+            Grade.exam_id == exam_id,
+            Grade.component_id == None,  # noqa: E711 - Only exam-level grades
+        )
+        .all()
+    )
 
     if not grades:
         return None
@@ -452,9 +466,12 @@ def add_exam_component(
         raise ValueError("Max points must be greater than 0")
 
     # Check total weight doesn't exceed 100%
-    existing_weight = db.session.query(
-        func.sum(ExamComponent.weight)
-    ).filter(ExamComponent.exam_id == exam_id).scalar() or 0
+    existing_weight = (
+        db.session.query(func.sum(ExamComponent.weight))
+        .filter(ExamComponent.exam_id == exam_id)
+        .scalar()
+        or 0
+    )
 
     if existing_weight + weight > 100:
         raise ValueError(
@@ -590,11 +607,15 @@ def main() -> int:
     comp_parser.add_argument("--description")
 
     # List components
-    list_comp_parser = subparsers.add_parser("list-components", help="List exam components")
+    list_comp_parser = subparsers.add_parser(
+        "list-components", help="List exam components"
+    )
     list_comp_parser.add_argument("exam_id", type=int)
 
     # Create default scale
-    scale_parser = subparsers.add_parser("create-scale", help="Create default grading scale")
+    scale_parser = subparsers.add_parser(
+        "create-scale", help="Create default grading scale"
+    )
     scale_parser.add_argument("--university-id", type=int)
 
     args = parser.parse_args()
@@ -680,8 +701,10 @@ def main() -> int:
 
                 print(f"\nFound {len(grades)} grade(s):\n")
                 for g in grades:
-                    print(f"ID {g.id}: {g.points} pts = {g.percentage}% "
-                          f"({g.grade_value} - {g.grade_label})")
+                    print(
+                        f"ID {g.id}: {g.points} pts = {g.percentage}% "
+                        f"({g.grade_value} - {g.grade_label})"
+                    )
                     print(f"  Exam: {g.exam.name}")
                     print(f"  Final: {'Yes' if g.is_final else 'No'}")
                     print()
@@ -695,8 +718,10 @@ def main() -> int:
 
                 print("\nGrade Details:")
                 print(f"ID: {grade.id}")
-                print(f"Student: {grade.enrollment.student.last_name}, "
-                      f"{grade.enrollment.student.first_name}")
+                print(
+                    f"Student: {grade.enrollment.student.last_name}, "
+                    f"{grade.enrollment.student.first_name}"
+                )
                 print(f"Exam: {grade.exam.name}")
                 if grade.component:
                     print(f"Component: {grade.component.name}")
@@ -720,7 +745,9 @@ def main() -> int:
                     return 0
 
                 print(f"\nWeighted Average for {result['student_name']}:")
-                print(f"Average Grade: {result['weighted_average']} ({result['grade_label']})")
+                print(
+                    f"Average Grade: {result['weighted_average']} ({result['grade_label']})"
+                )
                 print(f"Total Weight: {result['total_weight']}%")
                 print(f"Passing: {'Yes' if result['is_passing'] else 'No'}")
                 return 0
@@ -735,12 +762,16 @@ def main() -> int:
                 print(f"Total Students: {stats['total_students']}")
                 print(f"Passing: {stats['passing_count']} ({stats['pass_rate']}%)")
                 print(f"Failing: {stats['failing_count']}")
-                print(f"\nPoints: min={stats['points']['min']}, "
-                      f"max={stats['points']['max']}, avg={stats['points']['avg']}")
-                print(f"Grades: min={stats['grades']['min']}, "
-                      f"max={stats['grades']['max']}, avg={stats['grades']['avg']}")
+                print(
+                    f"\nPoints: min={stats['points']['min']}, "
+                    f"max={stats['points']['max']}, avg={stats['points']['avg']}"
+                )
+                print(
+                    f"Grades: min={stats['grades']['min']}, "
+                    f"max={stats['grades']['max']}, avg={stats['grades']['avg']}"
+                )
                 print("\nGrade Distribution:")
-                for label, count in sorted(stats['distribution'].items()):
+                for label, count in sorted(stats["distribution"].items()):
                     print(f"  {label}: {count}")
                 return 0
 
@@ -784,18 +815,36 @@ def main() -> int:
                 print(f"\nCreated grading scale: {scale.name} (ID: {scale.id})")
                 print("Thresholds:")
                 for t in scale.thresholds:
-                    print(f"  {t.grade_value} ({t.grade_label}): >= {t.min_percentage}%")
+                    print(
+                        f"  {t.grade_value} ({t.grade_label}): >= {t.min_percentage}%"
+                    )
                 return 0
 
         except ValueError as e:
-            print(f"Error: {e}")
+            logger.error(f"Validation error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
             return 1
+
         except IntegrityError as e:
-            print(f"Database constraint error: {e}")
+            logger.error(f"Database constraint error: {e}")
+            print(
+                "Database constraint error. Please check your input.", file=sys.stderr
+            )
             return 1
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error: {e}", exc_info=True)
+            print("Database error. Please try again.", file=sys.stderr)
+            return 1
+
+        except KeyboardInterrupt:
+            logger.info("Operation cancelled by user")
+            print("\nOperation cancelled.", file=sys.stderr)
+            return 130
+
         except Exception as e:
-            logger.exception("Unexpected error")
-            print(f"Error: {e}")
+            logger.error(f"Unexpected error: {e}", exc_info=True)
+            print(f"Unexpected error: {e}", file=sys.stderr)
             return 1
 
     return 1

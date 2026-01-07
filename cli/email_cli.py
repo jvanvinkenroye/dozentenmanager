@@ -105,7 +105,9 @@ def extract_student_id_from_text(text: str) -> str | None:
     return None
 
 
-def match_student_by_email(email_address: str, course_id: int | None = None) -> Enrollment | None:
+def match_student_by_email(
+    email_address: str, course_id: int | None = None
+) -> Enrollment | None:
     """
     Try to match a student by their email address.
 
@@ -129,7 +131,9 @@ def match_student_by_email(email_address: str, course_id: int | None = None) -> 
     return query.first()
 
 
-def match_student_by_id(student_id: str, course_id: int | None = None) -> Enrollment | None:
+def match_student_by_id(
+    student_id: str, course_id: int | None = None
+) -> Enrollment | None:
     """
     Try to match a student by their student ID.
 
@@ -173,9 +177,7 @@ def match_student_by_name(name: str, course_id: int | None = None) -> Enrollment
 
     # Get all active enrollments
     query = (
-        db.session.query(Enrollment)
-        .join(Student)
-        .filter(Enrollment.status == "active")
+        db.session.query(Enrollment).join(Student).filter(Enrollment.status == "active")
     )
 
     if course_id:
@@ -208,7 +210,9 @@ def match_student_by_name(name: str, course_id: int | None = None) -> Enrollment
     return None
 
 
-def get_upload_path(enrollment: Enrollment, filename: str, base_path: str = "uploads") -> str:
+def get_upload_path(
+    enrollment: Enrollment, filename: str, base_path: str = "uploads"
+) -> str:
     """
     Generate organized upload path for a document.
 
@@ -224,7 +228,13 @@ def get_upload_path(enrollment: Enrollment, filename: str, base_path: str = "upl
     student = enrollment.student
     university = course.university
 
-    path = Path(base_path) / university.slug / course.semester / course.slug / f"{student.last_name}{student.first_name}"
+    path = (
+        Path(base_path)
+        / university.slug
+        / course.semester
+        / course.slug
+        / f"{student.last_name}{student.first_name}"
+    )
     path.mkdir(parents=True, exist_ok=True)
 
     final_path = path / filename
@@ -310,11 +320,26 @@ def process_attachment(
         )
         db.session.add(document)
 
-        logger.info(f"Saved attachment: {filename} for student {enrollment.student.last_name}")
+        logger.info(
+            f"Saved attachment: {filename} for student {enrollment.student.last_name}"
+        )
         return document
 
+    except OSError as e:
+        logger.error(f"File I/O error processing attachment {filename}: {e}")
+        return None
+
+    except SQLAlchemyError as e:
+        logger.error(
+            f"Database error processing attachment {filename}: {e}", exc_info=True
+        )
+        db.session.rollback()
+        return None
+
     except Exception as e:
-        logger.error(f"Error processing attachment {filename}: {e}")
+        logger.error(
+            f"Unexpected error processing attachment {filename}: {e}", exc_info=True
+        )
         return None
 
 
@@ -411,11 +436,13 @@ def process_email_message(
                         result["date"],
                     )
                     if doc:
-                        result["attachments"].append({
-                            "filename": doc.original_filename,
-                            "size": doc.file_size,
-                            "document_id": doc.id,
-                        })
+                        result["attachments"].append(
+                            {
+                                "filename": doc.original_filename,
+                                "size": doc.file_size,
+                                "document_id": doc.id,
+                            }
+                        )
     else:
         result["errors"].append("Could not match email to any enrolled student")
 
@@ -441,12 +468,30 @@ def parse_eml_file(file_path: str, course_id: int | None = None) -> list[dict]:
             result = process_email_message(msg, course_id)
             result["source_file"] = file_path
             results.append(result)
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {file_path}: {e}")
+        results.append(
+            {
+                "source_file": file_path,
+                "errors": [f"File not found: {e}"],
+            }
+        )
+    except OSError as e:
+        logger.error(f"File I/O error parsing {file_path}: {e}")
+        results.append(
+            {
+                "source_file": file_path,
+                "errors": [f"File I/O error: {e}"],
+            }
+        )
     except Exception as e:
-        logger.error(f"Error parsing {file_path}: {e}")
-        results.append({
-            "source_file": file_path,
-            "errors": [str(e)],
-        })
+        logger.error(f"Unexpected error parsing {file_path}: {e}", exc_info=True)
+        results.append(
+            {
+                "source_file": file_path,
+                "errors": [str(e)],
+            }
+        )
 
     return results
 
@@ -470,12 +515,30 @@ def parse_mbox_file(file_path: str, course_id: int | None = None) -> list[dict]:
             result = process_email_message(msg, course_id)
             result["source_file"] = f"{file_path}:message_{i}"
             results.append(result)
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {file_path}: {e}")
+        results.append(
+            {
+                "source_file": file_path,
+                "errors": [f"File not found: {e}"],
+            }
+        )
+    except OSError as e:
+        logger.error(f"File I/O error parsing mbox {file_path}: {e}")
+        results.append(
+            {
+                "source_file": file_path,
+                "errors": [f"File I/O error: {e}"],
+            }
+        )
     except Exception as e:
-        logger.error(f"Error parsing {file_path}: {e}")
-        results.append({
-            "source_file": file_path,
-            "errors": [str(e)],
-        })
+        logger.error(f"Unexpected error parsing mbox {file_path}: {e}", exc_info=True)
+        results.append(
+            {
+                "source_file": file_path,
+                "errors": [str(e)],
+            }
+        )
 
     return results
 
@@ -592,7 +655,9 @@ def main() -> int:
             if args.command == "import":
                 print(f"\nImporting emails from: {args.path}")
                 if args.course_id:
-                    course = db.session.query(Course).filter_by(id=args.course_id).first()
+                    course = (
+                        db.session.query(Course).filter_by(id=args.course_id).first()
+                    )
                     if not course:
                         print(f"Error: Course with ID {args.course_id} not found")
                         return 1
@@ -668,13 +733,25 @@ def main() -> int:
                     print()
                 return 0
 
+        except ValueError as e:
+            logger.error(f"Validation error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
         except SQLAlchemyError as e:
             db.session.rollback()
-            print(f"Database error: {e}")
+            logger.error(f"Database error: {e}", exc_info=True)
+            print("Database error. Please try again.", file=sys.stderr)
             return 1
+
+        except KeyboardInterrupt:
+            logger.info("Operation cancelled by user")
+            print("\nOperation cancelled.", file=sys.stderr)
+            return 130
+
         except Exception as e:
-            logger.exception("Unexpected error")
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}", exc_info=True)
+            print(f"Unexpected error: {e}", file=sys.stderr)
             return 1
 
     return 1

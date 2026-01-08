@@ -7,17 +7,19 @@ Tests all CRUD operations for enrollment management.
 from datetime import date
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.student import Student
 from app.models.university import University
-from cli.enrollment_cli import (
-    add_enrollment,
-    list_enrollments,
-    remove_enrollment,
-    update_enrollment_status,
-)
+from app.services.enrollment_service import EnrollmentService
+
+
+@pytest.fixture
+def service():
+    """Return an EnrollmentService instance."""
+    return EnrollmentService()
 
 
 class TestEnrollmentCLI:
@@ -64,47 +66,54 @@ class TestEnrollmentCLI:
             # Return both ID and student_id for testing
             return {"id": student.id, "student_id": student.student_id}
 
-    def test_add_enrollment_success(self, app, db, sample_student, sample_course):
+    def test_add_enrollment_success(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test adding a new enrollment."""
         with app.app_context():
-            result = add_enrollment(sample_student["student_id"], sample_course)
-            assert result == 0
+            enrollment = service.add_enrollment(
+                sample_student["student_id"], sample_course
+            )
 
             # Verify enrollment was created
-            enrollment = (
-                db.session.query(Enrollment)
-                .filter_by(student_id=sample_student["id"], course_id=sample_course)
-                .first()
-            )
             assert enrollment is not None
+            assert isinstance(enrollment, Enrollment)
+            assert enrollment.student_id == sample_student["id"]
+            assert enrollment.course_id == sample_course
             assert enrollment.status == "active"
             assert enrollment.enrollment_date == date.today()
             assert enrollment.unenrollment_date is None
 
-    def test_add_enrollment_student_not_found(self, app, db, sample_course):
+    def test_add_enrollment_student_not_found(self, app, db, service, sample_course):
         """Test adding enrollment with non-existent student."""
         with app.app_context():
-            result = add_enrollment("99999999", sample_course)
-            assert result == 1
+            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+                service.add_enrollment("99999999", sample_course)
 
-    def test_add_enrollment_course_not_found(self, app, db, sample_student):
+    def test_add_enrollment_course_not_found(self, app, db, service, sample_student):
         """Test adding enrollment with non-existent course."""
         with app.app_context():
-            result = add_enrollment(sample_student["student_id"], 99999)
-            assert result == 1
+            with pytest.raises(ValueError, match="Course with ID 99999 not found"):
+                service.add_enrollment(sample_student["student_id"], 99999)
 
-    def test_add_enrollment_duplicate(self, app, db, sample_student, sample_course):
+    def test_add_enrollment_duplicate(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test adding duplicate enrollment."""
         with app.app_context():
             # Add first enrollment
-            result = add_enrollment(sample_student["student_id"], sample_course)
-            assert result == 0
+            enrollment = service.add_enrollment(
+                sample_student["student_id"], sample_course
+            )
+            assert enrollment is not None
 
             # Try to add duplicate
-            result = add_enrollment(sample_student["student_id"], sample_course)
-            assert result == 1
+            with pytest.raises(IntegrityError, match="already enrolled"):
+                service.add_enrollment(sample_student["student_id"], sample_course)
 
-    def test_list_enrollments_by_course(self, app, db, sample_student, sample_course):
+    def test_list_enrollments_by_course(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test listing enrollments for a specific course."""
         with app.app_context():
             # Create enrollment
@@ -117,10 +126,14 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # List enrollments
-            result = list_enrollments(course_id=sample_course)
-            assert result == 0
+            enrollments = service.list_enrollments(course_id=sample_course)
+            assert isinstance(enrollments, list)
+            assert len(enrollments) == 1
+            assert enrollments[0].course_id == sample_course
 
-    def test_list_enrollments_by_student(self, app, db, sample_student, sample_course):
+    def test_list_enrollments_by_student(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test listing enrollments for a specific student."""
         with app.app_context():
             # Create enrollment
@@ -133,22 +146,29 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # List enrollments
-            result = list_enrollments(student_id_str=sample_student["student_id"])
-            assert result == 0
+            enrollments = service.list_enrollments(
+                student_id_str=sample_student["student_id"]
+            )
+            assert isinstance(enrollments, list)
+            assert len(enrollments) == 1
+            assert enrollments[0].student_id == sample_student["id"]
 
-    def test_list_enrollments_student_not_found(self, app, db):
+    def test_list_enrollments_student_not_found(self, app, db, service):
         """Test listing enrollments for non-existent student."""
         with app.app_context():
-            result = list_enrollments(student_id_str="99999999")
-            assert result == 1
+            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+                service.list_enrollments(student_id_str="99999999")
 
-    def test_list_enrollments_empty(self, app, db, sample_course):
+    def test_list_enrollments_empty(self, app, db, service, sample_course):
         """Test listing enrollments when none exist."""
         with app.app_context():
-            result = list_enrollments(course_id=sample_course)
-            assert result == 0
+            enrollments = service.list_enrollments(course_id=sample_course)
+            assert isinstance(enrollments, list)
+            assert len(enrollments) == 0
 
-    def test_remove_enrollment_success(self, app, db, sample_student, sample_course):
+    def test_remove_enrollment_success(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test removing an enrollment."""
         with app.app_context():
             # Create enrollment
@@ -161,8 +181,10 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # Remove enrollment
-            result = remove_enrollment(sample_student["student_id"], sample_course)
-            assert result == 0
+            result = service.remove_enrollment(
+                sample_student["student_id"], sample_course
+            )
+            assert result is True
 
             # Verify enrollment was removed
             enrollment = (
@@ -172,20 +194,22 @@ class TestEnrollmentCLI:
             )
             assert enrollment is None
 
-    def test_remove_enrollment_student_not_found(self, app, db, sample_course):
+    def test_remove_enrollment_student_not_found(self, app, db, service, sample_course):
         """Test removing enrollment with non-existent student."""
         with app.app_context():
-            result = remove_enrollment("99999999", sample_course)
-            assert result == 1
+            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+                service.remove_enrollment("99999999", sample_course)
 
-    def test_remove_enrollment_not_found(self, app, db, sample_student, sample_course):
+    def test_remove_enrollment_not_found(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test removing enrollment that doesn't exist."""
         with app.app_context():
-            result = remove_enrollment(sample_student["student_id"], sample_course)
-            assert result == 1
+            with pytest.raises(ValueError, match="No enrollment found"):
+                service.remove_enrollment(sample_student["student_id"], sample_course)
 
     def test_update_enrollment_status_success(
-        self, app, db, sample_student, sample_course
+        self, app, db, service, sample_student, sample_course
     ):
         """Test updating enrollment status."""
         with app.app_context():
@@ -199,21 +223,15 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # Update status
-            result = update_enrollment_status(
+            updated_enrollment = service.update_enrollment_status(
                 sample_student["student_id"], sample_course, "completed"
             )
-            assert result == 0
-
-            # Verify status was updated
-            enrollment = (
-                db.session.query(Enrollment)
-                .filter_by(student_id=sample_student["id"], course_id=sample_course)
-                .first()
-            )
-            assert enrollment.status == "completed"
+            assert updated_enrollment is not None
+            assert isinstance(updated_enrollment, Enrollment)
+            assert updated_enrollment.status == "completed"
 
     def test_update_enrollment_status_to_dropped(
-        self, app, db, sample_student, sample_course
+        self, app, db, service, sample_student, sample_course
     ):
         """Test updating enrollment status to dropped sets unenrollment_date."""
         with app.app_context():
@@ -227,22 +245,16 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # Update status to dropped
-            result = update_enrollment_status(
+            updated_enrollment = service.update_enrollment_status(
                 sample_student["student_id"], sample_course, "dropped"
             )
-            assert result == 0
-
-            # Verify status and unenrollment_date were updated
-            enrollment = (
-                db.session.query(Enrollment)
-                .filter_by(student_id=sample_student["id"], course_id=sample_course)
-                .first()
-            )
-            assert enrollment.status == "dropped"
-            assert enrollment.unenrollment_date == date.today()
+            assert updated_enrollment is not None
+            assert isinstance(updated_enrollment, Enrollment)
+            assert updated_enrollment.status == "dropped"
+            assert updated_enrollment.unenrollment_date == date.today()
 
     def test_update_enrollment_status_invalid(
-        self, app, db, sample_student, sample_course
+        self, app, db, service, sample_student, sample_course
     ):
         """Test updating enrollment status with invalid status."""
         with app.app_context():
@@ -256,28 +268,32 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # Try to update with invalid status
-            result = update_enrollment_status(
-                sample_student["student_id"], sample_course, "invalid_status"
-            )
-            assert result == 1
+            with pytest.raises(ValueError, match="Invalid status"):
+                service.update_enrollment_status(
+                    sample_student["student_id"], sample_course, "invalid_status"
+                )
 
-    def test_update_enrollment_status_student_not_found(self, app, db, sample_course):
+    def test_update_enrollment_status_student_not_found(
+        self, app, db, service, sample_course
+    ):
         """Test updating enrollment status with non-existent student."""
         with app.app_context():
-            result = update_enrollment_status("99999999", sample_course, "completed")
-            assert result == 1
+            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+                service.update_enrollment_status("99999999", sample_course, "completed")
 
     def test_update_enrollment_status_enrollment_not_found(
-        self, app, db, sample_student, sample_course
+        self, app, db, service, sample_student, sample_course
     ):
         """Test updating enrollment status when enrollment doesn't exist."""
         with app.app_context():
-            result = update_enrollment_status(
-                sample_student["student_id"], sample_course, "completed"
-            )
-            assert result == 1
+            with pytest.raises(ValueError, match="No enrollment found"):
+                service.update_enrollment_status(
+                    sample_student["student_id"], sample_course, "completed"
+                )
 
-    def test_enrollment_model_repr(self, app, db, sample_student, sample_course):
+    def test_enrollment_model_repr(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test Enrollment model string representation."""
         with app.app_context():
             enrollment = Enrollment(
@@ -293,7 +309,9 @@ class TestEnrollmentCLI:
             assert str(sample_course) in repr(enrollment)
             assert "active" in repr(enrollment)
 
-    def test_enrollment_relationships(self, app, db, sample_student, sample_course):
+    def test_enrollment_relationships(
+        self, app, db, service, sample_student, sample_course
+    ):
         """Test that enrollment relationships are properly established."""
         with app.app_context():
             enrollment = Enrollment(
@@ -316,7 +334,7 @@ class TestEnrollmentCLI:
             assert enrollment.course.id == sample_course
 
     def test_multiple_enrollments_for_student(
-        self, app, db, sample_student, sample_university
+        self, app, db, service, sample_student, sample_university
     ):
         """Test that a student can enroll in multiple courses."""
         with app.app_context():
@@ -338,11 +356,15 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # Enroll in both courses
-            result1 = add_enrollment(sample_student["student_id"], course1.id)
-            result2 = add_enrollment(sample_student["student_id"], course2.id)
+            enrollment1 = service.add_enrollment(
+                sample_student["student_id"], course1.id
+            )
+            enrollment2 = service.add_enrollment(
+                sample_student["student_id"], course2.id
+            )
 
-            assert result1 == 0
-            assert result2 == 0
+            assert enrollment1 is not None
+            assert enrollment2 is not None
 
             # Verify both enrollments exist
             enrollments = (
@@ -352,7 +374,7 @@ class TestEnrollmentCLI:
             )
             assert len(enrollments) == 2
 
-    def test_multiple_students_in_course(self, app, db, sample_course):
+    def test_multiple_students_in_course(self, app, db, service, sample_course):
         """Test that multiple students can enroll in the same course."""
         with app.app_context():
             # Create two students
@@ -375,11 +397,11 @@ class TestEnrollmentCLI:
             db.session.commit()
 
             # Enroll both students
-            result1 = add_enrollment("11111111", sample_course)
-            result2 = add_enrollment("22222222", sample_course)
+            enrollment1 = service.add_enrollment("11111111", sample_course)
+            enrollment2 = service.add_enrollment("22222222", sample_course)
 
-            assert result1 == 0
-            assert result2 == 0
+            assert enrollment1 is not None
+            assert enrollment2 is not None
 
             # Verify both enrollments exist
             enrollments = (

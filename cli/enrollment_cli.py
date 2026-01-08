@@ -14,14 +14,12 @@ Usage:
 import argparse
 import logging
 import sys
-from datetime import date
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import db
-from app.models.course import Course
-from app.models.enrollment import VALID_STATUSES, Enrollment, validate_status
-from app.models.student import Student
+from app import create_app
+from app.models.enrollment import VALID_STATUSES
+from app.services.enrollment_service import EnrollmentService
 
 # Configure logging
 logging.basicConfig(
@@ -29,231 +27,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-
-def add_enrollment(student_id_str: str, course_id: int) -> int:
-    """
-    Enroll a student in a course.
-
-    Args:
-        student_id_str: Student ID (matriculation number)
-        course_id: Course database ID
-
-    Returns:
-        Exit code (0 for success, 1 for error)
-    """
-    try:
-        # Verify student exists
-        student = db.session.query(Student).filter_by(student_id=student_id_str).first()
-        if not student:
-            logger.error(f"Student with ID {student_id_str} not found")
-            return 1
-
-        # Verify course exists
-        course = db.session.query(Course).filter_by(id=course_id).first()
-        if not course:
-            logger.error(f"Course with ID {course_id} not found")
-            return 1
-
-        # Create enrollment
-        enrollment = Enrollment(
-            student_id=student.id,
-            course_id=course.id,
-            status="active",
-        )
-
-        db.session.add(enrollment)
-        db.session.commit()
-
-        logger.info(
-            f"Successfully enrolled {student.first_name} {student.last_name} "
-            f"(ID: {student.student_id}) in '{course.name}' (Semester: {course.semester})"
-        )
-        return 0
-
-    except IntegrityError:
-        db.session.rollback()
-        logger.error(
-            f"Student {student_id_str} is already enrolled in course {course_id}"
-        )
-        return 1
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error: {e}")
-        return 1
-
-
-def list_enrollments(
-    course_id: int | None = None,
-    student_id_str: str | None = None,
-) -> int:
-    """
-    List enrollments by course or student.
-
-    Args:
-        course_id: Course ID to filter by (optional)
-        student_id_str: Student ID to filter by (optional)
-
-    Returns:
-        Exit code (0 for success, 1 for error)
-    """
-    try:
-        query = db.session.query(Enrollment)
-
-        if course_id:
-            query = query.filter_by(course_id=course_id)
-        elif student_id_str:
-            # Get student database ID from student_id
-            student = (
-                db.session.query(Student).filter_by(student_id=student_id_str).first()
-            )
-            if not student:
-                logger.error(f"Student with ID {student_id_str} not found")
-                return 1
-            query = query.filter_by(student_id=student.id)
-
-        enrollments = query.all()
-
-        if not enrollments:
-            logger.info("No enrollments found")
-            return 0
-
-        logger.info(f"Found {len(enrollments)} enrollment(s):")
-        print("\n" + "=" * 100)
-        print(
-            f"{'Student ID':<12} {'Student Name':<25} {'Course':<30} {'Semester':<12} {'Status':<10}"
-        )
-        print("=" * 100)
-
-        for enrollment in enrollments:
-            student_name = (
-                f"{enrollment.student.first_name} {enrollment.student.last_name}"
-            )
-            print(
-                f"{enrollment.student.student_id:<12} "
-                f"{student_name:<25} "
-                f"{enrollment.course.name:<30} "
-                f"{enrollment.course.semester:<12} "
-                f"{enrollment.status:<10}"
-            )
-
-        print("=" * 100 + "\n")
-        return 0
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
-        return 1
-
-
-def remove_enrollment(student_id_str: str, course_id: int) -> int:
-    """
-    Remove a student's enrollment from a course.
-
-    Args:
-        student_id_str: Student ID (matriculation number)
-        course_id: Course database ID
-
-    Returns:
-        Exit code (0 for success, 1 for error)
-    """
-    try:
-        # Get student database ID
-        student = db.session.query(Student).filter_by(student_id=student_id_str).first()
-        if not student:
-            logger.error(f"Student with ID {student_id_str} not found")
-            return 1
-
-        # Find enrollment
-        enrollment = (
-            db.session.query(Enrollment)
-            .filter_by(student_id=student.id, course_id=course_id)
-            .first()
-        )
-
-        if not enrollment:
-            logger.error(
-                f"No enrollment found for student {student_id_str} in course {course_id}"
-            )
-            return 1
-
-        # Get course name before deleting enrollment
-        course_name = enrollment.course.name
-        student_first_name = student.first_name
-        student_last_name = student.last_name
-
-        db.session.delete(enrollment)
-        db.session.commit()
-
-        logger.info(
-            f"Successfully removed enrollment for {student_first_name} {student_last_name} "
-            f"from course {course_name}"
-        )
-        return 0
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error: {e}")
-        return 1
-
-
-def update_enrollment_status(student_id_str: str, course_id: int, status: str) -> int:
-    """
-    Update enrollment status.
-
-    Args:
-        student_id_str: Student ID (matriculation number)
-        course_id: Course database ID
-        status: New status (active, completed, dropped)
-
-    Returns:
-        Exit code (0 for success, 1 for error)
-    """
-    try:
-        # Validate status
-        if not validate_status(status):
-            logger.error(
-                f"Invalid status '{status}'. Must be one of: {', '.join(VALID_STATUSES)}"
-            )
-            return 1
-
-        # Get student database ID
-        student = db.session.query(Student).filter_by(student_id=student_id_str).first()
-        if not student:
-            logger.error(f"Student with ID {student_id_str} not found")
-            return 1
-
-        # Find enrollment
-        enrollment = (
-            db.session.query(Enrollment)
-            .filter_by(student_id=student.id, course_id=course_id)
-            .first()
-        )
-
-        if not enrollment:
-            logger.error(
-                f"No enrollment found for student {student_id_str} in course {course_id}"
-            )
-            return 1
-
-        old_status = enrollment.status
-        enrollment.status = status
-
-        # Set unenrollment date when status changes to dropped
-        if status == "dropped" and not enrollment.unenrollment_date:
-            enrollment.unenrollment_date = date.today()
-
-        db.session.commit()
-
-        logger.info(
-            f"Updated enrollment status from '{old_status}' to '{status}' for "
-            f"{student.first_name} {student.last_name} in course {enrollment.course.name}"
-        )
-        return 0
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error: {e}")
-        return 1
 
 
 def main() -> int:
@@ -356,25 +129,95 @@ Examples:
         parser.print_help()
         return 1
 
-    # Initialize Flask app to get database session
-    from app import create_app
-
+    # Initialize Flask app and service
     app = create_app()
 
     with app.app_context():
-        if args.command == "add":
-            return add_enrollment(args.student_id, args.course_id)
-        if args.command == "list":
-            return list_enrollments(
-                course_id=args.course_id,
-                student_id_str=args.student_id,
-            )
-        if args.command == "remove":
-            return remove_enrollment(args.student_id, args.course_id)
-        if args.command == "status":
-            return update_enrollment_status(
-                args.student_id, args.course_id, args.status
-            )
+        service = EnrollmentService()
+
+        try:
+            if args.command == "add":
+                enrollment = service.add_enrollment(args.student_id, args.course_id)
+                print(
+                    f"\nSuccessfully enrolled {enrollment.student.first_name} "
+                    f"{enrollment.student.last_name} (ID: {enrollment.student.student_id}) "
+                    f"in '{enrollment.course.name}' (Semester: {enrollment.course.semester})"
+                )
+                return 0
+
+            if args.command == "list":
+                enrollments = service.list_enrollments(
+                    course_id=args.course_id,
+                    student_id_str=args.student_id,
+                )
+
+                if not enrollments:
+                    print("No enrollments found")
+                    return 0
+
+                print(f"\nFound {len(enrollments)} enrollment(s):\n")
+                print("=" * 100)
+                print(
+                    f"{'Student ID':<12} {'Student Name':<25} {'Course':<30} {'Semester':<12} {'Status':<10}"
+                )
+                print("=" * 100)
+
+                for enrollment in enrollments:
+                    student_name = f"{enrollment.student.first_name} {enrollment.student.last_name}"
+                    print(
+                        f"{enrollment.student.student_id:<12} "
+                        f"{student_name:<25} "
+                        f"{enrollment.course.name:<30} "
+                        f"{enrollment.course.semester:<12} "
+                        f"{enrollment.status:<10}"
+                    )
+
+                print("=" * 100 + "\n")
+                return 0
+
+            if args.command == "remove":
+                service.remove_enrollment(args.student_id, args.course_id)
+                print(
+                    f"\nSuccessfully removed enrollment for student {args.student_id} "
+                    f"from course {args.course_id}"
+                )
+                return 0
+
+            if args.command == "status":
+                enrollment = service.update_enrollment_status(
+                    args.student_id, args.course_id, args.status
+                )
+                print(
+                    f"\nSuccessfully updated enrollment status to '{args.status}' for "
+                    f"{enrollment.student.first_name} {enrollment.student.last_name} "
+                    f"in course {enrollment.course.name}"
+                )
+                return 0
+
+        except ValueError as e:
+            logger.error(f"Validation error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
+        except IntegrityError as e:
+            logger.error(f"Database constraint error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error: {e}", exc_info=True)
+            print("Database error. Please try again.", file=sys.stderr)
+            return 1
+
+        except KeyboardInterrupt:
+            logger.info("Operation cancelled by user")
+            print("\nOperation cancelled.", file=sys.stderr)
+            return 130
+
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}", exc_info=True)
+            print(f"Unexpected error: {e}", file=sys.stderr)
+            return 1
 
     return 1
 

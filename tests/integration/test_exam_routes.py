@@ -9,8 +9,8 @@ from datetime import date
 import pytest
 
 from app.services.course_service import CourseService
+from app.services.exam_service import ExamService
 from app.services.university_service import UniversityService
-from cli.exam_cli import add_exam
 
 
 @pytest.fixture
@@ -25,6 +25,12 @@ def university_service():
     return UniversityService()
 
 
+@pytest.fixture
+def exam_service():
+    """Return an ExamService instance."""
+    return ExamService()
+
+
 class TestExamListRoute:
     """Test exam list route."""
 
@@ -35,7 +41,7 @@ class TestExamListRoute:
         assert "Keine Prüfungen gefunden" in response.data.decode("utf-8")
 
     def test_list_exams_with_data(
-        self, app, client, university_service, course_service
+        self, app, client, university_service, course_service, exam_service
     ):
         """Test listing exams with existing data."""
         with app.app_context():
@@ -46,7 +52,7 @@ class TestExamListRoute:
                 semester="2024_WiSe",
                 university_id=university.id,
             )
-            add_exam(
+            exam_service.add_exam(
                 name="Midterm Exam",
                 course_id=course.id,
                 exam_date=date(2024, 6, 15),
@@ -58,7 +64,7 @@ class TestExamListRoute:
         assert "Midterm Exam" in response.data.decode("utf-8")
 
     def test_list_exams_filter_by_course(
-        self, app, client, university_service, course_service
+        self, app, client, university_service, course_service, exam_service
     ):
         """Test filtering exams by course."""
         with app.app_context():
@@ -74,8 +80,8 @@ class TestExamListRoute:
                 semester="2024_SoSe",
                 university_id=university.id,
             )
-            add_exam("Exam 1", course1.id, date(2024, 6, 15), 100.0)
-            add_exam("Exam 2", course2.id, date(2024, 7, 20), 100.0)
+            exam_service.add_exam("Exam 1", course1.id, date(2024, 6, 15), 100.0)
+            exam_service.add_exam("Exam 2", course2.id, date(2024, 7, 20), 100.0)
 
             course1_id = course1.id
 
@@ -88,7 +94,7 @@ class TestExamListRoute:
 class TestExamShowRoute:
     """Test exam detail route."""
 
-    def test_show_exam_success(self, app, client, university_service, course_service):
+    def test_show_exam_success(self, app, client, university_service, course_service, exam_service):
         """Test showing exam details."""
         with app.app_context():
             # Create test data
@@ -98,7 +104,7 @@ class TestExamShowRoute:
                 semester="2024_WiSe",
                 university_id=university.id,
             )
-            exam = add_exam(
+            exam = exam_service.add_exam(
                 name="Final Exam",
                 course_id=course.id,
                 exam_date=date(2024, 7, 15),
@@ -312,7 +318,7 @@ class TestExamNewRoute:
 class TestExamEditRoute:
     """Test exam edit route."""
 
-    def test_edit_exam_get(self, app, client, university_service, course_service):
+    def test_edit_exam_get(self, app, client, university_service, course_service, exam_service):
         """Test GET request to edit exam form."""
         with app.app_context():
             university = university_service.add_university("TH Köln")
@@ -321,7 +327,7 @@ class TestExamEditRoute:
                 semester="2024_WiSe",
                 university_id=university.id,
             )
-            exam = add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
+            exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
             exam_id = exam.id
 
         response = client.get(f"/exams/{exam_id}/edit")
@@ -330,7 +336,7 @@ class TestExamEditRoute:
         assert "Test Exam" in response.data.decode("utf-8")
 
     def test_edit_exam_post_success(
-        self, app, client, university_service, course_service
+        self, app, client, university_service, course_service, exam_service
     ):
         """Test successful exam update."""
         with app.app_context():
@@ -340,7 +346,7 @@ class TestExamEditRoute:
                 semester="2024_WiSe",
                 university_id=university.id,
             )
-            exam = add_exam("Original Name", course.id, date(2024, 6, 15), 100.0)
+            exam = exam_service.add_exam("Original Name", course.id, date(2024, 6, 15), 100.0)
             exam_id = exam.id
             course_id = course.id
 
@@ -371,7 +377,7 @@ class TestExamEditRoute:
 class TestExamDeleteRoute:
     """Test exam delete route."""
 
-    def test_delete_exam_get(self, app, client, university_service, course_service):
+    def test_delete_exam_get(self, app, client, university_service, course_service, exam_service):
         """Test GET request to delete confirmation page."""
         with app.app_context():
             university = university_service.add_university("TH Köln")
@@ -380,7 +386,7 @@ class TestExamDeleteRoute:
                 semester="2024_WiSe",
                 university_id=university.id,
             )
-            exam = add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
+            exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
             exam_id = exam.id
 
         response = client.get(f"/exams/{exam_id}/delete")
@@ -390,7 +396,7 @@ class TestExamDeleteRoute:
         assert "Test Exam" in response_text
 
     def test_delete_exam_post_success(
-        self, app, client, university_service, course_service
+        self, app, client, university_service, course_service, exam_service
     ):
         """Test successful exam deletion."""
         with app.app_context():
@@ -400,7 +406,7 @@ class TestExamDeleteRoute:
                 semester="2024_WiSe",
                 university_id=university.id,
             )
-            exam = add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
+            exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
             exam_id = exam.id
 
         response = client.post(f"/exams/{exam_id}/delete", follow_redirects=True)

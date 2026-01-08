@@ -8,268 +8,18 @@ including adding, updating, listing, and deleting exams.
 import argparse
 import logging
 import sys
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import create_app, db
-from app.models.course import Course
-from app.models.exam import (
-    Exam,
-    validate_exam_date,
-    validate_max_points,
-    validate_weight,
-)
+from app import create_app
+from app.services.exam_service import ExamService
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-def add_exam(
-    name: str,
-    course_id: int,
-    exam_date: date,
-    max_points: float,
-    weight: float = 100.0,
-    description: str | None = None,
-) -> Exam | None:
-    """
-    Add a new exam to the database.
-
-    Args:
-        name: Exam name (e.g., "Klausur Statistik I")
-        course_id: Course ID (foreign key)
-        exam_date: Date of the exam
-        max_points: Maximum achievable points
-        weight: Percentage weight for final grade (0-100, default 100)
-        description: Optional description/notes
-
-    Returns:
-        Created Exam object or None if failed
-
-    Raises:
-        ValueError: If validation fails
-    """
-    # Validate name
-    if not name or not name.strip():
-        raise ValueError("Exam name cannot be empty")
-
-    name = name.strip()
-    if len(name) > 255:
-        raise ValueError("Exam name cannot exceed 255 characters")
-
-    # Validate course exists
-    try:
-        course = db.session.query(Course).filter_by(id=course_id).first()
-        if not course:
-            raise ValueError(f"Course with ID {course_id} not found")
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while checking course: {e}")
-        raise ValueError(f"Error checking course: {e}") from e
-
-    # Validate exam date
-    if not validate_exam_date(exam_date):
-        raise ValueError("Invalid exam date")
-
-    # Validate max points
-    if not validate_max_points(max_points):
-        raise ValueError("Maximum points must be greater than 0")
-
-    # Validate weight
-    if not validate_weight(weight):
-        raise ValueError("Weight must be between 0 and 100")
-
-    # Validate description length
-    if description:
-        description = description.strip()
-        if len(description) > 500:
-            raise ValueError("Description cannot exceed 500 characters")
-
-    try:
-        # Create new exam
-        exam = Exam(
-            name=name,
-            course_id=course_id,
-            exam_date=exam_date,
-            max_points=max_points,
-            weight=weight,
-            description=description,
-        )
-        db.session.add(exam)
-        db.session.commit()
-
-        logger.info(
-            f"Successfully added exam: {exam.name} for course {course.name} "
-            f"on {exam_date}"
-        )
-        return exam
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while adding exam: {e}")
-        return None
-
-
-def list_exams(course_id: int | None = None) -> list[Exam]:
-    """
-    List all exams with optional course filter.
-
-    Args:
-        course_id: Optional course ID filter
-
-    Returns:
-        List of Exam objects matching the filter
-    """
-    try:
-        query = db.session.query(Exam)
-
-        if course_id:
-            query = query.filter_by(course_id=course_id)
-
-        exams = query.order_by(Exam.exam_date.desc(), Exam.name).all()
-        return exams
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while listing exams: {e}")
-        return []
-
-
-def get_exam(exam_id: int) -> Exam | None:
-    """
-    Get an exam by ID.
-
-    Args:
-        exam_id: Exam database ID
-
-    Returns:
-        Exam object or None if not found
-    """
-    try:
-        exam = db.session.query(Exam).filter_by(id=exam_id).first()
-        return exam
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while fetching exam: {e}")
-        return None
-
-
-def update_exam(
-    exam_id: int,
-    name: str | None = None,
-    course_id: int | None = None,
-    exam_date: date | None = None,
-    max_points: float | None = None,
-    weight: float | None = None,
-    description: str | None = None,
-) -> Exam | None:
-    """
-    Update an existing exam.
-
-    Args:
-        exam_id: Exam database ID
-        name: Optional new name
-        course_id: Optional new course ID
-        exam_date: Optional new exam date
-        max_points: Optional new max points
-        weight: Optional new weight
-        description: Optional new description
-
-    Returns:
-        Updated Exam object or None if failed
-
-    Raises:
-        ValueError: If validation fails
-    """
-    try:
-        exam = db.session.query(Exam).filter_by(id=exam_id).first()
-
-        if not exam:
-            raise ValueError(f"Exam with ID {exam_id} not found")
-
-        # Update name
-        if name is not None:
-            name = name.strip()
-            if not name:
-                raise ValueError("Exam name cannot be empty")
-            if len(name) > 255:
-                raise ValueError("Exam name cannot exceed 255 characters")
-            exam.name = name
-
-        # Update course
-        if course_id is not None:
-            course = db.session.query(Course).filter_by(id=course_id).first()
-            if not course:
-                raise ValueError(f"Course with ID {course_id} not found")
-            exam.course_id = course_id
-
-        # Update exam date
-        if exam_date is not None:
-            if not validate_exam_date(exam_date):
-                raise ValueError("Invalid exam date")
-            exam.exam_date = exam_date
-
-        # Update max points
-        if max_points is not None:
-            if not validate_max_points(max_points):
-                raise ValueError("Maximum points must be greater than 0")
-            exam.max_points = max_points
-
-        # Update weight
-        if weight is not None:
-            if not validate_weight(weight):
-                raise ValueError("Weight must be between 0 and 100")
-            exam.weight = weight
-
-        # Update description
-        if description is not None:
-            description = description.strip()
-            if len(description) > 500:
-                raise ValueError("Description cannot exceed 500 characters")
-            exam.description = description
-
-        db.session.commit()
-        logger.info(f"Successfully updated exam: {exam.name}")
-        return exam
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while updating exam: {e}")
-        return None
-
-
-def delete_exam(exam_id: int) -> bool:
-    """
-    Delete an exam from the database.
-
-    Args:
-        exam_id: Exam database ID
-
-    Returns:
-        True if deleted successfully, False otherwise
-
-    Raises:
-        ValueError: If exam not found
-    """
-    try:
-        exam = db.session.query(Exam).filter_by(id=exam_id).first()
-
-        if not exam:
-            raise ValueError(f"Exam with ID {exam_id} not found")
-
-        exam_name = exam.name
-        db.session.delete(exam)
-        db.session.commit()
-
-        logger.info(f"Successfully deleted exam: {exam_name}")
-        return True
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while deleting exam: {e}")
-        return False
 
 
 def main() -> int:
@@ -337,6 +87,8 @@ def main() -> int:
     # Create app and initialize database connection
     app = create_app()
     with app.app_context():
+        service = ExamService()
+
         try:
             if args.command == "add":
                 # Parse exam date
@@ -347,7 +99,7 @@ def main() -> int:
                     print("Use format: YYYY-MM-DD (e.g., 2024-06-15)")
                     return 1
 
-                exam = add_exam(
+                exam = service.add_exam(
                     name=args.name,
                     course_id=args.course_id,
                     exam_date=exam_date,
@@ -355,22 +107,19 @@ def main() -> int:
                     weight=args.weight,
                     description=args.description,
                 )
-                if exam:
-                    print("\nExam added successfully!")
-                    print(f"ID: {exam.id}")
-                    print(f"Name: {exam.name}")
-                    print(f"Course: {exam.course.name}")
-                    print(f"Date: {exam.exam_date}")
-                    print(f"Max Points: {exam.max_points}")
-                    print(f"Weight: {exam.weight}%")
-                    if exam.description:
-                        print(f"Description: {exam.description}")
-                    return 0
-                print("Error: Failed to add exam")
-                return 1
+                print("\nExam added successfully!")
+                print(f"ID: {exam.id}")
+                print(f"Name: {exam.name}")
+                print(f"Course: {exam.course.name}")
+                print(f"Date: {exam.exam_date}")
+                print(f"Max Points: {exam.max_points}")
+                print(f"Weight: {exam.weight}%")
+                if exam.description:
+                    print(f"Description: {exam.description}")
+                return 0
 
             if args.command == "list":
-                exams = list_exams(course_id=args.course_id)
+                exams = service.list_exams(course_id=args.course_id)
                 if not exams:
                     print("No exams found")
                     return 0
@@ -388,7 +137,7 @@ def main() -> int:
                 return 0
 
             if args.command == "show":
-                exam = get_exam(args.exam_id)
+                exam = service.get_exam(args.exam_id)
                 if not exam:
                     print(f"Error: Exam with ID {args.exam_id} not found")
                     return 1
@@ -417,7 +166,7 @@ def main() -> int:
                         print("Use format: YYYY-MM-DD (e.g., 2024-06-15)")
                         return 1
 
-                exam = update_exam(
+                exam = service.update_exam(
                     exam_id=args.exam_id,
                     name=args.name,
                     course_id=args.course_id,
@@ -426,22 +175,19 @@ def main() -> int:
                     weight=args.weight,
                     description=args.description,
                 )
-                if exam:
-                    print("\nExam updated successfully!")
-                    print(f"ID: {exam.id}")
-                    print(f"Name: {exam.name}")
-                    print(f"Course: {exam.course.name}")
-                    print(f"Date: {exam.exam_date}")
-                    print(f"Max Points: {exam.max_points}")
-                    print(f"Weight: {exam.weight}%")
-                    if exam.description:
-                        print(f"Description: {exam.description}")
-                    return 0
-                print("Error: Failed to update exam")
-                return 1
+                print("\nExam updated successfully!")
+                print(f"ID: {exam.id}")
+                print(f"Name: {exam.name}")
+                print(f"Course: {exam.course.name}")
+                print(f"Date: {exam.exam_date}")
+                print(f"Max Points: {exam.max_points}")
+                print(f"Weight: {exam.weight}%")
+                if exam.description:
+                    print(f"Description: {exam.description}")
+                return 0
 
             if args.command == "delete":
-                exam = get_exam(args.exam_id)
+                exam = service.get_exam(args.exam_id)
                 if not exam:
                     print(f"Error: Exam with ID {args.exam_id} not found")
                     return 1
@@ -456,11 +202,9 @@ def main() -> int:
                         print("Deletion cancelled")
                         return 0
 
-                if delete_exam(args.exam_id):
-                    print("Exam deleted successfully")
-                    return 0
-                print("Error: Failed to delete exam")
-                return 1
+                service.delete_exam(args.exam_id)
+                print("Exam deleted successfully")
+                return 0
 
         except ValueError as e:
             logger.error(f"Validation error: {e}")

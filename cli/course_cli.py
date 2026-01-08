@@ -11,280 +11,14 @@ import sys
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from app import create_app, db
-from app.models.course import Course, generate_slug, validate_semester
-from app.models.university import University
+from app import create_app
+from app.services.course_service import CourseService
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
-def add_course(
-    name: str,
-    semester: str,
-    university_id: int,
-    slug: str | None = None,
-) -> Course | None:
-    """
-    Add a new course to the database.
-
-    Args:
-        name: Course name
-        semester: Semester (format: YYYY_SoSe or YYYY_WiSe)
-        university_id: University ID (foreign key)
-        slug: Optional custom slug (auto-generated if not provided)
-
-    Returns:
-        Created Course object or None if failed
-
-    Raises:
-        ValueError: If validation fails
-        IntegrityError: If course with same university_id+semester+slug already exists
-    """
-    # Validate name
-    if not name or not name.strip():
-        raise ValueError("Course name cannot be empty")
-
-    name = name.strip()
-    if len(name) > 255:
-        raise ValueError("Course name cannot exceed 255 characters")
-
-    # Validate semester
-    semester = semester.strip()
-    if not validate_semester(semester):
-        raise ValueError(
-            f"Invalid semester format: {semester}. "
-            "Semester must be in format YYYY_SoSe or YYYY_WiSe (e.g., 2023_SoSe, 2024_WiSe)"
-        )
-
-    # Validate university exists
-    try:
-        university = db.session.query(University).filter_by(id=university_id).first()
-        if not university:
-            raise ValueError(f"University with ID {university_id} not found")
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while checking university: {e}")
-        raise ValueError(f"Error checking university: {e}") from e
-
-    # Generate or validate slug
-    if slug:
-        slug = slug.strip()
-        if len(slug) > 100:
-            raise ValueError("Slug cannot exceed 100 characters")
-        # Basic slug validation
-        if not slug.replace("-", "").replace("_", "").isalnum():
-            raise ValueError(
-                "Slug can only contain lowercase letters, numbers, and hyphens"
-            )
-    else:
-        slug = generate_slug(name)
-
-    try:
-        # Create new course
-        course = Course(
-            name=name,
-            semester=semester,
-            university_id=university_id,
-            slug=slug,
-        )
-        db.session.add(course)
-        db.session.commit()
-
-        logger.info(
-            f"Successfully added course: {course.name} ({course.semester}) "
-            f"at {university.name}"
-        )
-        return course
-
-    except IntegrityError as e:
-        db.session.rollback()
-        error_msg = str(e)
-        if "uq_course_university_semester_slug" in error_msg.lower():
-            raise IntegrityError(
-                f"Course with slug '{slug}' already exists for {university.name} "
-                f"in semester {semester}",
-                params=None,
-                orig=e.orig,  # type: ignore[arg-type]
-            ) from e
-        raise
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while adding course: {e}")
-        return None
-
-
-def list_courses(
-    university_id: int | None = None, semester: str | None = None
-) -> list[Course]:
-    """
-    List all courses with optional filters.
-
-    Args:
-        university_id: Optional university ID filter
-        semester: Optional semester filter
-
-    Returns:
-        List of Course objects matching the filters
-    """
-    try:
-        query = db.session.query(Course)
-
-        if university_id:
-            query = query.filter_by(university_id=university_id)
-
-        if semester:
-            query = query.filter_by(semester=semester)
-
-        courses = query.order_by(Course.semester.desc(), Course.name).all()
-        return courses
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while listing courses: {e}")
-        return []
-
-
-def get_course(course_id: int) -> Course | None:
-    """
-    Get a course by ID.
-
-    Args:
-        course_id: Course database ID
-
-    Returns:
-        Course object or None if not found
-    """
-    try:
-        course = db.session.query(Course).filter_by(id=course_id).first()
-        return course
-
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while fetching course: {e}")
-        return None
-
-
-def update_course(
-    course_id: int,
-    name: str | None = None,
-    semester: str | None = None,
-    university_id: int | None = None,
-    slug: str | None = None,
-) -> Course | None:
-    """
-    Update an existing course.
-
-    Args:
-        course_id: Course database ID
-        name: Optional new name
-        semester: Optional new semester
-        university_id: Optional new university ID
-        slug: Optional new slug
-
-    Returns:
-        Updated Course object or None if failed
-
-    Raises:
-        ValueError: If validation fails
-        IntegrityError: If update would violate unique constraint
-    """
-    try:
-        course = db.session.query(Course).filter_by(id=course_id).first()
-
-        if not course:
-            raise ValueError(f"Course with ID {course_id} not found")
-
-        # Update name and regenerate slug if needed
-        if name:
-            name = name.strip()
-            if not name:
-                raise ValueError("Course name cannot be empty")
-            if len(name) > 255:
-                raise ValueError("Course name cannot exceed 255 characters")
-            course.name = name
-            # Auto-regenerate slug unless explicitly provided
-            if slug is None:
-                course.slug = generate_slug(name)
-
-        # Update semester
-        if semester:
-            semester = semester.strip()
-            if not validate_semester(semester):
-                raise ValueError(
-                    f"Invalid semester format: {semester}. "
-                    "Semester must be in format YYYY_SoSe or YYYY_WiSe"
-                )
-            course.semester = semester
-
-        # Update university
-        if university_id:
-            university = (
-                db.session.query(University).filter_by(id=university_id).first()
-            )
-            if not university:
-                raise ValueError(f"University with ID {university_id} not found")
-            course.university_id = university_id
-
-        # Update slug if explicitly provided
-        if slug:
-            slug = slug.strip()
-            if len(slug) > 100:
-                raise ValueError("Slug cannot exceed 100 characters")
-            course.slug = slug
-
-        db.session.commit()
-        logger.info(f"Successfully updated course: {course.name}")
-        return course
-
-    except IntegrityError as e:
-        db.session.rollback()
-        error_msg = str(e)
-        if "uq_course_university_semester_slug" in error_msg.lower():
-            raise IntegrityError(
-                f"Course with slug '{course.slug}' already exists for this university in semester {course.semester}",
-                params=None,
-                orig=e.orig,  # type: ignore[arg-type]
-            ) from e
-        raise
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while updating course: {e}")
-        return None
-
-
-def delete_course(course_id: int) -> bool:
-    """
-    Delete a course from the database.
-
-    Args:
-        course_id: Course database ID
-
-    Returns:
-        True if deleted successfully, False otherwise
-
-    Raises:
-        ValueError: If course not found
-    """
-    try:
-        course = db.session.query(Course).filter_by(id=course_id).first()
-
-        if not course:
-            raise ValueError(f"Course with ID {course_id} not found")
-
-        course_name = course.name
-        db.session.delete(course)
-        db.session.commit()
-
-        logger.info(f"Successfully deleted course: {course_name}")
-        return True
-
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        logger.error(f"Database error while deleting course: {e}")
-        return False
 
 
 def main() -> int:
@@ -348,27 +82,27 @@ def main() -> int:
     # Create app and initialize database connection
     app = create_app()
     with app.app_context():
+        # Initialize service
+        service = CourseService()
+
         try:
             if args.command == "add":
-                course = add_course(
+                course = service.add_course(
                     name=args.name,
                     semester=args.semester,
                     university_id=args.university_id,
                     slug=args.slug,
                 )
-                if course:
-                    print("\nCourse added successfully!")
-                    print(f"ID: {course.id}")
-                    print(f"Name: {course.name}")
-                    print(f"Slug: {course.slug}")
-                    print(f"Semester: {course.semester}")
-                    print(f"University: {course.university.name}")
-                    return 0
-                print("Error: Failed to add course")
-                return 1
+                print("\nCourse added successfully!")
+                print(f"ID: {course.id}")
+                print(f"Name: {course.name}")
+                print(f"Slug: {course.slug}")
+                print(f"Semester: {course.semester}")
+                print(f"University: {course.university.name}")
+                return 0
 
             if args.command == "list":
-                courses = list_courses(
+                courses = service.list_courses(
                     university_id=args.university_id, semester=args.semester
                 )
                 if not courses:
@@ -385,7 +119,7 @@ def main() -> int:
                 return 0
 
             if args.command == "show":
-                course = get_course(args.course_id)
+                course = service.get_course(args.course_id)
                 if not course:
                     print(f"Error: Course with ID {args.course_id} not found")
                     return 1
@@ -401,7 +135,7 @@ def main() -> int:
                 return 0
 
             if args.command == "update":
-                course = update_course(
+                course = service.update_course(
                     course_id=args.course_id,
                     name=args.name,
                     semester=args.semester,
@@ -420,7 +154,7 @@ def main() -> int:
                 return 1
 
             if args.command == "delete":
-                course = get_course(args.course_id)
+                course = service.get_course(args.course_id)
                 if not course:
                     print(f"Error: Course with ID {args.course_id} not found")
                     return 1
@@ -435,21 +169,35 @@ def main() -> int:
                         print("Deletion cancelled")
                         return 0
 
-                if delete_course(args.course_id):
+                if service.delete_course(args.course_id):
                     print("Course deleted successfully")
                     return 0
                 print("Error: Failed to delete course")
                 return 1
 
         except ValueError as e:
-            print(f"Validation error: {e}")
+            logger.error(f"Validation error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
             return 1
+
         except IntegrityError as e:
-            print(f"Database constraint error: {e}")
+            logger.error(f"Database constraint error: {e}")
+            print(f"Error: {e}", file=sys.stderr)
             return 1
+
+        except SQLAlchemyError as e:
+            logger.error(f"Database error: {e}", exc_info=True)
+            print("Database error. Please try again.", file=sys.stderr)
+            return 1
+
+        except KeyboardInterrupt:
+            logger.info("Operation cancelled by user")
+            print("\nOperation cancelled.", file=sys.stderr)
+            return 130
+
         except Exception as e:
-            logger.exception("Unexpected error")
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}", exc_info=True)
+            print(f"Unexpected error: {e}", file=sys.stderr)
             return 1
 
     return 1

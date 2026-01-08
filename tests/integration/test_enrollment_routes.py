@@ -4,27 +4,42 @@ Integration tests for enrollment routes.
 This module tests the Flask web interface for enrollment management.
 """
 
-from cli.course_cli import add_course
-from cli.enrollment_cli import add_enrollment
 import pytest
 
+from app.services.course_service import CourseService
 from app.services.student_service import StudentService
+from app.services.university_service import UniversityService
+from cli.enrollment_cli import add_enrollment
+
 
 @pytest.fixture
 def student_service():
     """Return a StudentService instance."""
     return StudentService()
-from cli.university_cli import add_university
+
+
+@pytest.fixture
+def course_service():
+    """Return a CourseService instance."""
+    return CourseService()
+
+
+@pytest.fixture
+def university_service():
+    """Return a UniversityService instance."""
+    return UniversityService()
 
 
 class TestEnrollmentRoute:
     """Test enrollment route."""
 
-    def test_enroll_success(self, app, client, student_service):
+    def test_enroll_success(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test successful student enrollment in course."""
         with app.app_context():
             # Create test data
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -32,7 +47,7 @@ class TestEnrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -52,11 +67,13 @@ class TestEnrollmentRoute:
             assert "erfolgreich" in response.data.decode("utf-8")
             assert "eingeschrieben" in response.data.decode("utf-8")
 
-    def test_enroll_duplicate_prevented(self, app, client, student_service):
+    def test_enroll_duplicate_prevented(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that duplicate enrollments are prevented."""
         with app.app_context():
             # Create test data
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -64,7 +81,7 @@ class TestEnrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -85,11 +102,13 @@ class TestEnrollmentRoute:
             # Should redirect due to error
             assert response.status_code == 302
 
-    def test_enroll_missing_student_id(self, app, client, student_service):
+    def test_enroll_missing_student_id(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test enrollment with missing student ID."""
         with app.app_context():
-            university = add_university("TH Köln")
-            course = add_course(
+            university = university_service.add_university("TH Köln")
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -103,7 +122,9 @@ class TestEnrollmentRoute:
             # Should redirect due to error
             assert response.status_code == 302
 
-    def test_enroll_missing_course_id(self, app, client, student_service):
+    def test_enroll_missing_course_id(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test enrollment with missing course ID."""
         with app.app_context():
             student = student_service.add_student(
@@ -121,11 +142,13 @@ class TestEnrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_enroll_invalid_student_id(self, app, client, student_service):
+    def test_enroll_invalid_student_id(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test enrollment with non-existent student."""
         with app.app_context():
-            university = add_university("TH Köln")
-            course = add_course(
+            university = university_service.add_university("TH Köln")
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -138,7 +161,9 @@ class TestEnrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_enroll_invalid_course_id(self, app, client, student_service):
+    def test_enroll_invalid_course_id(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test enrollment with non-existent course."""
         with app.app_context():
             student = student_service.add_student(
@@ -156,7 +181,9 @@ class TestEnrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_enroll_non_numeric_ids(self, app, client, student_service):
+    def test_enroll_non_numeric_ids(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test enrollment with non-numeric IDs."""
         with app.app_context():
             response = client.post(
@@ -166,10 +193,12 @@ class TestEnrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_enroll_redirect_to_course(self, app, client, student_service):
+    def test_enroll_redirect_to_course(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that enrollment redirects to course page by default."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -177,7 +206,7 @@ class TestEnrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -195,10 +224,12 @@ class TestEnrollmentRoute:
             assert response.status_code == 302
             assert f"/courses/{course.id}" in response.location
 
-    def test_enroll_redirect_to_student(self, app, client, student_service):
+    def test_enroll_redirect_to_student(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that enrollment can redirect to student page."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -206,7 +237,7 @@ class TestEnrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -229,11 +260,13 @@ class TestEnrollmentRoute:
 class TestUnenrollmentRoute:
     """Test unenrollment route."""
 
-    def test_unenroll_success(self, app, client, student_service):
+    def test_unenroll_success(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test successful student unenrollment from course."""
         with app.app_context():
             # Create test data
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -241,7 +274,7 @@ class TestUnenrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -262,10 +295,12 @@ class TestUnenrollmentRoute:
             assert "erfolgreich" in response.data.decode("utf-8")
             assert "ausgetragen" in response.data.decode("utf-8")
 
-    def test_unenroll_non_existent(self, app, client, student_service):
+    def test_unenroll_non_existent(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test unenrolling a non-existent enrollment."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -273,7 +308,7 @@ class TestUnenrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -290,11 +325,13 @@ class TestUnenrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_unenroll_missing_student_id(self, app, client, student_service):
+    def test_unenroll_missing_student_id(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test unenrollment with missing student ID."""
         with app.app_context():
-            university = add_university("TH Köln")
-            course = add_course(
+            university = university_service.add_university("TH Köln")
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -307,7 +344,9 @@ class TestUnenrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_unenroll_missing_course_id(self, app, client, student_service):
+    def test_unenroll_missing_course_id(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test unenrollment with missing course ID."""
         with app.app_context():
             student = student_service.add_student(
@@ -325,7 +364,9 @@ class TestUnenrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_unenroll_non_numeric_ids(self, app, client, student_service):
+    def test_unenroll_non_numeric_ids(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test unenrollment with non-numeric IDs."""
         with app.app_context():
             response = client.post(
@@ -335,10 +376,12 @@ class TestUnenrollmentRoute:
 
             assert response.status_code == 302
 
-    def test_unenroll_redirect_to_course(self, app, client, student_service):
+    def test_unenroll_redirect_to_course(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that unenrollment redirects to course page by default."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -346,7 +389,7 @@ class TestUnenrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -365,10 +408,12 @@ class TestUnenrollmentRoute:
             assert response.status_code == 302
             assert f"/courses/{course.id}" in response.location
 
-    def test_unenroll_redirect_to_student(self, app, client, student_service):
+    def test_unenroll_redirect_to_student(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that unenrollment can redirect to student page."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -376,7 +421,7 @@ class TestUnenrollmentRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -400,11 +445,13 @@ class TestUnenrollmentRoute:
 class TestUpdateStatusRoute:
     """Test enrollment status update route."""
 
-    def test_update_status_success(self, app, client, student_service):
+    def test_update_status_success(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test successful enrollment status update."""
         with app.app_context():
             # Create test data
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -412,7 +459,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -434,10 +481,12 @@ class TestUpdateStatusRoute:
             assert "Status" in response.data.decode("utf-8")
             assert "aktualisiert" in response.data.decode("utf-8")
 
-    def test_update_status_to_dropped(self, app, client, student_service):
+    def test_update_status_to_dropped(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test updating status to dropped sets unenrollment date."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -445,7 +494,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -466,10 +515,12 @@ class TestUpdateStatusRoute:
             assert response.status_code == 200
             assert "aktualisiert" in response.data.decode("utf-8")
 
-    def test_update_status_invalid(self, app, client, student_service):
+    def test_update_status_invalid(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test updating status with invalid status value."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -477,7 +528,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -496,10 +547,12 @@ class TestUpdateStatusRoute:
 
             assert response.status_code == 302
 
-    def test_update_status_non_existent_enrollment(self, app, client, student_service):
+    def test_update_status_non_existent_enrollment(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test updating status for non-existent enrollment."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -507,7 +560,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -525,7 +578,9 @@ class TestUpdateStatusRoute:
 
             assert response.status_code == 302
 
-    def test_update_status_missing_parameters(self, app, client, student_service):
+    def test_update_status_missing_parameters(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test updating status with missing required parameters."""
         with app.app_context():
             response = client.post(
@@ -535,7 +590,9 @@ class TestUpdateStatusRoute:
 
             assert response.status_code == 302
 
-    def test_update_status_non_numeric_ids(self, app, client, student_service):
+    def test_update_status_non_numeric_ids(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test updating status with non-numeric IDs."""
         with app.app_context():
             response = client.post(
@@ -545,10 +602,12 @@ class TestUpdateStatusRoute:
 
             assert response.status_code == 302
 
-    def test_update_status_redirect_to_course(self, app, client, student_service):
+    def test_update_status_redirect_to_course(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that status update redirects to course page by default."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -556,7 +615,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -576,10 +635,12 @@ class TestUpdateStatusRoute:
             assert response.status_code == 302
             assert f"/courses/{course.id}" in response.location
 
-    def test_update_status_redirect_to_student(self, app, client, student_service):
+    def test_update_status_redirect_to_student(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test that status update can redirect to student page."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -587,7 +648,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,
@@ -608,10 +669,12 @@ class TestUpdateStatusRoute:
             assert response.status_code == 302
             assert "/students/12345678" in response.location
 
-    def test_update_all_valid_statuses(self, app, client, student_service):
+    def test_update_all_valid_statuses(
+        self, app, client, student_service, university_service, course_service
+    ):
         """Test updating to all valid status values."""
         with app.app_context():
-            university = add_university("TH Köln")
+            university = university_service.add_university("TH Köln")
             student = student_service.add_student(
                 first_name="Max",
                 last_name="Mustermann",
@@ -619,7 +682,7 @@ class TestUpdateStatusRoute:
                 email="max.mustermann@example.com",
                 program="Computer Science",
             )
-            course = add_course(
+            course = course_service.add_course(
                 name="Introduction to Programming",
                 semester="2024_WiSe",
                 university_id=university.id,

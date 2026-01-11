@@ -53,7 +53,12 @@ def enroll() -> Any:
     try:
         # Get student to find their student_id (matriculation number)
         service = EnrollmentService()
-        student = service.query(Student).filter_by(id=student_id_int).first()
+        student = (
+            service.query(Student)
+            .filter_by(id=student_id_int)
+            .filter(Student.deleted_at.is_(None))
+            .first()
+        )
         if not student:
             flash("Student not found.", "error")
             return redirect(request.referrer or url_for("index"))
@@ -121,7 +126,12 @@ def unenroll() -> Any:
     try:
         # Get student to find their student_id (matriculation number)
         service = EnrollmentService()
-        student = service.query(Student).filter_by(id=student_id_int).first()
+        student = (
+            service.query(Student)
+            .filter_by(id=student_id_int)
+            .filter(Student.deleted_at.is_(None))
+            .first()
+        )
         if not student:
             flash("Student not found.", "error")
             return redirect(request.referrer or url_for("index"))
@@ -196,7 +206,12 @@ def update_status() -> Any:
     try:
         # Get student to find their student_id (matriculation number)
         service = EnrollmentService()
-        student = service.query(Student).filter_by(id=student_id_int).first()
+        student = (
+            service.query(Student)
+            .filter_by(id=student_id_int)
+            .filter(Student.deleted_at.is_(None))
+            .first()
+        )
         if not student:
             flash("Student not found.", "error")
             return redirect(request.referrer or url_for("index"))

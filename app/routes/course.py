@@ -113,12 +113,19 @@ def show(course_id: int) -> str | Any:
             return redirect(url_for("course.index"))
 
         # Get enrollments for this course
-        enrollments = db.session.query(Enrollment).filter_by(course_id=course_id).all()
+        enrollments = (
+            db.session.query(Enrollment)
+            .join(Student)
+            .filter(Enrollment.course_id == course_id)
+            .filter(Student.deleted_at.is_(None))
+            .all()
+        )
 
         # Get all students for enrollment dropdown (students not already enrolled)
         enrolled_student_ids = [e.student_id for e in enrollments]
         available_students = (
             db.session.query(Student)
+            .filter(Student.deleted_at.is_(None))
             .filter(
                 ~Student.id.in_(enrolled_student_ids) if enrolled_student_ids else True  # type: ignore[arg-type]
             )

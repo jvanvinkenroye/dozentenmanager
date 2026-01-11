@@ -135,7 +135,7 @@ class StudentService(BaseService):
             List of Student objects
         """
         try:
-            query = self.query(Student)
+            query = self.query(Student).filter(Student.deleted_at.is_(None))
 
             if search:
                 search_term = f"%{search}%"
@@ -169,7 +169,12 @@ class StudentService(BaseService):
             Student object or None if not found
         """
         try:
-            student = self.query(Student).filter_by(id=student_id).first()
+            student = (
+                self.query(Student)
+                .filter_by(id=student_id)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
 
             if student:
                 logger.info(f"Found student: {student}")
@@ -193,7 +198,12 @@ class StudentService(BaseService):
             Student object or None if not found
         """
         try:
-            student = self.query(Student).filter_by(student_id=student_id).first()
+            student = (
+                self.query(Student)
+                .filter_by(student_id=student_id)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
 
             if student:
                 logger.info(f"Found student: {student}")
@@ -239,7 +249,12 @@ class StudentService(BaseService):
             raise ValueError("At least one field must be provided for update")
 
         try:
-            student = self.query(Student).filter_by(id=student_id).first()
+            student = (
+                self.query(Student)
+                .filter_by(id=student_id)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
 
             if not student:
                 logger.warning(f"Student with ID {student_id} not found")
@@ -319,13 +334,18 @@ class StudentService(BaseService):
             True if deleted, False if not found
         """
         try:
-            student = self.query(Student).filter_by(id=student_id).first()
+            student = (
+                self.query(Student)
+                .filter_by(id=student_id)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
 
             if not student:
                 logger.warning(f"Student with ID {student_id} not found")
                 return False
 
-            self.delete(student)
+            student.soft_delete()
             self.commit()
             logger.info(f"Successfully deleted student: {student}")
             return True

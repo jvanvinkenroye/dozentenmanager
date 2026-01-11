@@ -46,7 +46,7 @@ def index() -> str:
 
     try:
         # Build query using service's query method
-        query = service.query(Student)
+        query = service.query(Student).filter(Student.deleted_at.is_(None))
 
         if search_term:
             search_pattern = f"%{search_term}%"

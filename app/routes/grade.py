@@ -52,13 +52,19 @@ def index():
         (e.id, f"{e.name} - {e.exam_date}") for e in exams
     ]
 
-    students = Student.query.order_by(Student.last_name, Student.first_name).all()
+    students = (
+        Student.query.filter(Student.deleted_at.is_(None))
+        .order_by(Student.last_name, Student.first_name)
+        .all()
+    )
     form.student_id.choices = [(0, "Alle Studierenden")] + [
         (s.id, f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
     ]
 
     # Build query
-    query = Grade.query
+    query = (
+        Grade.query.join(Enrollment).join(Student).filter(Student.deleted_at.is_(None))
+    )
 
     # Apply filters
     course_id = request.args.get("course_id", type=int)
@@ -71,7 +77,7 @@ def index():
 
     student_id = request.args.get("student_id", type=int)
     if student_id:
-        query = query.join(Enrollment).filter(Enrollment.student_id == student_id)
+        query = query.filter(Enrollment.student_id == student_id)
 
     is_final = request.args.get("is_final")
     if is_final == "1":
@@ -440,7 +446,11 @@ def exam_stats(exam_id: int):
 @bp.route("/student/<int:student_id>")
 def student_grades(student_id: int):
     """Show all grades for a student."""
-    student = Student.query.get_or_404(student_id)
+    student = (
+        Student.query.filter(Student.deleted_at.is_(None))
+        .filter_by(id=student_id)
+        .first_or_404()
+    )
 
     # Get all enrollments with their grades
     enrollments_with_grades = []

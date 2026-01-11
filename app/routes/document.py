@@ -114,6 +114,7 @@ def index() -> str:
             .join(Enrollment)
             .join(Student)
             .join(Course)
+            .filter(Student.deleted_at.is_(None))
         )
 
         # Apply filters
@@ -138,7 +139,12 @@ def index() -> str:
 
         # Get filter options
         courses = db.session.query(Course).order_by(Course.name).all()
-        students = db.session.query(Student).order_by(Student.last_name).all()
+        students = (
+            db.session.query(Student)
+            .filter(Student.deleted_at.is_(None))
+            .order_by(Student.last_name)
+            .all()
+        )
 
         # Populate form choices
         form.course_id.choices = [("", "-- Alle Kurse --")] + [

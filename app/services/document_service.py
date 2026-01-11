@@ -285,6 +285,7 @@ class DocumentService(BaseService):
                 .join(Enrollment)
                 .join(Student)
                 .join(Course)
+                .filter(Student.deleted_at.is_(None))
             )
 
             if enrollment_id:

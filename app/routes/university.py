@@ -102,6 +102,7 @@ def show(university_id: int) -> str | Any:
             .join(Enrollment)
             .join(Course)
             .filter(Course.university_id == university.id)
+            .filter(Student.deleted_at.is_(None))
             .distinct(Student.id)
             .count()
         )

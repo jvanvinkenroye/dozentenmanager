@@ -44,7 +44,12 @@ class EnrollmentService(BaseService):
         """
         try:
             # Verify student exists
-            student = self.query(Student).filter_by(student_id=student_id_str).first()
+            student = (
+                self.query(Student)
+                .filter_by(student_id=student_id_str)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
             if not student:
                 raise ValueError(
                     f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
@@ -113,7 +118,10 @@ class EnrollmentService(BaseService):
             elif student_id_str:
                 # Get student database ID from student_id
                 student = (
-                    self.query(Student).filter_by(student_id=student_id_str).first()
+                    self.query(Student)
+                    .filter_by(student_id=student_id_str)
+                    .filter(Student.deleted_at.is_(None))
+                    .first()
                 )
                 if not student:
                     raise ValueError(
@@ -143,7 +151,12 @@ class EnrollmentService(BaseService):
         """
         try:
             # Get student database ID
-            student = self.query(Student).filter_by(student_id=student_id_str).first()
+            student = (
+                self.query(Student)
+                .filter_by(student_id=student_id_str)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
             if not student:
                 raise ValueError(
                     f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
@@ -176,7 +189,12 @@ class EnrollmentService(BaseService):
         """
         try:
             # Get student database ID
-            student = self.query(Student).filter_by(student_id=student_id_str).first()
+            student = (
+                self.query(Student)
+                .filter_by(student_id=student_id_str)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
             if not student:
                 raise ValueError(
                     f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
@@ -236,7 +254,12 @@ class EnrollmentService(BaseService):
 
         try:
             # Get student database ID
-            student = self.query(Student).filter_by(student_id=student_id_str).first()
+            student = (
+                self.query(Student)
+                .filter_by(student_id=student_id_str)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
             if not student:
                 raise ValueError(
                     f"Student mit Matrikelnummer {student_id_str} nicht gefunden"

@@ -192,7 +192,12 @@ def show(document_id: int) -> str | Any:
             flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
             return redirect(url_for("document.index"))
 
-        return render_template("document/detail.html", document=document)
+        form = SubmissionStatusForm(obj=document.submission)
+        return render_template(
+            "document/detail.html",
+            document=document,
+            form=form,
+        )
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching document: {e}")
@@ -676,8 +681,7 @@ def update_submission_status(submission_id: int) -> Any:
 
         if form.validate_on_submit():
             submission.status = form.status.data
-            if form.notes.data:
-                submission.notes = form.notes.data
+            submission.notes = form.notes.data or None
             db.session.commit()
 
             flash("Status erfolgreich aktualisiert.", "success")

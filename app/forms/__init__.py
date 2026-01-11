@@ -20,7 +20,7 @@ from app.forms.grade import (
     GradeForm,
     GradeSearchForm,
 )
-from app.forms.student import StudentForm
+from app.forms.student import StudentForm, StudentImportForm
 from app.forms.university import UniversityForm
 
 __all__ = [
@@ -36,6 +36,7 @@ __all__ = [
     "GradeForm",
     "GradeSearchForm",
     "StudentForm",
+    "StudentImportForm",
     "SubmissionStatusForm",
     "UniversityForm",
 ]

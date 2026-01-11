@@ -4,18 +4,21 @@ Student routes blueprint.
 This module provides web routes for managing students through the Flask interface.
 """
 
+import csv
+import io
 import logging
 from typing import Any
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.datastructures import FileStorage
 
 from app import db
-from app.forms.student import StudentForm
+from app.forms.student import StudentForm, StudentImportForm
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.grade import Grade
-from app.models.student import Student
+from app.models.student import Student, validate_email, validate_student_id
 from app.models.submission import Submission
 from app.services.student_service import StudentService
 from app.utils.pagination import paginate_query
@@ -25,6 +28,127 @@ logger = logging.getLogger(__name__)
 
 # Create blueprint
 bp = Blueprint("student", __name__, url_prefix="/students")
+
+REQUIRED_IMPORT_HEADERS = [
+    "first_name",
+    "last_name",
+    "student_id",
+    "email",
+    "program",
+]
+
+
+def _normalize_header(header: str | None) -> str:
+    if not header:
+        return ""
+    return header.strip().lower()
+
+
+def _load_csv_rows(file: FileStorage) -> list[dict[str, str]]:
+    file.stream.seek(0)
+    text_stream = io.TextIOWrapper(file.stream, encoding="utf-8-sig")
+    reader = csv.DictReader(text_stream)
+    raw_headers = reader.fieldnames or []
+    normalized_headers = [_normalize_header(h) for h in raw_headers]
+    header_map = dict(zip(raw_headers, normalized_headers, strict=False))
+    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in normalized_headers]
+    if missing:
+        raise ValueError("Missing required headers: " + ", ".join(missing))
+
+    rows: list[dict[str, str]] = []
+    for row in reader:
+        normalized_row: dict[str, str] = {}
+        for raw_header, value in row.items():
+            normalized_key = header_map.get(raw_header, "")
+            if not normalized_key:
+                continue
+            normalized_row[normalized_key] = str(value).strip() if value else ""
+        rows.append(normalized_row)
+    return rows
+
+
+def _load_xlsx_rows(file: FileStorage) -> list[dict[str, str]]:
+    try:
+        from openpyxl import load_workbook
+    except ImportError as exc:
+        raise ValueError(
+            "openpyxl is required for XLSX import. Install it and try again."
+        ) from exc
+
+    file.stream.seek(0)
+    workbook = load_workbook(
+        filename=io.BytesIO(file.stream.read()),
+        read_only=True,
+        data_only=True,
+    )
+    sheet = workbook.active
+    rows_iter = sheet.iter_rows(values_only=True)
+    try:
+        headers = next(rows_iter)
+    except StopIteration:
+        raise ValueError("XLSX file has no rows.") from None
+
+    raw_headers = [_normalize_header(str(h)) for h in headers]
+    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in raw_headers]
+    if missing:
+        raise ValueError("Missing required headers: " + ", ".join(missing))
+
+    rows: list[dict[str, str]] = []
+    for row in rows_iter:
+        normalized_row: dict[str, str] = {}
+        for idx, value in enumerate(row):
+            header = raw_headers[idx] if idx < len(raw_headers) else ""
+            if not header:
+                continue
+            normalized_row[header] = str(value).strip() if value is not None else ""
+        rows.append(normalized_row)
+    return rows
+
+
+def _load_xls_rows(file: FileStorage) -> list[dict[str, str]]:
+    try:
+        import xlrd
+    except ImportError as exc:
+        raise ValueError(
+            "xlrd is required for XLS import. Install it and try again."
+        ) from exc
+
+    file.stream.seek(0)
+    workbook = xlrd.open_workbook(file_contents=file.stream.read())
+    if workbook.nsheets == 0:
+        raise ValueError("XLS file has no sheets.")
+
+    sheet = workbook.sheet_by_index(0)
+    if sheet.nrows == 0:
+        raise ValueError("XLS file has no rows.")
+
+    raw_headers = [_normalize_header(str(h)) for h in sheet.row_values(0)]
+    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in raw_headers]
+    if missing:
+        raise ValueError("Missing required headers: " + ", ".join(missing))
+
+    rows: list[dict[str, str]] = []
+    for row_idx in range(1, sheet.nrows):
+        row = sheet.row_values(row_idx)
+        normalized_row: dict[str, str] = {}
+        for idx, value in enumerate(row):
+            header = raw_headers[idx] if idx < len(raw_headers) else ""
+            if not header:
+                continue
+            normalized_row[header] = str(value).strip() if value else ""
+        rows.append(normalized_row)
+    return rows
+
+
+def _load_import_rows(file: FileStorage, fmt: str | None) -> list[dict[str, str]]:
+    format_hint = fmt or file.filename.rsplit(".", 1)[-1].lower()
+    if format_hint == "csv":
+        return _load_csv_rows(file)
+    if format_hint == "xlsx":
+        return _load_xlsx_rows(file)
+    if format_hint == "xls":
+        return _load_xls_rows(file)
+    raise ValueError(f"Unsupported format '{format_hint}'. Use csv, xlsx, or xls.")
 
 
 @bp.route("/")
@@ -195,6 +319,144 @@ def new() -> str | Any:
             flash(error, "error")
 
     return render_template("student/form.html", student=None, form=form)
+
+
+@bp.route("/import", methods=["GET", "POST"])
+def import_students() -> str | Any:
+    """Import students from CSV/XLSX/XLS."""
+    form = StudentImportForm()
+    service = StudentService()
+    import_errors: list[str] = []
+
+    if form.validate_on_submit():
+        file = form.file.data
+        try:
+            rows = _load_import_rows(file, form.file_format.data)
+        except ValueError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "student/import.html",
+                form=form,
+                import_errors=import_errors,
+            )
+
+        created = updated = skipped = errors = 0
+        seen_student_ids: set[str] = set()
+        seen_emails: set[str] = set()
+
+        for idx, row in enumerate(rows, start=2):
+            missing_values = [
+                header for header in REQUIRED_IMPORT_HEADERS if not row.get(header)
+            ]
+            if missing_values:
+                errors += 1
+                import_errors.append(
+                    f"Zeile {idx}: fehlende Werte: {', '.join(missing_values)}"
+                )
+                continue
+
+            student_id = row["student_id"].strip()
+            email = row["email"].strip().lower()
+
+            if not validate_student_id(student_id):
+                errors += 1
+                import_errors.append(
+                    f"Zeile {idx}: ungültige Matrikelnummer {student_id}"
+                )
+                continue
+            if not validate_email(email):
+                errors += 1
+                import_errors.append(f"Zeile {idx}: ungültige E-Mail {email}")
+                continue
+
+            if student_id in seen_student_ids or email in seen_emails:
+                errors += 1
+                import_errors.append(f"Zeile {idx}: Duplikat innerhalb der Datei")
+                continue
+            seen_student_ids.add(student_id)
+            seen_emails.add(email)
+
+            existing_by_id = (
+                db.session.query(Student).filter_by(student_id=student_id).first()
+            )
+            existing_by_email = db.session.query(Student).filter_by(email=email).first()
+
+            existing: Student | None = None
+            if existing_by_id and existing_by_email:
+                if existing_by_id.id != existing_by_email.id:
+                    errors += 1
+                    import_errors.append(
+                        f"Zeile {idx}: Matrikelnummer und E-Mail gehören zu unterschiedlichen Datensätzen"
+                    )
+                    continue
+                existing = existing_by_id
+            else:
+                existing = existing_by_id or existing_by_email
+
+            if existing:
+                if form.on_duplicate.data == "skip":
+                    skipped += 1
+                    continue
+                if form.on_duplicate.data == "error":
+                    errors += 1
+                    import_errors.append(f"Zeile {idx}: Duplikat gefunden")
+                    continue
+                if form.on_duplicate.data == "update":
+                    if existing.deleted_at:
+                        existing.deleted_at = None
+                    try:
+                        existing_id = int(existing.id)
+                        updated_student = service.update_student(
+                            existing_id,
+                            row["first_name"],
+                            row["last_name"],
+                            student_id,
+                            email,
+                            row["program"],
+                        )
+                        if updated_student:
+                            updated += 1
+                        else:
+                            errors += 1
+                            import_errors.append(
+                                f"Zeile {idx}: Datensatz nicht gefunden"
+                            )
+                    except ValueError as exc:
+                        errors += 1
+                        import_errors.append(f"Zeile {idx}: {exc}")
+                    except SQLAlchemyError:
+                        errors += 1
+                        import_errors.append(f"Zeile {idx}: Datenbankfehler")
+                    continue
+
+            try:
+                service.add_student(
+                    row["first_name"],
+                    row["last_name"],
+                    student_id,
+                    email,
+                    row["program"],
+                )
+                created += 1
+            except ValueError as exc:
+                errors += 1
+                import_errors.append(f"Zeile {idx}: {exc}")
+            except SQLAlchemyError:
+                errors += 1
+                import_errors.append(f"Zeile {idx}: Datenbankfehler")
+
+        flash(
+            f"Import abgeschlossen. Neu: {created}, "
+            f"Aktualisiert: {updated}, Übersprungen: {skipped}, "
+            f"Fehler: {errors}",
+            "success" if errors == 0 else "warning",
+        )
+
+    return render_template(
+        "student/import.html",
+        form=form,
+        import_errors=import_errors,
+    )
 
 
 @bp.route("/<int:student_id>/edit", methods=["GET", "POST"])

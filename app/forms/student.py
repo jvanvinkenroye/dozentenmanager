@@ -5,7 +5,8 @@ This module provides form validation for student creation and editing.
 """
 
 from flask_wtf import FlaskForm
-from wtforms import StringField
+from flask_wtf.file import FileAllowed, FileField, FileRequired
+from wtforms import SelectField, StringField
 from wtforms.validators import DataRequired, Email, Length, Regexp, ValidationError
 
 from app import db
@@ -109,3 +110,39 @@ class StudentForm(FlaskForm):
         existing = db.session.query(Student).filter_by(email=email_lower).first()
         if existing:
             raise ValidationError("E-Mail-Adresse existiert bereits.")
+
+
+class StudentImportForm(FlaskForm):
+    """Form for importing students from CSV/XLSX/XLS."""
+
+    file = FileField(
+        "Datei",
+        validators=[
+            FileRequired(message="Bitte eine Datei auswählen."),
+            FileAllowed(
+                ["csv", "xlsx", "xls"],
+                message="Nur CSV, XLSX oder XLS Dateien sind erlaubt.",
+            ),
+        ],
+    )
+
+    file_format = SelectField(
+        "Format (optional)",
+        choices=[
+            ("", "Automatisch"),
+            ("csv", "CSV"),
+            ("xlsx", "XLSX"),
+            ("xls", "XLS"),
+        ],
+    )
+
+    on_duplicate = SelectField(
+        "Duplikate",
+        choices=[
+            ("skip", "Überspringen"),
+            ("update", "Aktualisieren"),
+            ("error", "Fehler"),
+        ],
+        default="skip",
+        validators=[DataRequired()],
+    )

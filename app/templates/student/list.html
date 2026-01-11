@@ -24,12 +24,20 @@
     </div>
     <div class="level-right">
         <div class="level-item">
-            <a href="{{ url_for('student.new') }}" class="button is-primary">
-                <span class="icon">
-                    <i class="fas fa-plus"></i>
-                </span>
-                <span>Neue/r Studierende/r</span>
-            </a>
+            <div class="buttons">
+                <a href="{{ url_for('student.import_students') }}" class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-file-import"></i>
+                    </span>
+                    <span>Import</span>
+                </a>
+                <a href="{{ url_for('student.new') }}" class="button is-primary">
+                    <span class="icon">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span>Neue/r Studierende/r</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>

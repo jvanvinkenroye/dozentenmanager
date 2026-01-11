@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Studierende importieren - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('student.index') }}">Studierende</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Import</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title">Studierende importieren</h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <a href="{{ url_for('student.index') }}" class="button is-light">
+                <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                <span>Zurück</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                <div class="field">
+                    <label class="label">{{ form.file.label }}</label>
+                    <div class="control">
+                        <div class="file has-name is-fullwidth">
+                            <label class="file-label">
+                                {{ form.file(class="file-input") }}
+                                <span class="file-cta">
+                                    <span class="file-icon">
+                                        <i class="fas fa-upload"></i>
+                                    </span>
+                                    <span class="file-label">Datei auswählen</span>
+                                </span>
+                                <span class="file-name">Keine Datei ausgewählt</span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="help">Erlaubt: CSV, XLSX, XLS</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.file_format.label }}</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.file_format(class="") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">{{ form.on_duplicate.label }}</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.on_duplicate(class="") }}
+                        </div>
+                    </div>
+                    <p class="help">Duplikate werden anhand Matrikelnummer und E-Mail erkannt.</p>
+                </div>
+
+                <div class="field">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">
+                            <span class="icon"><i class="fas fa-file-import"></i></span>
+                            <span>Import starten</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if import_errors %}
+        <div class="box">
+            <h2 class="subtitle has-text-danger">
+                <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                Fehler im Import
+            </h2>
+            <ul>
+                {% for error in import_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="column">
+        <div class="box">
+            <h2 class="subtitle">Erwartete Spalten</h2>
+            <div class="content">
+                <ul>
+                    <li><strong>first_name</strong></li>
+                    <li><strong>last_name</strong></li>
+                    <li><strong>student_id</strong> (8 Ziffern)</li>
+                    <li><strong>email</strong></li>
+                    <li><strong>program</strong></li>
+                </ul>
+                <p class="is-size-7">Header müssen exakt so heißen (Groß/Kleinschreibung egal).</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const fileInput = document.querySelector(".file-input");
+        const fileName = document.querySelector(".file-name");
+        if (!fileInput || !fileName) return;
+        fileInput.addEventListener("change", () => {
+            const files = fileInput.files;
+            fileName.textContent = files && files.length ? files[0].name : "Keine Datei ausgewählt";
+        });
+    });
+</script>
+{% endblock %}

@@ -147,6 +147,34 @@
                     {% endif %}
                 </tbody>
             </table>
+
+            <hr>
+
+            <form method="post" action="{{ url_for('document.update_submission_status', submission_id=document.submission.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="field">
+                    <label class="label">{{ form.status.label }}</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            {{ form.status(class="") }}
+                        </div>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">{{ form.notes.label }}</label>
+                    <div class="control">
+                        {{ form.notes(class="textarea", rows="3") }}
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="control">
+                        <button type="submit" class="button is-link">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Status speichern</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 

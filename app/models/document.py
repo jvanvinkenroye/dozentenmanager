@@ -209,7 +209,7 @@ class Document(db.Model, TimestampMixin):  # type: ignore[name-defined]
         Returns:
             File size in human-readable format (e.g., '1.5 MB')
         """
-        size = self.file_size
+        size: float = float(self.file_size)
         for unit in ["B", "KB", "MB", "GB"]:
             if size < 1024:
                 return f"{size:.1f} {unit}"

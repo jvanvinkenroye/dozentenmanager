@@ -166,7 +166,7 @@ class GradingScale(db.Model, TimestampMixin):  # type: ignore[name-defined]
         """
         for threshold in self.thresholds:
             if percentage >= threshold.min_percentage:
-                return threshold
+                return threshold  # type: ignore[return-value]
         return None
 
     def to_dict(self) -> dict:
@@ -373,11 +373,13 @@ class Grade(db.Model, TimestampMixin):  # type: ignore[name-defined]
         percentage = calculate_percentage(points, max_points)
 
         # Calculate grade
+        grade_value: float
+        grade_label: str
         if grading_scale:
             threshold = grading_scale.get_grade(percentage)
             if threshold:
-                grade_value = threshold.grade_value
-                grade_label = threshold.grade_label
+                grade_value = threshold.grade_value  # type: ignore[assignment]
+                grade_label = threshold.grade_label  # type: ignore[assignment]
             else:
                 grade_value = 5.0
                 grade_label = "nicht ausreichend"

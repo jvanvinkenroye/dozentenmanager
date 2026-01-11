@@ -13,7 +13,7 @@ dependencies = [
     "playwright>=1.57.0",
     "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.44",
-    "xlrd>=2.0.1",
+    "xlrd>=2.0.2",
 ]
 
 [dependency-groups]

@@ -245,7 +245,13 @@ python cli/student_cli.py list
 
 # Nach Studiengang filtern
 python cli/student_cli.py list --program "Informatik"
+
+# Studierende importieren (CSV/XLSX/XLS)
+python cli/student_cli.py import --file students.csv --on-duplicate skip
+python cli/student_cli.py import --file students.xlsx --on-duplicate update
 ```
+`--on-duplicate` unterstützt `skip`, `update`, `error`.
+Hinweis: `--student-id` in den CLI-Tools meint die Matrikelnummer (nicht die Datenbank-ID).
 
 #### Lehrveranstaltungen verwalten
 ```bash
@@ -267,14 +273,14 @@ python cli/course_cli.py list --semester "2024_WiSe"
 #### Einschreibungen verwalten
 ```bash
 # Studierenden einschreiben
-python cli/enrollment_cli.py add --student-id 1 --course-id 1
+python cli/enrollment_cli.py add --student-id 12345678 --course-id 1
 
 # Einschreibungen anzeigen
 python cli/enrollment_cli.py list --course-id 1
 
 # Status aktualisieren
 python cli/enrollment_cli.py update-status \
-  --student-id 1 \
+  --student-id 12345678 \
   --course-id 1 \
   --status completed
 ```

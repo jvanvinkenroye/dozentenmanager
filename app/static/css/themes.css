@@ -459,6 +459,10 @@ p, .content {
     color: var(--text-primary);
 }
 
+.label {
+    color: var(--text-secondary) !important;
+}
+
 /* Text color utilities with better contrast */
 .has-text-dark {
     color: var(--text-primary) !important;

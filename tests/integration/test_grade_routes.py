@@ -121,6 +121,109 @@ class TestGradeNewRoute:
         assert response.status_code == 200
         assert b"Neue Note" in response.data
 
+    def test_new_post_success(self, client, sample_data):
+        """Test creating a new grade via POST."""
+        response = client.post(
+            "/grades/new",
+            data={
+                "enrollment_id": sample_data["enrollment"].id,
+                "exam_id": sample_data["exam"].id,
+                "points": 85,
+                "component_id": 0,  # No component
+                "graded_by": "Prof. Test",
+                "is_final": True,
+                "notes": "Good work",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 302  # Redirect to grade detail
+
+        # Verify grade was created
+        from app.models import Grade
+
+        grade = Grade.query.first()
+        assert grade is not None
+        assert grade.points == 85
+        assert grade.is_final is True
+
+    def test_new_post_validation_error(self, client, sample_data):
+        """Test POST with validation errors."""
+        response = client.post(
+            "/grades/new",
+            data={
+                "enrollment_id": sample_data["enrollment"].id,
+                "exam_id": sample_data["exam"].id,
+                "points": -10,  # Invalid points
+                "is_final": False,
+            },
+        )
+        # Should stay on form with error
+        assert response.status_code == 200
+
+
+class TestGradeEditRoute:
+    """Tests for edit grade route."""
+
+    def test_edit_get(self, client, sample_data):
+        """Test edit grade form page."""
+        # Create a grade first
+        grade = Grade(
+            enrollment_id=sample_data["enrollment"].id,
+            exam_id=sample_data["exam"].id,
+            points=75,
+            percentage=75.0,
+            grade_value=2.3,
+            grade_label="gut",
+            is_final=False,
+        )
+        db.session.add(grade)
+        db.session.commit()
+
+        response = client.get(f"/grades/{grade.id}/edit")
+        assert response.status_code == 200
+        assert b"Note bearbeiten" in response.data
+
+    def test_edit_post_success(self, client, sample_data):
+        """Test updating a grade via POST."""
+        # Create a grade first
+        grade = Grade(
+            enrollment_id=sample_data["enrollment"].id,
+            exam_id=sample_data["exam"].id,
+            points=75,
+            percentage=75.0,
+            grade_value=2.3,
+            grade_label="gut",
+            is_final=False,
+        )
+        db.session.add(grade)
+        db.session.commit()
+
+        grade_id = grade.id
+
+        response = client.post(
+            f"/grades/{grade_id}/edit",
+            data={
+                "enrollment_id": sample_data["enrollment"].id,
+                "exam_id": sample_data["exam"].id,
+                "points": 90,
+                "component_id": 0,
+                "is_final": True,
+                "notes": "Improved",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 302
+
+        # Verify grade was updated
+        updated_grade = Grade.query.get(grade_id)
+        assert updated_grade.points == 90
+        assert updated_grade.is_final is True
+
+    def test_edit_not_found(self, client):
+        """Test editing non-existent grade."""
+        response = client.get("/grades/999/edit")
+        assert response.status_code == 404
+
 
 class TestGradeDashboardRoute:
     """Tests for grade dashboard route."""

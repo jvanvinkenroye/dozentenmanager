@@ -15,6 +15,7 @@ import sys
 from datetime import UTC, datetime
 from email.header import decode_header
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -558,7 +559,7 @@ def import_emails(
     Returns:
         Dictionary with import summary
     """
-    summary = {
+    summary: dict[str, Any] = {
         "files_processed": 0,
         "emails_processed": 0,
         "attachments_saved": 0,

@@ -369,7 +369,7 @@ def bulk_upload() -> str | Any:
             exam_id = form.exam_id.data if form.exam_id.data else None
             notes = form.notes.data
 
-            results = {"success": [], "failed": [], "unmatched": []}
+            results: dict[str, list] = {"success": [], "failed": [], "unmatched": []}
 
             for file in files:
                 if not file or not file.filename:

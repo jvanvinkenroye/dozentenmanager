@@ -10,6 +10,7 @@ import logging
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app import db
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
 from app.models.exam_component import ExamComponent
@@ -496,7 +497,7 @@ class GradeService(BaseService):
 
         # Check total weight doesn't exceed 100%
         existing_weight = (
-            self.query(func.sum(ExamComponent.weight))
+            db.session.query(func.sum(ExamComponent.weight))
             .filter(ExamComponent.exam_id == exam_id)
             .scalar()
             or 0

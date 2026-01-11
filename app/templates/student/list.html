@@ -25,6 +25,12 @@
     <div class="level-right">
         <div class="level-item">
             <div class="buttons">
+                <a href="{{ url_for('student.export_students', search=search_term, program=program_filter) }}" class="button is-light">
+                    <span class="icon">
+                        <i class="fas fa-file-csv"></i>
+                    </span>
+                    <span>CSV Export</span>
+                </a>
                 <a href="{{ url_for('student.import_students') }}" class="button is-light">
                     <span class="icon">
                         <i class="fas fa-file-import"></i>

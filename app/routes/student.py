@@ -9,7 +9,15 @@ import io
 import logging
 from typing import Any
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    Response,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.datastructures import FileStorage
 
@@ -319,6 +327,57 @@ def new() -> str | Any:
             flash(error, "error")
 
     return render_template("student/form.html", student=None, form=form)
+
+
+@bp.route("/export")
+def export_students() -> Response:
+    """Export students to CSV with optional filters."""
+    search_term = request.args.get("search", "").strip()
+    program_filter = request.args.get("program", "").strip()
+    service = StudentService()
+
+    try:
+        query = service.query(Student).filter(Student.deleted_at.is_(None))
+
+        if search_term:
+            search_pattern = f"%{search_term}%"
+            query = query.filter(
+                (Student.first_name.ilike(search_pattern))
+                | (Student.last_name.ilike(search_pattern))
+                | (Student.student_id.ilike(search_pattern))
+                | (Student.email.ilike(search_pattern))
+            )
+
+        if program_filter:
+            program_pattern = f"%{program_filter}%"
+            query = query.filter(Student.program.ilike(program_pattern))
+
+        students = query.order_by(Student.last_name, Student.first_name).all()
+    except SQLAlchemyError as e:
+        logger.error(f"Database error while exporting students: {e}")
+        flash("Fehler beim Export der Studierenden.", "error")
+        return redirect(url_for("student.index"))
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["first_name", "last_name", "student_id", "email", "program"])
+    for student in students:
+        writer.writerow(
+            [
+                student.first_name,
+                student.last_name,
+                student.student_id,
+                student.email,
+                student.program,
+            ]
+        )
+
+    filename = "students_export.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @bp.route("/import", methods=["GET", "POST"])

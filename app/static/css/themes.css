@@ -488,6 +488,10 @@ p, .content {
     color: var(--text-light) !important;
 }
 
+.icon {
+    color: var(--text-secondary);
+}
+
 /* Code elements */
 code {
     background-color: var(--bg-tertiary);

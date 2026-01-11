@@ -78,7 +78,9 @@ class DocumentService(BaseService):
         student_folder = f"{student.last_name}{student.first_name}"
 
         # Build path
-        path = Path(base_path) / university_slug / semester / course_slug / student_folder
+        path = (
+            Path(base_path) / university_slug / semester / course_slug / student_folder
+        )
         path.mkdir(parents=True, exist_ok=True)
 
         # Generate unique filename if file already exists

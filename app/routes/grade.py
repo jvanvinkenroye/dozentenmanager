@@ -29,15 +29,7 @@ from app.models.grade import (
     calculate_percentage,
     percentage_to_german_grade,
 )
-from cli.grade_cli import (
-    add_exam_component,
-    add_grade,
-    calculate_weighted_average,
-    delete_grade,
-    get_exam_statistics,
-    list_exam_components,
-    update_grade,
-)
+from app.services.grade_service import GradeService
 
 logger = logging.getLogger(__name__)
 
@@ -140,12 +132,13 @@ def new():
     form.component_id.choices = [(0, "--- Keine Komponente ---")]
 
     if form.validate_on_submit():
+        service = GradeService()
         try:
             component_id = (
                 form.component_id.data if form.component_id.data != 0 else None
             )
 
-            grade = add_grade(
+            grade = service.add_grade(
                 enrollment_id=form.enrollment_id.data,
                 exam_id=form.exam_id.data,
                 points=form.points.data,
@@ -188,8 +181,9 @@ def edit(grade_id: int):
         form.component_id.choices.append((grade.component_id, grade.component.name))
 
     if form.validate_on_submit():
+        service = GradeService()
         try:
-            updated = update_grade(
+            updated = service.update_grade(
                 grade_id=grade_id,
                 points=form.points.data,
                 is_final=form.is_final.data,
@@ -214,8 +208,9 @@ def delete(grade_id: int):
     grade = Grade.query.get_or_404(grade_id)
 
     if request.method == "POST":
+        service = GradeService()
         try:
-            if delete_grade(grade_id):
+            if service.delete_grade(grade_id):
                 flash("Note erfolgreich gelöscht", "success")
                 return redirect(url_for("grade.index"))
             flash("Fehler beim Löschen der Note", "danger")
@@ -247,6 +242,7 @@ def bulk():
         ]
 
     if form.validate_on_submit():
+        service = GradeService()
         exam_id = form.exam_id.data
         component_id = form.component_id.data if form.component_id.data != 0 else None
         graded_by = form.graded_by.data
@@ -261,7 +257,7 @@ def bulk():
                 enrollment_id = int(key.replace("points_", ""))
                 try:
                     points = float(value)
-                    grade = add_grade(
+                    grade = service.add_grade(
                         enrollment_id=enrollment_id,
                         exam_id=exam_id,
                         points=points,
@@ -411,7 +407,8 @@ def dashboard():
 def exam_stats(exam_id: int):
     """Show detailed statistics for an exam."""
     exam = Exam.query.get_or_404(exam_id)
-    stats = get_exam_statistics(exam_id)
+    service = GradeService()
+    stats = service.get_exam_statistics(exam_id)
 
     # Get component statistics if multi-part exam
     component_stats = []
@@ -448,7 +445,8 @@ def student_grades(student_id: int):
     enrollments_with_grades = []
     for enrollment in student.enrollments:
         grades = Grade.query.filter_by(enrollment_id=enrollment.id).all()
-        weighted_avg = calculate_weighted_average(enrollment.id)
+        service = GradeService()
+        weighted_avg = service.calculate_weighted_average(enrollment.id)
         enrollments_with_grades.append(
             {
                 "enrollment": enrollment,
@@ -468,7 +466,8 @@ def student_grades(student_id: int):
 def components(exam_id: int):
     """Manage exam components."""
     exam = Exam.query.get_or_404(exam_id)
-    component_list = list_exam_components(exam_id)
+    service = GradeService()
+    component_list = service.list_exam_components(exam_id)
 
     total_weight = sum(c.weight for c in component_list)
 
@@ -488,8 +487,9 @@ def new_component(exam_id: int):
     form.exam_id.data = exam_id
 
     if form.validate_on_submit():
+        service = GradeService()
         try:
-            component = add_exam_component(
+            component = service.add_exam_component(
                 exam_id=exam_id,
                 name=form.name.data,
                 weight=form.weight.data,

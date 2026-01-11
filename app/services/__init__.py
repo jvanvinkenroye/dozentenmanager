@@ -10,6 +10,7 @@ from app.services.course_service import CourseService
 from app.services.document_service import DocumentService
 from app.services.enrollment_service import EnrollmentService
 from app.services.exam_service import ExamService
+from app.services.grade_service import GradeService
 from app.services.student_service import StudentService
 from app.services.university_service import UniversityService
 
@@ -19,6 +20,7 @@ __all__ = [
     "DocumentService",
     "EnrollmentService",
     "ExamService",
+    "GradeService",
     "StudentService",
     "UniversityService",
 ]

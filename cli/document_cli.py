@@ -166,7 +166,9 @@ def main() -> int:
                         print("Deletion cancelled")
                         return 0
 
-                service.delete_document(args.document_id, delete_file=not args.keep_file)
+                service.delete_document(
+                    args.document_id, delete_file=not args.keep_file
+                )
                 print("Document deleted successfully")
                 return 0
 

@@ -26,7 +26,7 @@ from app.forms.student import StudentForm, StudentImportForm
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.grade import Grade
-from app.models.student import Student, validate_email, validate_student_id
+from app.models.student import Student, validate_email
 from app.models.submission import Submission
 from app.services.student_service import StudentService
 from app.utils.pagination import paginate_query
@@ -417,11 +417,9 @@ def import_students() -> str | Any:
             student_id = row["student_id"].strip()
             email = row["email"].strip().lower()
 
-            if not validate_student_id(student_id):
+            if not student_id:
                 errors += 1
-                import_errors.append(
-                    f"Zeile {idx}: ungültige Matrikelnummer {student_id}"
-                )
+                import_errors.append(f"Zeile {idx}: fehlende Matrikelnummer")
                 continue
             if not validate_email(email):
                 errors += 1
@@ -472,6 +470,7 @@ def import_students() -> str | Any:
                             student_id,
                             email,
                             row["program"],
+                            validate_id=False,
                         )
                         if updated_student:
                             updated += 1
@@ -495,6 +494,7 @@ def import_students() -> str | Any:
                     student_id,
                     email,
                     row["program"],
+                    validate_id=False,
                 )
                 created += 1
             except ValueError as exc:

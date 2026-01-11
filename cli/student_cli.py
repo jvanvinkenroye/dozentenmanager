@@ -14,7 +14,7 @@ from pathlib import Path
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import create_app
-from app.models.student import Student, validate_email, validate_student_id
+from app.models.student import Student, validate_email
 from app.services.student_service import StudentService
 
 # Configure logging
@@ -151,8 +151,8 @@ def _import_students(
         student_id = row["student_id"].strip()
         email = row["email"].strip().lower()
 
-        if not validate_student_id(student_id):
-            logger.error("Row %d invalid student_id: %s", idx, student_id)
+        if not student_id:
+            logger.error("Row %d missing student_id", idx)
             errors += 1
             continue
         if not validate_email(email):
@@ -198,6 +198,7 @@ def _import_students(
                     student_id,
                     email,
                     row["program"],
+                    validate_id=False,
                 )
                 if updated_student:
                     updated += 1
@@ -212,6 +213,7 @@ def _import_students(
                 student_id,
                 email,
                 row["program"],
+                validate_id=False,
             )
             created += 1
         except ValueError as exc:

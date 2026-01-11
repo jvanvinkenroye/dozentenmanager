@@ -31,6 +31,7 @@ class StudentService(BaseService):
         student_id: str,
         email: str,
         program: str,
+        validate_id: bool = True,
     ) -> Student:
         """
         Add a new student to the database.
@@ -67,7 +68,9 @@ class StudentService(BaseService):
 
         # Validate student ID
         student_id = student_id.strip()
-        if not validate_student_id(student_id):
+        if not student_id:
+            raise ValueError("Matrikelnummer darf nicht leer sein.")
+        if validate_id and not validate_student_id(student_id):
             raise ValueError(
                 f"Ungültiges Matrikelnummer-Format: {student_id}. "
                 "Die Matrikelnummer muss genau 8 Ziffern haben."
@@ -224,6 +227,7 @@ class StudentService(BaseService):
         student_number: str | None = None,
         email: str | None = None,
         program: str | None = None,
+        validate_id: bool = True,
     ) -> Student | None:
         """
         Update a student's information.
@@ -279,7 +283,9 @@ class StudentService(BaseService):
 
             if student_number is not None:
                 student_number = student_number.strip()
-                if not validate_student_id(student_number):
+                if not student_number:
+                    raise ValueError("Matrikelnummer darf nicht leer sein.")
+                if validate_id and not validate_student_id(student_number):
                     raise ValueError(
                         f"Ungültiges Matrikelnummer-Format: {student_number}. "
                         "Die Matrikelnummer muss genau 8 Ziffern haben."

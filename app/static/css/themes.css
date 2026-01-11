@@ -49,8 +49,8 @@
 
     /* Text */
     --text-primary: #1a1d2e;
-    --text-secondary: #4a5568;
-    --text-light: #718096;
+    --text-secondary: #3c4657;
+    --text-light: #5b6676;
     --text-on-primary: #FFFFFF;
 
     /* Borders */
@@ -107,8 +107,8 @@
 
     /* Text */
     --text-primary: #1a252f;
-    --text-secondary: #4a5c6a;
-    --text-light: #6b7c8a;
+    --text-secondary: #3f4e5a;
+    --text-light: #586775;
     --text-on-primary: #FFFFFF;
 
     /* Borders */
@@ -165,8 +165,8 @@
 
     /* Text */
     --text-primary: #0f1419;
-    --text-secondary: #4a5568;
-    --text-light: #718096;
+    --text-secondary: #3c4657;
+    --text-light: #5b6676;
     --text-on-primary: #FFFFFF;
 
     /* Borders */
@@ -291,7 +291,7 @@ body {
 .input::placeholder,
 .textarea::placeholder {
     color: var(--text-light) !important;
-    opacity: 0.7;
+    opacity: 1;
 }
 
 /* Icons with colors */

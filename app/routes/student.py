@@ -101,7 +101,7 @@ def show(student_id: int) -> str | Any:
         student = service.get_student(student_id)
 
         if not student:
-            flash(f"Student with ID {student_id} not found.", "error")
+            flash(f"Student mit Datenbank-ID {student_id} nicht gefunden.", "error")
             return redirect(url_for("student.index"))
 
         enrollments = (
@@ -224,7 +224,7 @@ def edit(student_id: int) -> str | Any:
         student = service.get_student(student_id)
 
         if not student:
-            flash(f"Student with ID {student_id} not found.", "error")
+            flash(f"Student mit Datenbank-ID {student_id} nicht gefunden.", "error")
             return redirect(url_for("student.index"))
 
         form = StudentForm(student=student, obj=student)
@@ -292,7 +292,7 @@ def delete(student_id: int) -> str | Any:
         student = service.get_student(student_id)
 
         if not student:
-            flash(f"Student with ID {student_id} not found.", "error")
+            flash(f"Student mit Datenbank-ID {student_id} nicht gefunden.", "error")
             return redirect(url_for("student.index"))
 
         if request.method == "GET":

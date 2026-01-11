@@ -139,7 +139,7 @@
                     {% for enrollment in enrollments %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('student.show', student_id=enrollment.student.student_id) }}">
+                            <a href="{{ url_for('student.show', student_id=enrollment.student.id) }}">
                                 {{ enrollment.student.first_name }} {{ enrollment.student.last_name }}
                             </a>
                         </td>

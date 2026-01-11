@@ -46,7 +46,9 @@ class EnrollmentService(BaseService):
             # Verify student exists
             student = self.query(Student).filter_by(student_id=student_id_str).first()
             if not student:
-                raise ValueError(f"Student with ID {student_id_str} not found")
+                raise ValueError(
+                    f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
+                )
 
             # Verify course exists
             course = self.query(Course).filter_by(id=course_id).first()
@@ -114,7 +116,9 @@ class EnrollmentService(BaseService):
                     self.query(Student).filter_by(student_id=student_id_str).first()
                 )
                 if not student:
-                    raise ValueError(f"Student with ID {student_id_str} not found")
+                    raise ValueError(
+                        f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
+                    )
                 query = query.filter_by(student_id=student.id)
 
             return query.all()
@@ -141,7 +145,9 @@ class EnrollmentService(BaseService):
             # Get student database ID
             student = self.query(Student).filter_by(student_id=student_id_str).first()
             if not student:
-                raise ValueError(f"Student with ID {student_id_str} not found")
+                raise ValueError(
+                    f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
+                )
 
             # Find enrollment
             return (
@@ -172,7 +178,9 @@ class EnrollmentService(BaseService):
             # Get student database ID
             student = self.query(Student).filter_by(student_id=student_id_str).first()
             if not student:
-                raise ValueError(f"Student with ID {student_id_str} not found")
+                raise ValueError(
+                    f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
+                )
 
             # Find enrollment
             enrollment = (
@@ -230,7 +238,9 @@ class EnrollmentService(BaseService):
             # Get student database ID
             student = self.query(Student).filter_by(student_id=student_id_str).first()
             if not student:
-                raise ValueError(f"Student with ID {student_id_str} not found")
+                raise ValueError(
+                    f"Student mit Matrikelnummer {student_id_str} nicht gefunden"
+                )
 
             # Find enrollment
             enrollment = (

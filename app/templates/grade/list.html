@@ -118,6 +118,7 @@
                 <td>
                     <a href="{{ url_for('grade.student_grades', student_id=grade.enrollment.student_id) }}">
                         {{ grade.enrollment.student.last_name }}, {{ grade.enrollment.student.first_name }}
+                        ({{ grade.enrollment.student.student_id }})
                     </a>
                 </td>
                 <td>

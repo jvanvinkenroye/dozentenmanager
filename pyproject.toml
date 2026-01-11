@@ -9,9 +9,11 @@ dependencies = [
     "flask>=3.1.2",
     "flask-sqlalchemy>=3.1.1",
     "flask-wtf>=1.2.2",
+    "openpyxl>=3.1.5",
     "playwright>=1.57.0",
     "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.44",
+    "xlrd>=2.0.1",
 ]
 
 [dependency-groups]

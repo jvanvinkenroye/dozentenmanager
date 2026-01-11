@@ -16,46 +16,46 @@ class StudentForm(FlaskForm):
     """Form for creating and editing students."""
 
     first_name = StringField(
-        "First Name",
+        "Vorname",
         validators=[
-            DataRequired(message="First name is required."),
-            Length(max=100, message="First name cannot exceed 100 characters."),
+            DataRequired(message="Vorname ist erforderlich."),
+            Length(max=100, message="Vorname darf maximal 100 Zeichen haben."),
         ],
     )
 
     last_name = StringField(
-        "Last Name",
+        "Nachname",
         validators=[
-            DataRequired(message="Last name is required."),
-            Length(max=100, message="Last name cannot exceed 100 characters."),
+            DataRequired(message="Nachname ist erforderlich."),
+            Length(max=100, message="Nachname darf maximal 100 Zeichen haben."),
         ],
     )
 
     student_id = StringField(
-        "Student ID",
+        "Matrikelnummer",
         validators=[
-            DataRequired(message="Student ID is required."),
+            DataRequired(message="Matrikelnummer ist erforderlich."),
             Regexp(
                 r"^\d{8}$",
-                message="Invalid student ID format. Must be exactly 8 digits.",
+                message="Ungültiges Format. Die Matrikelnummer muss genau 8 Ziffern haben.",
             ),
         ],
     )
 
     email = StringField(
-        "Email",
+        "E-Mail",
         validators=[
-            DataRequired(message="Email is required."),
-            Email(message="Invalid email format."),
-            Length(max=255, message="Email cannot exceed 255 characters."),
+            DataRequired(message="E-Mail ist erforderlich."),
+            Email(message="Ungültiges E-Mail-Format."),
+            Length(max=255, message="E-Mail darf maximal 255 Zeichen haben."),
         ],
     )
 
     program = StringField(
-        "Program",
+        "Studiengang",
         validators=[
-            DataRequired(message="Program is required."),
-            Length(max=200, message="Program cannot exceed 200 characters."),
+            DataRequired(message="Studiengang ist erforderlich."),
+            Length(max=200, message="Studiengang darf maximal 200 Zeichen haben."),
         ],
     )
 
@@ -87,7 +87,7 @@ class StudentForm(FlaskForm):
 
         existing = db.session.query(Student).filter_by(student_id=field.data).first()
         if existing:
-            raise ValidationError("Student ID already exists.")
+            raise ValidationError("Matrikelnummer existiert bereits.")
 
     def validate_email(self, field):
         """
@@ -108,4 +108,4 @@ class StudentForm(FlaskForm):
 
         existing = db.session.query(Student).filter_by(email=email_lower).first()
         if existing:
-            raise ValidationError("Email address already exists.")
+            raise ValidationError("E-Mail-Adresse existiert bereits.")

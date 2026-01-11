@@ -182,6 +182,7 @@
                     <td>
                         <a href="{{ url_for('student.show', student_id=doc.submission.enrollment.student.id) }}">
                             {{ doc.submission.enrollment.student.last_name }}, {{ doc.submission.enrollment.student.first_name }}
+                            ({{ doc.submission.enrollment.student.student_id }})
                         </a>
                     </td>
                     <td>

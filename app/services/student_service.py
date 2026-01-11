@@ -69,8 +69,8 @@ class StudentService(BaseService):
         student_id = student_id.strip()
         if not validate_student_id(student_id):
             raise ValueError(
-                f"Invalid student ID format: {student_id}. "
-                "Student ID must be exactly 8 digits."
+                f"Ungültiges Matrikelnummer-Format: {student_id}. "
+                "Die Matrikelnummer muss genau 8 Ziffern haben."
             )
 
         # Validate email
@@ -108,10 +108,12 @@ class StudentService(BaseService):
             self.rollback()
             if "student_id" in str(e):
                 raise ValueError(
-                    f"Student with ID '{student_id}' already exists"
+                    f"Student mit Matrikelnummer '{student_id}' existiert bereits"
                 ) from e
             if "email" in str(e):
-                raise ValueError(f"Student with email '{email}' already exists") from e
+                raise ValueError(
+                    f"Student mit E-Mail-Adresse '{email}' existiert bereits"
+                ) from e
             raise
 
         except SQLAlchemyError as e:
@@ -232,8 +234,7 @@ class StudentService(BaseService):
             IntegrityError: If updated values conflict with existing records
         """
         if all(
-            v is None
-            for v in [first_name, last_name, student_number, email, program]
+            v is None for v in [first_name, last_name, student_number, email, program]
         ):
             raise ValueError("At least one field must be provided for update")
 
@@ -265,8 +266,8 @@ class StudentService(BaseService):
                 student_number = student_number.strip()
                 if not validate_student_id(student_number):
                     raise ValueError(
-                        f"Invalid student ID format: {student_number}. "
-                        "Student ID must be exactly 8 digits."
+                        f"Ungültiges Matrikelnummer-Format: {student_number}. "
+                        "Die Matrikelnummer muss genau 8 Ziffern haben."
                     )
                 student.student_id = student_number
 
@@ -294,10 +295,12 @@ class StudentService(BaseService):
             self.rollback()
             if "student_id" in str(e):
                 raise ValueError(
-                    f"Student with ID '{student_number}' already exists"
+                    f"Student mit Matrikelnummer '{student_number}' existiert bereits"
                 ) from e
             if "email" in str(e):
-                raise ValueError(f"Student with email '{email}' already exists") from e
+                raise ValueError(
+                    f"Student mit E-Mail-Adresse '{email}' existiert bereits"
+                ) from e
             raise
 
         except SQLAlchemyError as e:

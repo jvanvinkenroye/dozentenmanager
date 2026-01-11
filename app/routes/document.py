@@ -145,7 +145,7 @@ def index() -> str:
             (c.id, c.name) for c in courses
         ]
         form.student_id.choices = [("", "-- Alle Studierende --")] + [
-            (s.id, f"{s.last_name}, {s.first_name}") for s in students
+            (s.id, f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
         ]
 
         return render_template(

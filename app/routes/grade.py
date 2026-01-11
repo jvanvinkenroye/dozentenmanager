@@ -53,8 +53,8 @@ def index():
     ]
 
     students = Student.query.order_by(Student.last_name, Student.first_name).all()
-    form.student_id.choices = [(0, "Alle Studenten")] + [
-        (s.id, f"{s.last_name}, {s.first_name}") for s in students
+    form.student_id.choices = [(0, "Alle Studierenden")] + [
+        (s.id, f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
     ]
 
     # Build query
@@ -120,7 +120,8 @@ def new():
     form.enrollment_id.choices = [
         (
             e.id,
-            f"{e.student.last_name}, {e.student.first_name} - {e.course.name}",
+            f"{e.student.last_name}, {e.student.first_name} "
+            f"({e.student.student_id}) - {e.course.name}",
         )
         for e in enrollments
     ]

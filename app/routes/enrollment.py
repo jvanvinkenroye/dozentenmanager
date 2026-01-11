@@ -69,7 +69,7 @@ def enroll() -> Any:
 
         # Redirect based on redirect_to parameter
         if redirect_to == "student":
-            return redirect(url_for("student.show", student_id=student.student_id))
+            return redirect(url_for("student.show", student_id=student.id))
         return redirect(url_for("course.show", course_id=enrollment.course.id))
 
     except ValueError as e:
@@ -145,7 +145,7 @@ def unenroll() -> Any:
 
         # Redirect based on redirect_to parameter
         if redirect_to == "student":
-            return redirect(url_for("student.show", student_id=student.student_id))
+            return redirect(url_for("student.show", student_id=student.id))
         return redirect(url_for("course.show", course_id=course_id_int))
 
     except ValueError as e:
@@ -202,9 +202,7 @@ def update_status() -> Any:
             return redirect(request.referrer or url_for("index"))
 
         # Update enrollment status using service
-        service.update_enrollment_status(
-            student.student_id, course_id_int, status
-        )
+        service.update_enrollment_status(student.student_id, course_id_int, status)
 
         flash(
             f"Status wurde auf '{status}' aktualisiert.",
@@ -213,7 +211,7 @@ def update_status() -> Any:
 
         # Redirect based on redirect_to parameter
         if redirect_to == "student":
-            return redirect(url_for("student.show", student_id=student.student_id))
+            return redirect(url_for("student.show", student_id=student.id))
         return redirect(url_for("course.show", course_id=course_id_int))
 
     except ValueError as e:

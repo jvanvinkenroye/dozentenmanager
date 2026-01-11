@@ -140,7 +140,7 @@ Examples:
                 enrollment = service.add_enrollment(args.student_id, args.course_id)
                 print(
                     f"\nSuccessfully enrolled {enrollment.student.first_name} "
-                    f"{enrollment.student.last_name} (ID: {enrollment.student.student_id}) "
+                    f"{enrollment.student.last_name} (Matrikelnummer: {enrollment.student.student_id}) "
                     f"in '{enrollment.course.name}' (Semester: {enrollment.course.semester})"
                 )
                 return 0
@@ -158,7 +158,7 @@ Examples:
                 print(f"\nFound {len(enrollments)} enrollment(s):\n")
                 print("=" * 100)
                 print(
-                    f"{'Student ID':<12} {'Student Name':<25} {'Course':<30} {'Semester':<12} {'Status':<10}"
+                    f"{'Matrikelnr.':<12} {'Student Name':<25} {'Course':<30} {'Semester':<12} {'Status':<10}"
                 )
                 print("=" * 100)
 

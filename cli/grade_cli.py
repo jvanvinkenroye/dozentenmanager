@@ -197,7 +197,9 @@ def main() -> int:
                 print(f"\nFound {len(grades)} grade(s):\n")
                 for grade in grades:
                     print(f"ID {grade.id}:")
-                    print(f"  Student: {grade.enrollment.student.last_name}, {grade.enrollment.student.first_name}")
+                    print(
+                        f"  Student: {grade.enrollment.student.last_name}, {grade.enrollment.student.first_name}"
+                    )
                     print(f"  Exam: {grade.exam.name}")
                     if grade.component_id:
                         print(f"  Component: {grade.component.name}")
@@ -219,19 +221,27 @@ def main() -> int:
 
                 print("\nWeighted Average Calculation:")
                 print(f"Student: {result['student_name']}")
-                print(f"Weighted Average: {result['weighted_average']} ({result['grade_label']})")
+                print(
+                    f"Weighted Average: {result['weighted_average']} ({result['grade_label']})"
+                )
                 print(f"Total Weight: {result['total_weight']}%")
                 print(f"Passing: {'Yes' if result['is_passing'] else 'No'}")
                 print("\nPer-Exam Breakdown:")
                 for _exam_id, exam_data in result["exam_grades"].items():
-                    print(f"\n  {exam_data['exam_name']} (Weight: {exam_data['exam_weight']}%)")
+                    print(
+                        f"\n  {exam_data['exam_name']} (Weight: {exam_data['exam_weight']}%)"
+                    )
                     if exam_data["components"]:
                         print("    Components:")
                         for comp in exam_data["components"]:
-                            print(f"      - {comp['component_name']}: {comp['points']} pts ({comp['percentage']}%) = {comp['grade']}")
+                            print(
+                                f"      - {comp['component_name']}: {comp['points']} pts ({comp['percentage']}%) = {comp['grade']}"
+                            )
                     if exam_data["final_grade"]:
                         fg = exam_data["final_grade"]
-                        print(f"    Final: {fg['points']} pts ({fg['percentage']}%) = {fg['grade']}")
+                        print(
+                            f"    Final: {fg['points']} pts ({fg['percentage']}%) = {fg['grade']}"
+                        )
                 return 0
 
             if args.command == "stats":

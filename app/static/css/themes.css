@@ -290,8 +290,18 @@ body {
 
 .input::placeholder,
 .textarea::placeholder {
-    color: var(--text-light) !important;
+    color: var(--text-secondary) !important;
     opacity: 1;
+}
+
+/* Improve select placeholder contrast */
+.select select:required:invalid,
+.select select:invalid {
+    color: var(--text-secondary) !important;
+}
+
+.select select option {
+    color: var(--text-primary);
 }
 
 /* Icons with colors */

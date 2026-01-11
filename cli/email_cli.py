@@ -203,9 +203,10 @@ def match_student_by_name(name: str, course_id: int | None = None) -> Enrollment
                 return enrollment
 
         # Single name part - check if it matches either first or last
-        if len(name_parts) == 1:
-            if name_parts[0] == student_first or name_parts[0] == student_last:
-                return enrollment
+        if len(name_parts) == 1 and (
+            name_parts[0] == student_first or name_parts[0] == student_last
+        ):
+            return enrollment
 
     return None
 

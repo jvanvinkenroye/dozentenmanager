@@ -114,3 +114,4 @@ GEMINI.md
 .env.docker.local
 ssl/
 nginx/logs/
+coverage.json

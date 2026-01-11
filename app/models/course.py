@@ -88,9 +88,7 @@ def generate_slug(name: str) -> str:
     slug = re.sub(r"[\s-]+", "-", slug)
 
     # Remove leading/trailing hyphens
-    slug = slug.strip("-")
-
-    return slug
+    return slug.strip("-")
 
 
 class Course(db.Model, TimestampMixin):  # type: ignore[name-defined]

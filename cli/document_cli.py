@@ -260,8 +260,7 @@ def list_documents(
         if file_type:
             query = query.filter(Document.file_type == file_type.lower())
 
-        documents = query.order_by(Document.upload_date.desc()).all()
-        return documents
+        return query.order_by(Document.upload_date.desc()).all()
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while listing documents: {e}")
@@ -279,8 +278,7 @@ def get_document(document_id: int) -> Document | None:
         Document object or None if not found
     """
     try:
-        document = db.session.query(Document).filter_by(id=document_id).first()
-        return document
+        return db.session.query(Document).filter_by(id=document_id).first()
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching document: {e}")
         return None
@@ -358,8 +356,7 @@ def list_submissions(
         if status:
             query = query.filter_by(status=status)
 
-        submissions = query.order_by(Submission.submission_date.desc()).all()
-        return submissions
+        return query.order_by(Submission.submission_date.desc()).all()
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while listing submissions: {e}")

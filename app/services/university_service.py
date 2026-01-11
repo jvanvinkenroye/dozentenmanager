@@ -84,9 +84,7 @@ class UniversityService(BaseService):
         slug = re.sub(r"-+", "-", slug)
 
         # Remove leading/trailing hyphens
-        slug = slug.strip("-")
-
-        return slug
+        return slug.strip("-")
 
     def add_university(self, name: str, slug: str | None = None) -> University:
         """
@@ -133,13 +131,9 @@ class UniversityService(BaseService):
         except IntegrityError as e:
             self.rollback()
             if "name" in str(e):
-                raise ValueError(
-                    f"University with name '{name}' already exists"
-                ) from e
+                raise ValueError(f"University with name '{name}' already exists") from e
             if "slug" in str(e):
-                raise ValueError(
-                    f"University with slug '{slug}' already exists"
-                ) from e
+                raise ValueError(f"University with slug '{slug}' already exists") from e
             raise
 
         except SQLAlchemyError as e:
@@ -252,13 +246,9 @@ class UniversityService(BaseService):
         except IntegrityError as e:
             self.rollback()
             if "name" in str(e):
-                raise ValueError(
-                    f"University with name '{name}' already exists"
-                ) from e
+                raise ValueError(f"University with name '{name}' already exists") from e
             if "slug" in str(e):
-                raise ValueError(
-                    f"University with slug '{slug}' already exists"
-                ) from e
+                raise ValueError(f"University with slug '{slug}' already exists") from e
             raise
 
         except SQLAlchemyError as e:

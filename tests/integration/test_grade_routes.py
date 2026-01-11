@@ -60,6 +60,7 @@ def sample_data(app):
 
         # Create exam
         from datetime import date
+
         exam = Exam(
             name="Test Exam",
             course_id=course.id,
@@ -279,7 +280,7 @@ class TestGradeApiRoutes:
         data = response.get_json()
         assert data["percentage"] == 85.0
         assert data["grade_value"] == 1.7
-        assert data["is_passing"] == True
+        assert data["is_passing"]
 
 
 class TestGradeShowRoute:

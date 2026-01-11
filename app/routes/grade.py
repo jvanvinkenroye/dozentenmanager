@@ -141,7 +141,9 @@ def new():
 
     if form.validate_on_submit():
         try:
-            component_id = form.component_id.data if form.component_id.data != 0 else None
+            component_id = (
+                form.component_id.data if form.component_id.data != 0 else None
+            )
 
             grade = add_grade(
                 enrollment_id=form.enrollment_id.data,
@@ -235,10 +237,14 @@ def bulk():
     exam_id = request.args.get("exam_id", type=int)
     if exam_id:
         form.exam_id.data = exam_id
-        components = ExamComponent.query.filter_by(exam_id=exam_id).order_by(
-            ExamComponent.order
-        ).all()
-        form.component_id.choices += [(c.id, f"{c.name} ({c.weight}%)") for c in components]
+        components = (
+            ExamComponent.query.filter_by(exam_id=exam_id)
+            .order_by(ExamComponent.order)
+            .all()
+        )
+        form.component_id.choices += [
+            (c.id, f"{c.name} ({c.weight}%)") for c in components
+        ]
 
     if form.validate_on_submit():
         exam_id = form.exam_id.data
@@ -317,28 +323,36 @@ def dashboard():
     # Get pass/fail rates
     passing = Grade.query.filter(
         Grade.is_final == True,  # noqa: E712
-        Grade.grade_value <= 4.0
+        Grade.grade_value <= 4.0,
     ).count()
     failing = Grade.query.filter(
         Grade.is_final == True,  # noqa: E712
-        Grade.grade_value > 4.0
+        Grade.grade_value > 4.0,
     ).count()
 
     pass_rate = round((passing / final_grades * 100), 1) if final_grades > 0 else 0
 
     # Get average grade
-    avg_grade = db.session.query(func.avg(Grade.grade_value)).filter(
-        Grade.is_final == True  # noqa: E712
-    ).scalar() or 0
+    avg_grade = (
+        db.session.query(func.avg(Grade.grade_value))
+        .filter(
+            Grade.is_final == True  # noqa: E712
+        )
+        .scalar()
+        or 0
+    )
 
     # Get grade distribution
-    distribution = db.session.query(
-        Grade.grade_label, func.count(Grade.id)
-    ).filter(
-        Grade.is_final == True  # noqa: E712
-    ).group_by(Grade.grade_label).all()
+    distribution = (
+        db.session.query(Grade.grade_label, func.count(Grade.id))
+        .filter(
+            Grade.is_final == True  # noqa: E712
+        )
+        .group_by(Grade.grade_label)
+        .all()
+    )
 
-    grade_distribution = {label: count for label, count in distribution}
+    grade_distribution = dict(distribution)
 
     # Get recent exams with grades
     recent_exams = (
@@ -359,9 +373,7 @@ def dashboard():
         db.session.query(
             Course,
             func.count(Grade.id).label("total_grades"),
-            func.sum(
-                db.case((Grade.grade_value <= 4.0, 1), else_=0)
-            ).label("passing"),
+            func.sum(db.case((Grade.grade_value <= 4.0, 1), else_=0)).label("passing"),
         )
         .join(Exam, Exam.course_id == Course.id)
         .join(Grade, Grade.exam_id == Exam.id)
@@ -409,13 +421,15 @@ def exam_stats(exam_id: int):
         ).all()
         if comp_grades:
             points_list = [g.points for g in comp_grades]
-            component_stats.append({
-                "component": component,
-                "count": len(comp_grades),
-                "avg_points": round(sum(points_list) / len(points_list), 2),
-                "min_points": min(points_list),
-                "max_points": max(points_list),
-            })
+            component_stats.append(
+                {
+                    "component": component,
+                    "count": len(comp_grades),
+                    "avg_points": round(sum(points_list) / len(points_list), 2),
+                    "min_points": min(points_list),
+                    "max_points": max(points_list),
+                }
+            )
 
     return render_template(
         "grade/exam_stats.html",
@@ -435,11 +449,13 @@ def student_grades(student_id: int):
     for enrollment in student.enrollments:
         grades = Grade.query.filter_by(enrollment_id=enrollment.id).all()
         weighted_avg = calculate_weighted_average(enrollment.id)
-        enrollments_with_grades.append({
-            "enrollment": enrollment,
-            "grades": grades,
-            "weighted_average": weighted_avg,
-        })
+        enrollments_with_grades.append(
+            {
+                "enrollment": enrollment,
+                "grades": grades,
+                "weighted_average": weighted_avg,
+            }
+        )
 
     return render_template(
         "grade/student_grades.html",
@@ -483,7 +499,9 @@ def new_component(exam_id: int):
             )
 
             if component:
-                flash(f"Komponente '{component.name}' erfolgreich hinzugefügt", "success")
+                flash(
+                    f"Komponente '{component.name}' erfolgreich hinzugefügt", "success"
+                )
                 return redirect(url_for("grade.components", exam_id=exam_id))
             flash("Fehler beim Hinzufügen der Komponente", "danger")
 
@@ -522,25 +540,29 @@ def delete_component(component_id: int):
 @bp.route("/api/exam/<int:exam_id>/components")
 def api_exam_components(exam_id: int):
     """API endpoint to get components for an exam."""
-    components = ExamComponent.query.filter_by(exam_id=exam_id).order_by(
-        ExamComponent.order
-    ).all()
+    components = (
+        ExamComponent.query.filter_by(exam_id=exam_id)
+        .order_by(ExamComponent.order)
+        .all()
+    )
 
     exam = Exam.query.get(exam_id)
     max_points = exam.max_points if exam else 0
 
-    return jsonify({
-        "components": [
-            {
-                "id": c.id,
-                "name": c.name,
-                "weight": c.weight,
-                "max_points": c.max_points,
-            }
-            for c in components
-        ],
-        "exam_max_points": max_points,
-    })
+    return jsonify(
+        {
+            "components": [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "weight": c.weight,
+                    "max_points": c.max_points,
+                }
+                for c in components
+            ],
+            "exam_max_points": max_points,
+        }
+    )
 
 
 @bp.route("/api/calculate", methods=["POST"])
@@ -554,11 +576,13 @@ def api_calculate_grade():
         percentage = calculate_percentage(float(points), float(max_points))
         grade_value, grade_label = percentage_to_german_grade(percentage)
 
-        return jsonify({
-            "percentage": percentage,
-            "grade_value": grade_value,
-            "grade_label": grade_label,
-            "is_passing": grade_value <= 4.0,
-        })
+        return jsonify(
+            {
+                "percentage": percentage,
+                "grade_value": grade_value,
+                "grade_label": grade_label,
+                "is_passing": grade_value <= 4.0,
+            }
+        )
     except (ValueError, TypeError) as e:
         return jsonify({"error": str(e)}), 400

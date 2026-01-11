@@ -4,6 +4,7 @@ Document routes blueprint.
 This module provides web routes for managing documents through the Flask interface.
 """
 
+import contextlib
 import logging
 import mimetypes
 import os
@@ -327,7 +328,7 @@ def upload() -> str | Any:
             return redirect(url_for("document.show", document_id=document.id))
 
         # Show form validation errors
-        for field, errors in form.errors.items():
+        for _field, errors in form.errors.items():
             for error in errors:
                 flash(error, "error")
 
@@ -378,7 +379,10 @@ def bulk_upload() -> str | Any:
 
                 if not allowed_file(original_filename):
                     results["failed"].append(
-                        {"filename": original_filename, "reason": "Dateityp nicht erlaubt"}
+                        {
+                            "filename": original_filename,
+                            "reason": "Dateityp nicht erlaubt",
+                        }
                     )
                     continue
 
@@ -450,7 +454,7 @@ def bulk_upload() -> str | Any:
             )
 
         # Show form validation errors
-        for field, errors in form.errors.items():
+        for _field, errors in form.errors.items():
             for error in errors:
                 flash(error, "error")
 
@@ -672,17 +676,21 @@ def update_submission_status(submission_id: int) -> Any:
 
             flash("Status erfolgreich aktualisiert.", "success")
         else:
-            for field, errors in form.errors.items():
+            for _field, errors in form.errors.items():
                 for error in errors:
                     flash(error, "error")
 
-        return redirect(url_for("document.submission_detail", submission_id=submission_id))
+        return redirect(
+            url_for("document.submission_detail", submission_id=submission_id)
+        )
 
     except SQLAlchemyError as e:
         db.session.rollback()
         logger.error(f"Database error while updating submission status: {e}")
         flash("Fehler beim Aktualisieren des Status.", "error")
-        return redirect(url_for("document.submission_detail", submission_id=submission_id))
+        return redirect(
+            url_for("document.submission_detail", submission_id=submission_id)
+        )
 
 
 # Email import routes
@@ -735,13 +743,11 @@ def email_import() -> str | Any:
                 )
             finally:
                 # Clean up temp file
-                try:
+                with contextlib.suppress(OSError):
                     Path(tmp_path).unlink(missing_ok=True)
-                except OSError:
-                    pass
 
         # Show form validation errors
-        for field, errors in form.errors.items():
+        for _field, errors in form.errors.items():
             for error in errors:
                 flash(error, "error")
 

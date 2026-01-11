@@ -218,6 +218,16 @@ Nach dem Start der Anwendung mit `python run.py` können Sie das Web-Interface u
 
 Alle Funktionen sind auch über die Kommandozeile verfügbar:
 
+**CLI-Tool Übersicht (Subcommands):**
+- `cli/university_cli.py`: `add`, `list`, `show`, `update`, `delete`
+- `cli/student_cli.py`: `add`, `list`, `show`, `update`, `delete`, `import` (CSV/XLSX/XLS)
+- `cli/course_cli.py`: `add`, `list`, `show`, `update`, `delete`
+- `cli/enrollment_cli.py`: `add`, `list`, `remove`, `status`
+- `cli/exam_cli.py`: `add`, `list`, `show`, `update`, `delete`
+- `cli/grade_cli.py`: `add`, `update`, `delete`, `list`, `show`, `average`, `stats`, `add-component`, `list-components`, `create-scale`
+- `cli/document_cli.py`: `upload`, `list`, `show`, `delete`, `submissions`, `update-status`
+- `cli/email_cli.py`: `import`, `parse`, `list-courses`
+
 #### Universitäten verwalten
 ```bash
 # Universität hinzufügen

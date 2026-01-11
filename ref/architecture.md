@@ -40,8 +40,12 @@
 │                 │                       │
 │  ┌──────────────▼──────────────────┐   │
 │  │      Business Logic Layer       │   │
-│  │  - Student Management           │   │
-│  │  - Course Management            │   │
+│  │      (Service Layer)            │   │
+│  │  - UniversityService            │   │
+│  │  - StudentService               │   │
+│  │  - CourseService                │   │
+│  │  - EnrollmentService            │   │
+│  │  - ExamService                  │   │
 │  │  - Grading System               │   │
 │  │  - Document Processing          │   │
 │  └──────────────┬──────────────────┘   │
@@ -82,12 +86,17 @@ dozentenmanager/
 │   │   ├── courses.py
 │   │   ├── exams.py
 │   │   └── documents.py
-│   ├── services/             # Business logic
+│   ├── services/             # Business logic layer
 │   │   ├── __init__.py
-│   │   ├── student_service.py
-│   │   ├── grading_service.py
-│   │   ├── email_parser.py
-│   │   └── document_parser.py
+│   │   ├── base_service.py       # Base service with common DB operations
+│   │   ├── university_service.py # University management
+│   │   ├── student_service.py    # Student management
+│   │   ├── course_service.py     # Course management
+│   │   ├── enrollment_service.py # Enrollment management
+│   │   ├── exam_service.py       # Exam management
+│   │   ├── grading_service.py    # Grading logic
+│   │   ├── email_parser.py       # Email parsing
+│   │   └── document_parser.py    # Document processing
 │   ├── utils/                # Utilities
 │   │   ├── __init__.py
 │   │   ├── file_manager.py
@@ -126,7 +135,20 @@ dozentenmanager/
 - Enables testing with different configurations
 - Clean separation of configuration and initialization
 
-### Repository Pattern
+### Service Layer Pattern
+- **Status**: ✅ Fully Implemented (Issue #11)
+- Business logic encapsulated in dedicated service classes
+- All services inherit from BaseService with common database operations
+- Services raise exceptions (ValueError, IntegrityError) for error handling
+- CLI tools and web routes consume services and convert exceptions appropriately
+- Clean separation of concerns: Models → Services → Routes/CLI
+- Makes testing easier with service-level mocking
+- **Implemented Services**:
+  - `UniversityService`: University CRUD operations
+  - `StudentService`: Student management with validation
+  - `CourseService`: Course management with slug generation
+  - `EnrollmentService`: Student enrollment and status management
+  - `ExamService`: Exam management with validation
 - Data access abstracted through service layer
 - Business logic separated from data persistence
 - Easier to test and maintain

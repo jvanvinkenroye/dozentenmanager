@@ -38,49 +38,86 @@
 
 ## Development Process
 
-### Phase 1: CLI Tools First
+### Phase 1: Service Layer First (Updated Workflow)
 
-Following the requirement to build CLI tools first, then integrate into Flask:
+**Current Best Practice (Service Layer Pattern):**
+
+Following the implemented service layer architecture:
 
 1. **Feature Development Sequence:**
-   - Implement core functionality as CLI tool in `cli/` directory
-   - Write unit tests for CLI tool
-   - Add type hints and docstrings
+   - Create service class in `app/services/` with business logic
+   - Service inherits from `BaseService` for common DB operations
+   - Service methods raise exceptions (ValueError, IntegrityError) for errors
+   - Write unit tests for service layer
+   - Refactor CLI tool in `cli/` to use the service
+   - CLI converts service exceptions to exit codes (0/1)
+   - Write unit tests for CLI (if not already covered by service tests)
+   - Create Flask routes in `app/routes/` that use the service
+   - Routes convert service exceptions to flash messages
+   - Write integration tests for routes
+   - Add type hints and docstrings throughout
    - Run linting and type checking
-   - Commit the CLI implementation
-   - Create Flask route wrapper
-   - Write integration tests
-   - Commit the Flask integration
+   - Commit the complete implementation
 
-2. **Example Workflow - Student Management:**
+2. **Example Workflow - Exam Management (Service Layer Pattern):**
    ```bash
-   # 1. Create CLI tool
-   touch cli/student_cli.py
-   # Implement: add_student, list_students, update_student, delete_student
+   # 1. Create service class
+   touch app/services/exam_service.py
+   # Implement ExamService(BaseService):
+   #   - add_exam(name, course_id, exam_date, max_points, weight, description)
+   #   - list_exams(course_id=None)
+   #   - get_exam(exam_id)
+   #   - update_exam(exam_id, **kwargs)
+   #   - delete_exam(exam_id)
+   # All methods raise ValueError for validation errors, IntegrityError for duplicates
 
-   # 2. Write tests
-   touch tests/unit/test_student_cli.py
-   pytest tests/unit/test_student_cli.py
+   # 2. Write service tests
+   touch tests/unit/test_exam_service.py
+   pytest tests/unit/test_exam_service.py -v
 
-   # 3. Lint and type check
-   ruff check cli/student_cli.py
-   mypy cli/student_cli.py
+   # 3. Refactor CLI to use service
+   # Edit cli/exam_cli.py:
+   #   from app.services import ExamService
+   #   service = ExamService()
+   #   try:
+   #       exam = service.add_exam(...)
+   #       return 0
+   #   except ValueError as e:
+   #       print(f"Error: {e}", file=sys.stderr)
+   #       return 1
 
-   # 4. Commit
-   git add cli/student_cli.py tests/unit/test_student_cli.py
-   git commit -m "feat: add student management CLI tool"
+   # 4. Update CLI tests
+   # Edit tests/unit/test_exam_cli.py to use service pattern
+   pytest tests/unit/test_exam_cli.py -v
 
-   # 5. Create Flask route
-   touch app/routes/students.py
-   # Implement Flask routes that use the CLI logic
+   # 5. Lint and type check
+   ruff check --fix .
+   mypy app/services/ cli/
 
-   # 6. Integration tests
-   touch tests/integration/test_student_routes.py
-   pytest tests/integration/test_student_routes.py
+   # 6. Commit service and CLI
+   git add app/services/exam_service.py cli/exam_cli.py tests/
+   git commit -m "feat: implement ExamService and refactor CLI"
 
-   # 7. Commit
-   git add app/routes/students.py tests/integration/test_student_routes.py
-   git commit -m "feat: add student management web interface"
+   # 7. Create Flask routes using service
+   # Edit app/routes/exam.py:
+   #   from app.services import ExamService
+   #   service = ExamService()
+   #   try:
+   #       exam = service.add_exam(...)
+   #       flash('Exam created successfully', 'success')
+   #   except ValueError as e:
+   #       flash(str(e), 'error')
+
+   # 8. Integration tests
+   touch tests/integration/test_exam_routes.py
+   pytest tests/integration/test_exam_routes.py -v
+
+   # 9. Run full test suite
+   pytest --no-cov
+
+   # 10. Commit Flask integration
+   git add app/routes/exam.py tests/integration/test_exam_routes.py
+   git commit -m "feat: add exam management web interface with ExamService"
    ```
 
 ### Phase 2: Code Quality Checks
@@ -504,22 +541,129 @@ DATABASE_URL=sqlite:///dozentenmanager.db
        pass
    ```
 
+## Service Layer Best Practices
+
+### BaseService Pattern
+
+All services should inherit from `BaseService` which provides:
+- `query(model)` - Get SQLAlchemy query object for a model
+- `add(obj)` - Add object to session
+- `delete(obj)` - Delete object from session
+- `commit()` - Commit transaction
+- `rollback()` - Rollback transaction
+
+```python
+from app.services.base_service import BaseService
+from app.models import Student
+
+class StudentService(BaseService):
+    def add_student(self, first_name: str, last_name: str,
+                   student_id: str, email: str, program: str) -> Student:
+        """Add a new student.
+
+        Raises:
+            ValueError: If validation fails
+            IntegrityError: If student_id or email already exists
+        """
+        # Validation
+        if not first_name or not last_name:
+            raise ValueError("First name and last name are required")
+
+        # Create and add
+        student = Student(
+            first_name=first_name.strip(),
+            last_name=last_name.strip(),
+            student_id=student_id,
+            email=email.lower().strip(),
+            program=program.strip()
+        )
+        self.add(student)
+        self.commit()
+        return student
+```
+
+### Exception Handling Pattern
+
+**In Services:**
+- Raise `ValueError` for validation errors
+- Raise `IntegrityError` for database constraint violations
+- Return objects on success, `None` for not found
+
+**In CLI:**
+```python
+try:
+    student = service.add_student(...)
+    print(f"Created student: {student.first_name} {student.last_name}")
+    return 0
+except ValueError as e:
+    print(f"Error: {e}", file=sys.stderr)
+    return 1
+except IntegrityError:
+    print("Student ID or email already exists", file=sys.stderr)
+    return 1
+```
+
+**In Flask Routes:**
+```python
+try:
+    student = service.add_student(...)
+    flash(f"Student {student.first_name} {student.last_name} created successfully", "success")
+    return redirect(url_for('students.list'))
+except ValueError as e:
+    flash(str(e), "error")
+    return redirect(url_for('students.new'))
+except IntegrityError:
+    flash("Student ID or email already exists", "error")
+    return redirect(url_for('students.new'))
+```
+
+### Testing Pattern
+
+**Service Tests:**
+```python
+def test_add_student_success(student_service):
+    student = student_service.add_student(
+        first_name="Max",
+        last_name="Mustermann",
+        student_id="12345678",
+        email="max@example.com",
+        program="Informatik"
+    )
+    assert student.id is not None
+    assert isinstance(student, Student)
+
+def test_add_student_validation_error(student_service):
+    with pytest.raises(ValueError, match="First name.*required"):
+        student_service.add_student(
+            first_name="",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max@example.com",
+            program="Informatik"
+        )
+```
+
 ## Feature Development Checklist
 
-For each new feature:
+For each new feature (following Service Layer Pattern):
 
-- [ ] Design CLI interface and implement in `cli/`
-- [ ] Add comprehensive docstrings and type hints
-- [ ] Write unit tests with >80% coverage
+- [ ] Design service interface in `app/services/`
+- [ ] Implement service class inheriting from BaseService
+- [ ] Add comprehensive docstrings and type hints to service
+- [ ] Write unit tests for service with >80% coverage
 - [ ] Run linting: `ruff check --fix .`
-- [ ] Run type checking: `mypy cli/`
-- [ ] Run tests: `pytest`
-- [ ] Commit CLI implementation
-- [ ] Design Flask route and implement in `app/routes/`
-- [ ] Create HTML template in `app/templates/`
+- [ ] Run type checking: `mypy app/services/`
+- [ ] Refactor or create CLI tool in `cli/` to use service
+- [ ] CLI converts service exceptions to exit codes
+- [ ] Update CLI tests to use service pattern
+- [ ] Run tests: `pytest tests/unit/`
+- [ ] Commit service and CLI implementation
+- [ ] Design Flask routes in `app/routes/` to use service
+- [ ] Routes convert service exceptions to flash messages
+- [ ] Create HTML templates in `app/templates/`
 - [ ] Add integration tests
 - [ ] Test manually in browser
-- [ ] Run full test suite
+- [ ] Run full test suite: `pytest`
 - [ ] Commit Flask integration
 - [ ] Update documentation if needed
 

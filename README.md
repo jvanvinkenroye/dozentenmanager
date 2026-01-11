@@ -5,7 +5,7 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Flask](https://img.shields.io/badge/flask-3.0+-green.svg)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests: 219 passing](https://img.shields.io/badge/tests-219%20passing-success.svg)](tests/)
+[![Tests: 251 passing](https://img.shields.io/badge/tests-251%20passing-success.svg)](tests/)
 
 ## 📋 Inhaltsverzeichnis
 
@@ -20,6 +20,23 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 - [Mitwirken](#-mitwirken)
 
 ## ✨ Features
+
+### ✅ Implementierte Features
+
+#### 🏗️ Service Layer Architektur (v0.6.0 - Januar 2026)
+- **Vollständige Service Layer Implementation** (Issue #11)
+- Saubere Trennung von Business-Logik und Datenzugriff
+- Alle Services erben von `BaseService` mit gemeinsamen DB-Operationen
+- Exception-basierte Fehlerbehandlung (ValueError, IntegrityError)
+- Implementierte Services:
+  - `UniversityService` - Universitätsverwaltung
+  - `StudentService` - Studierendenverwaltung
+  - `CourseService` - Kursverwaltung
+  - `EnrollmentService` - Einschreibungsverwaltung
+  - `ExamService` - Prüfungsverwaltung
+- CLI-Tools nutzen Services und konvertieren Exceptions zu Exit-Codes
+- Flask-Routes nutzen Services und konvertieren Exceptions zu Flash-Messages
+- Verbesserte Testbarkeit durch Service-Level-Mocking
 
 ### Phase 1 - Kernfunktionen (✅ Abgeschlossen - v0.5.0)
 
@@ -61,14 +78,31 @@ Ein umfassendes Verwaltungssystem für Hochschuldozenten zur Organisation von St
 - Verknüpfung mit Lehrveranstaltungen
 - CLI und Web-Interface
 
-### 🔮 Geplante Features (Phase 2+)
+#### 📄 Dokumenten-Management (Phase 2 - ✅ Abgeschlossen)
+- Vollständiges Dokumenten-Upload-System
+- Automatische Dateiorganisation nach Universität/Semester/Kurs/Student
+- E-Mail-Import-Funktion (.eml-Dateien)
+- PDF- und Office-Dokumente-Unterstützung
+- Submission-Tracking mit Metadaten
+- Bulk-Upload-Funktionalität
+- CLI und Web-Interface
 
-- Dokumenten-Management (PDF-Upload und Organisation)
-- Bewertungssystem (Noten- und Punkteeingabe für Prüfungen)
-- Statistiken und Berichte
-- Export-Funktionen (CSV, PDF)
-- E-Mail-Benachrichtigungen
-- Audit-Trail für alle Änderungen
+#### 📊 Bewertungssystem (Phase 3 - ✅ Abgeschlossen)
+- Vollständige Notenverwaltung für Prüfungen
+- Unterstützung für mehrteilige Prüfungen (Exam Components)
+- Punktevergabe und automatische Notenberechnung
+- Flexible Notenschemata (Deutsche Notenskala)
+- Statistiken und Notenübersichten
+- Grade Dashboard mit Visualisierungen
+- Grading-API für programmatischen Zugriff
+
+### 🔮 Geplante Features (Phase 4+)
+
+- Export-Funktionen erweitert (CSV, Excel, PDF-Berichte)
+- E-Mail-Benachrichtigungssystem
+- Vollständiger Audit-Trail für alle Änderungen
+- Multi-User-Support mit Rollenverwaltung
+- API-Dokumentation (OpenAPI/Swagger)
 
 ## 🛠️ Technologie-Stack
 
@@ -274,15 +308,27 @@ python cli/student_cli.py --help
 
 ### Entwicklungs-Workflow
 
-Dieses Projekt folgt einem **CLI-First Workflow**:
+Dieses Projekt folgt einem **Service Layer First Workflow**:
 
-1. CLI-Funktionalität implementieren (`cli/`)
-2. Unit-Tests schreiben (`tests/unit/`)
-3. Linting und Type-Checking durchführen
-4. CLI-Implementation committen
-5. Flask-Routes implementieren (`app/routes/`)
-6. Integration-Tests schreiben (`tests/integration/`)
-7. Flask-Integration committen
+1. Service-Klasse in `app/services/` implementieren (erbt von `BaseService`)
+2. Service wirft Exceptions (ValueError, IntegrityError) bei Fehlern
+3. Unit-Tests für Service schreiben (`tests/unit/`)
+4. CLI-Tool in `cli/` implementieren/refactorieren (nutzt Service)
+5. CLI konvertiert Service-Exceptions zu Exit-Codes (0/1)
+6. CLI-Tests aktualisieren
+7. Linting und Type-Checking durchführen
+8. Service und CLI committen
+9. Flask-Routes in `app/routes/` implementieren (nutzen Service)
+10. Routes konvertieren Service-Exceptions zu Flash-Messages
+11. Integration-Tests schreiben (`tests/integration/`)
+12. Flask-Integration committen
+
+**Vorteile des Service Layer Pattern:**
+- Klare Trennung von Business-Logik und Präsentation
+- Einheitliche Fehlerbehandlung über alle Schichten
+- Einfachere Testbarkeit (Service-Level-Mocking)
+- Wiederverwendbare Business-Logik in CLI und Web-Interface
+- Bessere Wartbarkeit und Erweiterbarkeit
 
 ### Code-Qualität sicherstellen
 
@@ -333,18 +379,29 @@ Detaillierte Anleitung in [`/ref/development-workflow.md`](ref/development-workf
 dozentenmanager/
 ├── app/                        # Flask-Anwendung
 │   ├── __init__.py            # Application Factory
-│   ├── models/                # Datenbank-Modelle
+│   ├── models/                # Datenbank-Modelle (SQLAlchemy)
 │   │   ├── university.py
 │   │   ├── student.py
 │   │   ├── course.py
 │   │   ├── enrollment.py
-│   │   └── exam.py
-│   ├── routes/                # Flask Blueprints
+│   │   ├── exam.py
+│   │   ├── document.py
+│   │   └── grade.py
+│   ├── services/              # Business Logic Layer (NEW!)
+│   │   ├── base_service.py         # Base service with common operations
+│   │   ├── university_service.py   # University management
+│   │   ├── student_service.py      # Student management
+│   │   ├── course_service.py       # Course management
+│   │   ├── enrollment_service.py   # Enrollment management
+│   │   └── exam_service.py         # Exam management
+│   ├── routes/                # Flask Blueprints (use services)
 │   │   ├── university.py
 │   │   ├── student.py
 │   │   ├── course.py
 │   │   ├── enrollment.py
-│   │   └── exam.py
+│   │   ├── exam.py
+│   │   ├── document.py
+│   │   └── grade.py
 │   ├── templates/             # Jinja2 Templates
 │   │   ├── base.html
 │   │   ├── university/
@@ -405,17 +462,26 @@ open htmlcov/index.html  # macOS
 
 ### Test-Statistiken
 
-**v0.5.0:**
-- **219 Tests** (175 Unit + 44 Integration)
+**v0.6.0 (Aktuell):**
+- **251 Tests** (185 Unit + 66 Integration)
 - **100% Pass-Rate**
-- **Coverage:** Umfassende Abdeckung aller CRUD-Operationen
+- **Coverage:** Umfassende Abdeckung aller Services und CRUD-Operationen
+- **Service Layer Tests:** Alle Services vollständig getestet
 - **E2E-Tests:** Playwright Browser-Automatisierung
 
 ### Testing-Kategorien
 
-- **Unit-Tests:** Testen CLI-Funktionen isoliert
-- **Integration-Tests:** Testen Flask-Routes mit Datenbank
-- **E2E-Tests:** Vollständige Workflows im Browser
+- **Unit-Tests:**
+  - Service Layer Tests (Business-Logik)
+  - CLI-Funktionen (mit Service-Integration)
+  - Model-Validierungen
+- **Integration-Tests:**
+  - Flask-Routes mit Service Layer
+  - Datenbankoperationen
+  - End-to-End Workflows
+- **E2E-Tests:**
+  - Browser-Automatisierung mit Playwright
+  - Vollständige User-Workflows
 
 ## 🗺️ Roadmap
 
@@ -426,23 +492,47 @@ open htmlcov/index.html  # macOS
 - [x] 1.4 Einschreibungsverwaltung
 - [x] 1.5 Prüfungsverwaltung (Struktur und CRUD)
 
-### 🚧 Phase 2: Dokumenten-Management (Geplant)
-- [ ] 2.1 Datei-Upload-System
-- [ ] 2.2 Dokumenten-Organisation
-- [ ] 2.3 PDF-Viewer-Integration
-- [ ] 2.4 Volltextsuche
+### ✅ Phase 2: Dokumenten-Management (Abgeschlossen - v0.5.x)
+- [x] 2.1 Datei-Upload-System
+- [x] 2.2 Dokumenten-Organisation
+- [x] 2.3 E-Mail-Import (.eml-Dateien)
+- [x] 2.4 Bulk-Upload-Funktionalität
 
-### 📋 Phase 3: Bewertungssystem (Geplant)
-- [ ] 3.1 Bewertungseingabe (Punkte/Noten pro Prüfung)
-- [ ] 3.2 Notenspiegel und Übersichten
-- [ ] 3.3 Statistiken und Analysen
-- [ ] 3.4 Automatische Notenberechnung
+### ✅ Phase 3: Bewertungssystem (Abgeschlossen - v0.5.x)
+- [x] 3.1 Bewertungseingabe (Punkte/Noten pro Prüfung)
+- [x] 3.2 Notenspiegel und Übersichten
+- [x] 3.3 Statistiken und Analysen
+- [x] 3.4 Automatische Notenberechnung
+- [x] 3.5 Grade Dashboard mit Visualisierungen
+- [x] 3.6 Multi-Part Exam Support (Exam Components)
 
-### 📊 Phase 4: Erweiterte Features (Geplant)
-- [ ] 4.1 E-Mail-Benachrichtigungen
-- [ ] 4.2 Export-Funktionen (CSV, PDF)
-- [ ] 4.3 Audit-Trail
-- [ ] 4.4 Multi-User-Support mit Rollen
+### ✅ Phase 3.5: Service Layer Refactoring (Abgeschlossen - v0.6.0)
+- [x] Issue #11: Service Layer Implementation
+  - [x] BaseService mit gemeinsamen DB-Operationen
+  - [x] UniversityService
+  - [x] StudentService
+  - [x] CourseService
+  - [x] EnrollmentService
+  - [x] ExamService
+  - [x] CLI-Refactoring (Services nutzen)
+  - [x] Route-Refactoring (Services nutzen)
+  - [x] Test-Updates (Service-Pattern)
+  - [x] Dokumentation aktualisiert
+
+### 🚧 Phase 4: Code Quality & Technical Debt (In Arbeit)
+- [x] Issue #12: Pagination für List-Views
+- [x] Issue #13-18: Code Quality Improvements
+- [ ] 4.1 Verbleibende Linting-Warnungen beheben
+- [ ] 4.2 Test Coverage auf >90% erhöhen
+- [ ] 4.3 API-Dokumentation (OpenAPI/Swagger)
+- [ ] 4.4 Performance-Optimierung
+
+### 📊 Phase 5: Erweiterte Features (Geplant)
+- [ ] 5.1 E-Mail-Benachrichtigungssystem
+- [ ] 5.2 Export-Funktionen erweitert (CSV, Excel, PDF-Berichte)
+- [ ] 5.3 Vollständiger Audit-Trail
+- [ ] 5.4 Multi-User-Support mit Rollen
+- [ ] 5.5 REST API mit Authentication
 
 Detaillierte Feature-Beschreibungen in [`/ref/features.md`](ref/features.md).
 

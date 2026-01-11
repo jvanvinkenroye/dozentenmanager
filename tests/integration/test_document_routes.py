@@ -346,6 +346,46 @@ class TestDocumentShowRoute:
             assert b"test.pdf" in response.data
 
 
+class TestDocumentDownloadRoute:
+    """Tests for document download route."""
+
+    def test_download_not_found(self, client, app):
+        """Test downloading non-existent document."""
+        with app.app_context():
+            response = client.get("/documents/999/download")
+            assert response.status_code == 302
+            # Should redirect to document index
+
+    def test_download_file_not_on_disk(self, client, sample_data, app):
+        """Test downloading document when file doesn't exist on disk."""
+        with app.app_context():
+            from app.models import Document
+
+            # Create a document with non-existent file path
+            submission = Submission(
+                enrollment_id=sample_data["enrollment_id"],
+                submission_type="document",
+                status="submitted",
+            )
+            db.session.add(submission)
+            db.session.flush()
+
+            document = Document(
+                submission_id=submission.id,
+                filename="test.pdf",
+                original_filename="test.pdf",
+                file_path="/nonexistent/path/test.pdf",
+                file_type="pdf",
+                file_size=1024,
+            )
+            db.session.add(document)
+            db.session.commit()
+
+            response = client.get(f"/documents/{document.id}/download")
+            assert response.status_code == 302
+            # Should redirect with error message
+
+
 class TestDocumentDeleteRoute:
     """Tests for document deletion route."""
 

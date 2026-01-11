@@ -103,6 +103,8 @@ def show(course_id: int) -> str | Any:
 
     try:
         from app.models.enrollment import Enrollment
+        from app.models.exam import Exam
+        from app.models.submission import Submission
 
         course = service.get_course(course_id)
 
@@ -124,11 +126,27 @@ def show(course_id: int) -> str | Any:
             .all()
         )
 
+        exams = (
+            db.session.query(Exam)
+            .filter_by(course_id=course_id)
+            .order_by(Exam.exam_date.desc(), Exam.name)
+            .all()
+        )
+
+        submissions_count = (
+            db.session.query(Submission)
+            .join(Enrollment)
+            .filter(Enrollment.course_id == course_id)
+            .count()
+        )
+
         return render_template(
             "course/detail.html",
             course=course,
             enrollments=enrollments,
             available_students=available_students,
+            exams=exams,
+            submissions_count=submissions_count,
         )
 
     except SQLAlchemyError as e:

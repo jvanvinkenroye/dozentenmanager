@@ -257,7 +257,7 @@
                 </p>
                 <p>
                     <span class="icon"><i class="fas fa-university"></i></span>
-                    <a href="{{ url_for('university.show', slug=course.university.slug) }}">
+                    <a href="{{ url_for('university.show', university_id=course.university.id) }}">
                         {{ course.university.name }}
                     </a>
                 </p>

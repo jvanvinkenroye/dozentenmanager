@@ -94,19 +94,60 @@
         <div class="box">
             <h2 class="subtitle">Statistiken</h2>
 
-            <div class="notification is-info is-light">
-                <p class="has-text-weight-semibold">
-                    <span class="icon">
-                        <i class="fas fa-info-circle"></i>
-                    </span>
-                    Statistiken werden in zukünftigen Versionen verfügbar sein.
-                </p>
-                <ul class="mt-2">
-                    <li>Anzahl der Studierenden</li>
-                    <li>Anzahl der Lehrveranstaltungen</li>
-                    <li>Anzahl der Prüfungen</li>
-                </ul>
+            <div class="columns is-multiline">
+                <div class="column is-half">
+                    <div class="notification is-light">
+                        <p class="heading">Studierende</p>
+                        <p class="title is-5">{{ students_count }}</p>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="notification is-light">
+                        <p class="heading">Lehrveranstaltungen</p>
+                        <p class="title is-5">{{ courses|length }}</p>
+                    </div>
+                </div>
+                <div class="column is-half">
+                    <div class="notification is-light">
+                        <p class="heading">Prüfungen</p>
+                        <p class="title is-5">{{ exams_count }}</p>
+                    </div>
+                </div>
             </div>
+
+            <h3 class="subtitle is-6 mt-4">Lehrveranstaltungen</h3>
+            {% if courses %}
+            <table class="table is-fullwidth is-hoverable is-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Semester</th>
+                        <th class="has-text-right">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('course.show', course_id=course.id) }}">
+                                {{ course.name }}
+                            </a>
+                        </td>
+                        <td>{{ course.semester }}</td>
+                        <td class="has-text-right">
+                            <a href="{{ url_for('exam.index', course_id=course.id) }}" class="button is-small is-info is-outlined">
+                                <span class="icon"><i class="fas fa-clipboard-check"></i></span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="notification is-light">
+                Keine Lehrveranstaltungen vorhanden.
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

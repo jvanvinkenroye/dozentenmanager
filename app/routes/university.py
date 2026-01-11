@@ -10,7 +10,12 @@ from typing import Any
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
+from app import db
 from app.forms.university import UniversityForm
+from app.models.course import Course
+from app.models.enrollment import Enrollment
+from app.models.exam import Exam
+from app.models.student import Student
 from app.models.university import University
 from app.services.university_service import UniversityService
 from app.utils.pagination import paginate_query
@@ -86,7 +91,34 @@ def show(university_id: int) -> str | Any:
             flash(f"University with ID {university_id} not found.", "error")
             return redirect(url_for("university.index"))
 
-        return render_template("university/detail.html", university=university)
+        courses = (
+            db.session.query(Course)
+            .filter(Course.university_id == university.id)
+            .order_by(Course.semester.desc(), Course.name)
+            .all()
+        )
+        students_count = (
+            db.session.query(Student)
+            .join(Enrollment)
+            .join(Course)
+            .filter(Course.university_id == university.id)
+            .distinct(Student.id)
+            .count()
+        )
+        exams_count = (
+            db.session.query(Exam)
+            .join(Course)
+            .filter(Course.university_id == university.id)
+            .count()
+        )
+
+        return render_template(
+            "university/detail.html",
+            university=university,
+            courses=courses,
+            students_count=students_count,
+            exams_count=exams_count,
+        )
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching university: {e}")

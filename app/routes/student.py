@@ -7,11 +7,15 @@ This module provides web routes for managing students through the Flask interfac
 import csv
 import io
 import logging
+import os
+from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from flask import (
     Blueprint,
     Response,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -52,16 +56,13 @@ def _normalize_header(header: str | None) -> str:
     return header.strip().lower()
 
 
-def _load_csv_rows(file: FileStorage) -> list[dict[str, str]]:
+def _load_csv_rows(file: FileStorage) -> tuple[list[str], list[dict[str, str]]]:
     file.stream.seek(0)
     text_stream = io.TextIOWrapper(file.stream, encoding="utf-8-sig")
     reader = csv.DictReader(text_stream)
     raw_headers = reader.fieldnames or []
     normalized_headers = [_normalize_header(h) for h in raw_headers]
     header_map = dict(zip(raw_headers, normalized_headers, strict=False))
-    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in normalized_headers]
-    if missing:
-        raise ValueError("Missing required headers: " + ", ".join(missing))
 
     rows: list[dict[str, str]] = []
     for row in reader:
@@ -72,10 +73,10 @@ def _load_csv_rows(file: FileStorage) -> list[dict[str, str]]:
                 continue
             normalized_row[normalized_key] = str(value).strip() if value else ""
         rows.append(normalized_row)
-    return rows
+    return normalized_headers, rows
 
 
-def _load_xlsx_rows(file: FileStorage) -> list[dict[str, str]]:
+def _load_xlsx_rows(file: FileStorage) -> tuple[list[str], list[dict[str, str]]]:
     try:
         from openpyxl import load_workbook
     except ImportError as exc:
@@ -97,9 +98,6 @@ def _load_xlsx_rows(file: FileStorage) -> list[dict[str, str]]:
         raise ValueError("XLSX file has no rows.") from None
 
     raw_headers = [_normalize_header(str(h)) for h in headers]
-    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in raw_headers]
-    if missing:
-        raise ValueError("Missing required headers: " + ", ".join(missing))
 
     rows: list[dict[str, str]] = []
     for row in rows_iter:
@@ -110,10 +108,10 @@ def _load_xlsx_rows(file: FileStorage) -> list[dict[str, str]]:
                 continue
             normalized_row[header] = str(value).strip() if value is not None else ""
         rows.append(normalized_row)
-    return rows
+    return raw_headers, rows
 
 
-def _load_xls_rows(file: FileStorage) -> list[dict[str, str]]:
+def _load_xls_rows(file: FileStorage) -> tuple[list[str], list[dict[str, str]]]:
     try:
         import xlrd
     except ImportError as exc:
@@ -131,9 +129,6 @@ def _load_xls_rows(file: FileStorage) -> list[dict[str, str]]:
         raise ValueError("XLS file has no rows.")
 
     raw_headers = [_normalize_header(str(h)) for h in sheet.row_values(0)]
-    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in raw_headers]
-    if missing:
-        raise ValueError("Missing required headers: " + ", ".join(missing))
 
     rows: list[dict[str, str]] = []
     for row_idx in range(1, sheet.nrows):
@@ -145,18 +140,129 @@ def _load_xls_rows(file: FileStorage) -> list[dict[str, str]]:
                 continue
             normalized_row[header] = str(value).strip() if value else ""
         rows.append(normalized_row)
+    return raw_headers, rows
+
+
+def _load_import_headers(file: FileStorage, fmt: str | None) -> list[tuple[str, str]]:
+    format_hint = fmt or file.filename.rsplit(".", 1)[-1].lower()
+    if format_hint == "csv":
+        file.stream.seek(0)
+        content = file.stream.read()
+        file.stream.seek(0)
+        text = content.decode("utf-8-sig", errors="replace")
+        reader = csv.reader(io.StringIO(text))
+        try:
+            raw_headers = next(reader)
+        except StopIteration:
+            raise ValueError("CSV file has no rows.") from None
+        normalized_headers = [_normalize_header(h) for h in raw_headers]
+        return [
+            (normalized_headers[idx], str(raw_header).strip())
+            for idx, raw_header in enumerate(raw_headers)
+            if normalized_headers[idx]
+        ]
+    if format_hint == "xlsx":
+        file.stream.seek(0)
+        try:
+            from openpyxl import load_workbook
+        except ImportError as exc:
+            raise ValueError(
+                "openpyxl is required for XLSX import. Install it and try again."
+            ) from exc
+        workbook = load_workbook(
+            filename=io.BytesIO(file.stream.read()),
+            read_only=True,
+            data_only=True,
+        )
+        sheet = workbook.active
+        rows_iter = sheet.iter_rows(values_only=True)
+        try:
+            headers = next(rows_iter)
+        except StopIteration:
+            raise ValueError("XLSX file has no rows.") from None
+        raw_headers = [str(h).strip() if h is not None else "" for h in headers]
+        normalized_headers = [_normalize_header(h) for h in raw_headers]
+        return [
+            (normalized_headers[idx], raw_header)
+            for idx, raw_header in enumerate(raw_headers)
+            if normalized_headers[idx]
+        ]
+    if format_hint == "xls":
+        file.stream.seek(0)
+        try:
+            import xlrd
+        except ImportError as exc:
+            raise ValueError(
+                "xlrd is required for XLS import. Install it and try again."
+            ) from exc
+        workbook = xlrd.open_workbook(file_contents=file.stream.read())
+        if workbook.nsheets == 0:
+            raise ValueError("XLS file has no sheets.")
+        sheet = workbook.sheet_by_index(0)
+        if sheet.nrows == 0:
+            raise ValueError("XLS file has no rows.")
+        raw_headers = [
+            str(h).strip() if h is not None else "" for h in sheet.row_values(0)
+        ]
+        normalized_headers = [_normalize_header(h) for h in raw_headers]
+        return [
+            (normalized_headers[idx], raw_header)
+            for idx, raw_header in enumerate(raw_headers)
+            if normalized_headers[idx]
+        ]
+    raise ValueError(f"Unsupported format '{format_hint}'. Use csv, xlsx, or xls.")
+
+
+def _load_import_rows(
+    file: FileStorage, fmt: str | None, mapping: dict[str, str] | None = None
+) -> list[dict[str, str]]:
+    format_hint = fmt or file.filename.rsplit(".", 1)[-1].lower()
+    if format_hint == "csv":
+        headers, rows = _load_csv_rows(file)
+    elif format_hint == "xlsx":
+        headers, rows = _load_xlsx_rows(file)
+    elif format_hint == "xls":
+        headers, rows = _load_xls_rows(file)
+    else:
+        raise ValueError(f"Unsupported format '{format_hint}'. Use csv, xlsx, or xls.")
+
+    if mapping:
+        missing_map = [h for h in REQUIRED_IMPORT_HEADERS if not mapping.get(h)]
+        if missing_map:
+            raise ValueError("Mapping missing for: " + ", ".join(missing_map))
+        used_headers = list(mapping.values())
+        if len(set(used_headers)) != len(used_headers):
+            raise ValueError("Mapping contains duplicate column selections.")
+        unknown_headers = [h for h in used_headers if h not in headers]
+        if unknown_headers:
+            raise ValueError(
+                "Mapping references unknown headers: " + ", ".join(unknown_headers)
+            )
+        mapped_rows: list[dict[str, str]] = []
+        for row in rows:
+            mapped_rows.append(
+                {
+                    key: row.get(mapping[key], "").strip()
+                    for key in REQUIRED_IMPORT_HEADERS
+                }
+            )
+        return mapped_rows
+
+    missing = [h for h in REQUIRED_IMPORT_HEADERS if h not in headers]
+    if missing:
+        raise ValueError("Missing required headers: " + ", ".join(missing))
     return rows
 
 
-def _load_import_rows(file: FileStorage, fmt: str | None) -> list[dict[str, str]]:
-    format_hint = fmt or file.filename.rsplit(".", 1)[-1].lower()
-    if format_hint == "csv":
-        return _load_csv_rows(file)
-    if format_hint == "xlsx":
-        return _load_xlsx_rows(file)
-    if format_hint == "xls":
-        return _load_xls_rows(file)
-    raise ValueError(f"Unsupported format '{format_hint}'. Use csv, xlsx, or xls.")
+def _save_import_file(file: FileStorage) -> tuple[str, Path, str]:
+    filename = file.filename or "import"
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else "data"
+    token = uuid4().hex
+    import_dir = Path(current_app.root_path) / "uploads" / "imports"
+    import_dir.mkdir(parents=True, exist_ok=True)
+    file_path = import_dir / f"students_{token}.{extension}"
+    file.save(file_path)
+    return token, file_path, extension
 
 
 @bp.route("/")
@@ -386,11 +492,82 @@ def import_students() -> str | Any:
     form = StudentImportForm()
     service = StudentService()
     import_errors: list[str] = []
+    import_summary: dict[str, int] | None = None
+    mapping_headers: list[tuple[str, str]] = []
+    mapping_token = ""
+    mapping_format = ""
+    mapping_defaults: dict[str, str] = {}
+    mapping_on_duplicate = ""
 
-    if form.validate_on_submit():
+    if request.method == "POST" and request.form.get("mapping_token"):
+        mapping_token = request.form.get("mapping_token", "").strip()
+        mapping_format = request.form.get("file_format", "").strip()
+        mapping_on_duplicate = request.form.get("on_duplicate", "skip").strip()
+        file_extension = request.form.get("file_extension", "data").strip()
+        file_path = (
+            Path(current_app.root_path)
+            / "uploads"
+            / "imports"
+            / f"students_{mapping_token}.{file_extension}"
+        )
+
+        mapping = {
+            key: request.form.get(f"map_{key}", "").strip()
+            for key in REQUIRED_IMPORT_HEADERS
+        }
+        mapping_defaults = mapping.copy()
+
+        if not file_path.exists():
+            flash("Importdatei nicht gefunden. Bitte erneut hochladen.", "error")
+            return redirect(url_for("student.import_students"))
+
+        try:
+            with file_path.open("rb") as handle:
+                file = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = _load_import_headers(file, mapping_format)
+                handle.seek(0)
+                rows = _load_import_rows(file, mapping_format, mapping=mapping)
+        except ValueError as exc:
+            import_errors.append(str(exc))
+            return render_template(
+                "student/import.html",
+                form=form,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                mapping_on_duplicate=mapping_on_duplicate,
+                file_extension=file_extension,
+            )
+    elif form.validate_on_submit():
         file = form.file.data
         try:
-            rows = _load_import_rows(file, form.file_format.data)
+            token, file_path, extension = _save_import_file(file)
+            with file_path.open("rb") as handle:
+                stored_file = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = _load_import_headers(
+                    stored_file, form.file_format.data
+                )
+            mapping_token = token
+            mapping_format = form.file_format.data
+            mapping_on_duplicate = form.on_duplicate.data
+            normalized_headers = [value for value, _ in mapping_headers]
+            mapping_defaults = {
+                key: key if key in normalized_headers else ""
+                for key in REQUIRED_IMPORT_HEADERS
+            }
+            return render_template(
+                "student/import.html",
+                form=form,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                mapping_on_duplicate=mapping_on_duplicate,
+                file_extension=extension,
+            )
         except ValueError as exc:
             flash(str(exc), "error")
             return render_template(
@@ -398,7 +575,30 @@ def import_students() -> str | Any:
                 form=form,
                 import_errors=import_errors,
             )
+    else:
+        rows = []
 
+    if "rows" in locals() and not rows and mapping_token:
+        flash("Keine Datenzeilen gefunden.", "warning")
+        file_extension = request.form.get("file_extension", "data").strip()
+        file_path = (
+            Path(current_app.root_path)
+            / "uploads"
+            / "imports"
+            / f"students_{mapping_token}.{file_extension}"
+        )
+        if file_path.exists():
+            try:
+                os.remove(file_path)
+            except OSError:
+                logger.warning("Failed to remove import file %s", file_path)
+        return render_template(
+            "student/import.html",
+            form=form,
+            import_errors=import_errors,
+        )
+
+    if "rows" in locals() and rows:
         created = updated = skipped = errors = 0
         seen_student_ids: set[str] = set()
         seen_emails: set[str] = set()
@@ -510,11 +710,37 @@ def import_students() -> str | Any:
             f"Fehler: {errors}",
             "success" if errors == 0 else "warning",
         )
+        import_summary = {
+            "created": created,
+            "updated": updated,
+            "skipped": skipped,
+            "errors": errors,
+        }
+        if mapping_token and mapping_format is not None:
+            file_extension = request.form.get("file_extension", "data").strip()
+            file_path = (
+                Path(current_app.root_path)
+                / "uploads"
+                / "imports"
+                / f"students_{mapping_token}.{file_extension}"
+            )
+            if file_path.exists():
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    logger.warning("Failed to remove import file %s", file_path)
 
     return render_template(
         "student/import.html",
         form=form,
         import_errors=import_errors,
+        import_summary=import_summary,
+        mapping_headers=mapping_headers,
+        mapping_token=mapping_token,
+        mapping_format=mapping_format,
+        mapping_defaults=mapping_defaults,
+        mapping_on_duplicate=mapping_on_duplicate,
+        file_extension=request.form.get("file_extension", "").strip(),
     )
 
 

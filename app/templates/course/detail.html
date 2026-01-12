@@ -263,25 +263,55 @@
             <p class="modal-card-title">Studierenden einschreiben</p>
             <button class="delete" aria-label="close" onclick="document.getElementById('enroll-modal').classList.remove('is-active')"></button>
         </header>
-        <form method="post" action="{{ url_for('enrollment.enroll') }}">
+        <form method="post" action="{{ url_for('enrollment.enroll') }}" id="enroll-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <section class="modal-card-body">
                 <input type="hidden" name="course_id" value="{{ course.id }}">
                 <input type="hidden" name="redirect_to" value="course">
 
                 <div class="field">
-                    <label class="label">Student auswählen</label>
-                    <div class="control">
-                        <div class="select is-fullwidth">
-                            <select name="student_id" required>
-                                <option value="">Bitte wählen...</option>
-                                {% for student in available_students %}
-                                <option value="{{ student.id }}">
-                                    {{ student.last_name }}, {{ student.first_name }} ({{ student.student_id }})
-                                </option>
-                                {% endfor %}
-                            </select>
+                    <label class="label">Studierende auswählen</label>
+                    {% if available_students %}
+                    <div class="field is-grouped is-grouped-multiline is-align-items-center">
+                        <div class="control is-expanded">
+                            <input
+                                class="input"
+                                type="search"
+                                id="enroll-student-search"
+                                placeholder="Suche nach Name oder Matrikelnummer"
+                                autocomplete="off"
+                            >
                         </div>
+                        <div class="control">
+                            <label class="checkbox">
+                                <input type="checkbox" id="enroll-select-visible" checked>
+                                Nur sichtbare auswählen
+                            </label>
+                        </div>
+                        <div class="control">
+                            <label class="checkbox">
+                                <input type="checkbox" id="enroll-select-all">
+                                Alle auswählen
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="control">
+                        <div class="checkbox-list" id="enroll-checkbox-list">
+                            {% if available_students %}
+                                {% for student in available_students %}
+                                <label class="checkbox" data-search="{{ (student.last_name ~ ' ' ~ student.first_name ~ ' ' ~ student.student_id)|lower }}">
+                                    <input type="checkbox" name="student_ids" value="{{ student.id }}">
+                                    {{ student.last_name }}, {{ student.first_name }} ({{ student.student_id }})
+                                </label>
+                                {% endfor %}
+                            {% else %}
+                                <p class="has-text-grey">Alle Studierenden sind bereits eingeschrieben.</p>
+                            {% endif %}
+                        </div>
+                        {% if available_students %}
+                        <p class="help" id="enroll-selection-count">Ausgewählt: 0 / {{ available_students|length }}</p>
+                        {% endif %}
                     </div>
                 </div>
             </section>
@@ -292,4 +322,90 @@
         </form>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const enrollForm = document.getElementById("enroll-form");
+    const enrollModal = document.getElementById("enroll-modal");
+    const searchInput = document.getElementById("enroll-student-search");
+    const selectAll = document.getElementById("enroll-select-all");
+    const selectVisible = document.getElementById("enroll-select-visible");
+    const list = document.getElementById("enroll-checkbox-list");
+    if (!list) {
+        return;
+    }
+
+    const items = Array.from(list.querySelectorAll("label.checkbox"));
+    const getVisibleItems = () =>
+        items.filter((item) => item.style.display !== "none");
+
+    const updateCount = () => {
+        const visible = getVisibleItems();
+        const checked = items.filter((item) => {
+            const checkbox = item.querySelector("input[type='checkbox']");
+            return checkbox && checkbox.checked;
+        });
+        const countEl = document.getElementById("enroll-selection-count");
+        if (countEl) {
+            countEl.textContent = `Ausgewählt: ${checked.length} / ${items.length}` +
+                (visible.length !== items.length ? ` (sichtbar: ${visible.length})` : "");
+        }
+        if (selectAll) {
+            selectAll.checked = visible.length > 0 &&
+                visible.every((item) => {
+                    const checkbox = item.querySelector("input[type='checkbox']");
+                    return checkbox && checkbox.checked;
+                });
+        }
+    };
+
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            const query = searchInput.value.trim().toLowerCase();
+            items.forEach((item) => {
+                const haystack = item.dataset.search || "";
+                item.style.display = haystack.includes(query) ? "" : "none";
+            });
+            updateCount();
+        });
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener("change", () => {
+            const targets = (selectVisible && selectVisible.checked)
+                ? getVisibleItems()
+                : items;
+            targets.forEach((item) => {
+                const checkbox = item.querySelector("input[type='checkbox']");
+                if (checkbox) {
+                    checkbox.checked = selectAll.checked;
+                }
+            });
+            updateCount();
+        });
+    }
+
+    if (selectVisible) {
+        selectVisible.addEventListener("change", () => {
+            if (selectVisible.checked) {
+                selectAll.checked = false;
+            }
+        });
+    }
+
+    items.forEach((item) => {
+        const checkbox = item.querySelector("input[type='checkbox']");
+        if (checkbox) {
+            checkbox.addEventListener("change", updateCount);
+        }
+    });
+
+    updateCount();
+
+    if (enrollForm && enrollModal) {
+        enrollForm.addEventListener("submit", () => {
+            enrollModal.classList.remove("is-active");
+        });
+    }
+});
+</script>
 {% endblock %}

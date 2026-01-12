@@ -24,74 +24,90 @@ bp = Blueprint("enrollment", __name__, url_prefix="/enrollments")
 @bp.route("/enroll", methods=["POST"])
 def enroll() -> Any:
     """
-    Enroll a student in a course.
+    Enroll one or more students in a course.
 
     Form fields:
-        student_id: Student database ID (required)
+        student_ids: Student database IDs (required, can be multiple)
         course_id: Course database ID (required)
         redirect_to: Where to redirect after enrollment (optional)
 
     Returns:
         Redirect to course or student detail page
     """
-    student_db_id = request.form.get("student_id", "").strip()
+    student_ids = [value.strip() for value in request.form.getlist("student_ids")]
+    if not student_ids:
+        single_id = request.form.get("student_id", "").strip()
+        if single_id:
+            student_ids = [single_id]
     course_id = request.form.get("course_id", "").strip()
     redirect_to = request.form.get("redirect_to", "").strip()
 
     # Validate inputs
-    if not student_db_id or not course_id:
+    if not student_ids or not course_id:
         flash("Student and course are required.", "error")
         return redirect(request.referrer or url_for("index"))
 
     try:
-        student_id_int = int(student_db_id)
         course_id_int = int(course_id)
     except ValueError:
-        flash("Invalid student or course ID.", "error")
+        flash("Invalid course ID.", "error")
         return redirect(request.referrer or url_for("index"))
 
-    try:
-        # Get student to find their student_id (matriculation number)
-        service = EnrollmentService()
-        student = (
-            service.query(Student)
-            .filter_by(id=student_id_int)
-            .filter(Student.deleted_at.is_(None))
-            .first()
-        )
-        if not student:
-            flash("Student not found.", "error")
-            return redirect(request.referrer or url_for("index"))
+    service = EnrollmentService()
+    enrolled = 0
+    already_enrolled = 0
+    errors = 0
+    first_student_db_id: int | None = None
+    for student_db_id in student_ids:
+        try:
+            student_id_int = int(student_db_id)
+        except ValueError:
+            errors += 1
+            continue
 
-        # Enroll student using service
-        enrollment = service.add_enrollment(student.student_id, course_id_int)
+        try:
+            student = (
+                service.query(Student)
+                .filter_by(id=student_id_int)
+                .filter(Student.deleted_at.is_(None))
+                .first()
+            )
+            if not student:
+                errors += 1
+                continue
 
-        flash(
-            f"{student.first_name} {student.last_name} wurde erfolgreich in "
-            f"'{enrollment.course.name}' eingeschrieben.",
-            "success",
-        )
+            if first_student_db_id is None:
+                first_student_db_id = student.id
 
-        # Redirect based on redirect_to parameter
-        if redirect_to == "student":
-            return redirect(url_for("student.show", student_id=student.id))
-        return redirect(url_for("course.show", course_id=enrollment.course.id))
+            service.add_enrollment(student.student_id, course_id_int)
+            enrolled += 1
 
-    except ValueError as e:
-        flash(str(e), "error")
+        except IntegrityError:
+            already_enrolled += 1
+        except ValueError:
+            errors += 1
+        except SQLAlchemyError as e:
+            logger.error(f"Database error while enrolling student: {e}")
+            errors += 1
+
+    if enrolled == 0 and errors == 0 and already_enrolled == 0:
+        flash("Keine Studierenden ausgewählt.", "error")
         return redirect(request.referrer or url_for("index"))
 
-    except IntegrityError:
-        flash(
-            "Der Studierende ist bereits in diesem Kurs eingeschrieben.",
-            "error",
-        )
-        return redirect(request.referrer or url_for("index"))
+    message = (
+        f"Eingeschrieben: {enrolled}, "
+        f"Bereits eingeschrieben: {already_enrolled}, "
+        f"Fehler: {errors}"
+    )
+    flash(message, "success" if errors == 0 else "warning")
 
-    except SQLAlchemyError as e:
-        logger.error(f"Database error while enrolling student: {e}")
-        flash("Fehler beim Einschreiben. Bitte versuchen Sie es erneut.", "error")
-        return redirect(request.referrer or url_for("index"))
+    if redirect_to == "student" and len(student_ids) == 1 and first_student_db_id:
+        return redirect(url_for("student.show", student_id=first_student_db_id))
+    return redirect(
+        url_for("course.show", course_id=course_id_int)
+        if course_id_int
+        else (request.referrer or url_for("index"))
+    )
 
 
 @bp.route("/unenroll", methods=["POST"])

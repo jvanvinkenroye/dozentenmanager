@@ -155,24 +155,36 @@
 
 <script>
     // Update file name display when file is selected
-    document.querySelector('.file-input').addEventListener('change', function(e) {
-        const fileName = e.target.files[0]?.name || 'No file selected';
-        document.getElementById('fileName').textContent = fileName;
-        
-        // Enable restore button when file is selected
-        document.getElementById('restoreButton').disabled = !e.target.files[0];
-    });
+    const fileInput = document.querySelector('.file-input');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            const fileNameElement = document.getElementById('fileName');
+            if (fileNameElement) {
+                fileNameElement.textContent = fileName;
+            }
+            
+            // Enable restore button when file is selected
+            const restoreButton = document.getElementById('restoreButton');
+            if (restoreButton) {
+                restoreButton.disabled = !e.target.files[0];
+            }
+        });
+    }
 
     // Confirm before restoring with clear existing
-    document.querySelector('form[action*="restore"]').addEventListener('submit', function(e) {
-        const clearExisting = document.getElementById('clearExisting').checked;
-        
-        if (clearExisting) {
-            if (!confirm('⚠️ WARNING: This will delete ALL existing data!\n\nAre you absolutely sure you want to proceed?')) {
-                e.preventDefault();
-                return false;
+    const restoreForm = document.querySelector('form[action*="restore"]');
+    if (restoreForm) {
+        restoreForm.addEventListener('submit', function(e) {
+            const clearExisting = document.getElementById('clearExisting');
+            
+            if (clearExisting && clearExisting.checked) {
+                if (!confirm('⚠️ WARNING: This will delete ALL existing data!\n\nAre you absolutely sure you want to proceed?')) {
+                    e.preventDefault();
+                    return false;
+                }
             }
-        }
-    });
+        });
+    }
 </script>
 {% endblock %}

@@ -43,6 +43,9 @@ logger = logging.getLogger(__name__)
 # Backup format version for compatibility checking
 BACKUP_VERSION = "1.0"
 
+# Files to exclude from backup
+EXCLUDED_FILES = {".gitkeep", ".DS_Store", "Thumbs.db", ".gitignore"}
+
 
 def serialize_model(obj: Any) -> dict[str, Any]:
     """
@@ -158,7 +161,7 @@ def create_backup(output_file: str, include_uploads: bool = True) -> Path:
                 if upload_folder.exists():
                     logger.info("Including uploaded files in backup...")
                     for file_path in upload_folder.rglob("*"):
-                        if file_path.is_file() and file_path.name != ".gitkeep":
+                        if file_path.is_file() and file_path.name not in EXCLUDED_FILES:
                             # Store with relative path from uploads folder
                             arcname = str(file_path.relative_to(upload_folder.parent))
                             zipf.write(file_path, arcname)
@@ -318,7 +321,12 @@ def _restore_database_tables(tables_data: dict[str, list[dict[str, Any]]]) -> No
             try:
                 # Convert datetime strings back to datetime objects
                 for key, value in record_data.items():
-                    if isinstance(value, str) and "T" in value:
+                    # Only try to parse datetime-like column names with ISO format strings
+                    if (
+                        isinstance(value, str)
+                        and ("_at" in key or "date" in key.lower())
+                        and "T" in value
+                    ):
                         # Try to parse as datetime
                         with contextlib.suppress(ValueError):
                             record_data[key] = datetime.fromisoformat(value)

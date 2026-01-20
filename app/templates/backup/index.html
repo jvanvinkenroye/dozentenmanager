@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Backup Management - Dozentenmanager{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">
+            <span class="icon-text">
+                <span class="icon"><i class="fas fa-save"></i></span>
+                <span>Backup Management</span>
+            </span>
+        </h1>
+
+        <div class="columns">
+            <!-- Create Backup Card -->
+            <div class="column is-half">
+                <div class="box">
+                    <h2 class="title is-4">
+                        <span class="icon-text">
+                            <span class="icon has-text-success"><i class="fas fa-download"></i></span>
+                            <span>Create Backup</span>
+                        </span>
+                    </h2>
+                    <p class="content">
+                        Create a backup of all your data including database records and uploaded files.
+                        The backup will be downloaded as a ZIP file that can be restored later.
+                    </p>
+
+                    <form method="POST" action="{{ url_for('backup.create') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="field">
+                            <label class="checkbox">
+                                <input type="checkbox" name="include_uploads" checked>
+                                Include uploaded files (documents, submissions)
+                            </label>
+                            <p class="help">
+                                Uncheck to create a database-only backup (smaller file size)
+                            </p>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button type="submit" class="button is-success is-fullwidth">
+                                    <span class="icon"><i class="fas fa-download"></i></span>
+                                    <span>Create & Download Backup</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Restore Backup Card -->
+            <div class="column is-half">
+                <div class="box">
+                    <h2 class="title is-4">
+                        <span class="icon-text">
+                            <span class="icon has-text-warning"><i class="fas fa-upload"></i></span>
+                            <span>Restore Backup</span>
+                        </span>
+                    </h2>
+                    <p class="content">
+                        Restore data from a previously created backup file.
+                        This will add the backup data to your current database.
+                    </p>
+
+                    <form method="POST" action="{{ url_for('backup.restore') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="field">
+                            <label class="label">Backup File</label>
+                            <div class="control">
+                                <div class="file has-name is-fullwidth">
+                                    <label class="file-label">
+                                        <input class="file-input" type="file" name="backup_file" accept=".zip" required>
+                                        <span class="file-cta">
+                                            <span class="file-icon">
+                                                <i class="fas fa-upload"></i>
+                                            </span>
+                                            <span class="file-label">
+                                                Choose a file...
+                                            </span>
+                                        </span>
+                                        <span class="file-name" id="fileName">
+                                            No file selected
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="help">Select a backup ZIP file to restore</p>
+                        </div>
+
+                        <div class="field">
+                            <label class="checkbox">
+                                <input type="checkbox" name="clear_existing" id="clearExisting">
+                                Clear existing data before restoring
+                            </label>
+                            <p class="help has-text-danger">
+                                ⚠️ Warning: This will delete all current data!
+                            </p>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button type="submit" class="button is-warning is-fullwidth" id="restoreButton" disabled>
+                                    <span class="icon"><i class="fas fa-upload"></i></span>
+                                    <span>Restore Backup</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Box -->
+        <div class="box has-background-info-light">
+            <article class="message is-info">
+                <div class="message-header">
+                    <p>
+                        <span class="icon"><i class="fas fa-info-circle"></i></span>
+                        Important Information
+                    </p>
+                </div>
+                <div class="message-body">
+                    <div class="content">
+                        <h4>About Backups</h4>
+                        <ul>
+                            <li><strong>What's included:</strong> Database records (universities, courses, students, enrollments, exams, grades) and optionally uploaded files</li>
+                            <li><strong>File format:</strong> ZIP archive containing JSON data and files</li>
+                            <li><strong>Compatibility:</strong> Backups can be restored on any Dozentenmanager instance with the same version</li>
+                        </ul>
+
+                        <h4>Best Practices</h4>
+                        <ul>
+                            <li>Create regular backups before making major changes</li>
+                            <li>Store backup files in a safe location outside the application</li>
+                            <li>Test your backups by restoring them on a test instance</li>
+                            <li>Be careful with the "clear existing data" option - it cannot be undone!</li>
+                        </ul>
+
+                        <h4>Restore Behavior</h4>
+                        <ul>
+                            <li><strong>Without "clear existing":</strong> Backup data is added to current data (may cause duplicates)</li>
+                            <li><strong>With "clear existing":</strong> All current data is deleted first, then backup is restored</li>
+                        </ul>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+
+<script>
+    // Update file name display when file is selected
+    document.querySelector('.file-input').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name || 'No file selected';
+        document.getElementById('fileName').textContent = fileName;
+        
+        // Enable restore button when file is selected
+        document.getElementById('restoreButton').disabled = !e.target.files[0];
+    });
+
+    // Confirm before restoring with clear existing
+    document.querySelector('form[action*="restore"]').addEventListener('submit', function(e) {
+        const clearExisting = document.getElementById('clearExisting').checked;
+        
+        if (clearExisting) {
+            if (!confirm('⚠️ WARNING: This will delete ALL existing data!\n\nAre you absolutely sure you want to proceed?')) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+</script>
+{% endblock %}

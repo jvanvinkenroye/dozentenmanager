@@ -132,6 +132,7 @@ def register_blueprints(app: Flask) -> None:
         app: Flask application instance
     """
     # Import blueprints here to avoid circular imports
+    from app.routes.backup import bp as backup_bp
     from app.routes.course import bp as course_bp
     from app.routes.document import bp as document_bp
     from app.routes.enrollment import bp as enrollment_bp
@@ -141,6 +142,7 @@ def register_blueprints(app: Flask) -> None:
     from app.routes.university import bp as university_bp
 
     # Register blueprints
+    app.register_blueprint(backup_bp)
     app.register_blueprint(course_bp)
     app.register_blueprint(document_bp)
     app.register_blueprint(enrollment_bp)

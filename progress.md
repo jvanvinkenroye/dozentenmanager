@@ -1,6 +1,6 @@
 # Dozentenmanager - Development Progress
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-01-24
 
 ## Current Status
 
@@ -43,7 +43,7 @@ Continued improving test coverage for route files, focusing on grade and documen
 | ExamService | 76.58% | ✅ Good |
 | StudentService | 75.50% | ✅ Good |
 | UniversityService | 81.90% | ✅ Excellent |
-| GradeService | 38.61% | ❌ Low |
+| GradeService | 68.95% | ✅ Good |
 | DocumentService | 14.00% | ❌ Very Low |
 
 ### Model Coverage
@@ -65,6 +65,22 @@ Continued improving test coverage for route files, focusing on grade and documen
 All forms: **86-100% coverage** ✅
 
 ## Tests Added This Session
+
+### Grade Service Unit Tests (11 tests)
+
+**File:** `tests/unit/test_grade_service.py`
+
+1. **test_add_grade_success**
+2. **test_add_grade_validation**
+3. **test_add_grade_duplicate**
+4. **test_add_exam_component_and_grade**
+5. **test_update_grade**
+6. **test_delete_grade**
+7. **test_list_grades**
+8. **test_calculate_weighted_average**
+9. **test_get_exam_statistics**
+10. **test_add_exam_component_validation**
+11. **test_create_default_grading_scale**
 
 ### Grade Route Tests (5 tests)
 
@@ -141,9 +157,9 @@ All pre-commit hooks passing:
 
 ## Test Results
 
-**Total Tests:** 308 passing, 2 skipped
+**Total Tests:** 319 passing, 2 skipped
 - All integration tests pass
-- Unit tests pass
+- Unit tests for GradeService pass
 - 2 tests skipped due to template URL building issues (documented)
 
 ## Remaining Coverage Gaps

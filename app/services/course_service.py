@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.course import Course, generate_slug, validate_semester
 from app.models.university import University
+from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
 
 # Configure logging
@@ -96,6 +97,19 @@ class CourseService(BaseService):
             )
             self.add(course)
             self.commit()
+
+            # Log creation
+            AuditService.log(
+                action="create",
+                target_type="Course",
+                target_id=course.id,
+                details={
+                    "name": course.name,
+                    "semester": course.semester,
+                    "university_id": course.university_id,
+                    "slug": course.slug,
+                },
+            )
 
             logger.info(
                 f"Successfully added course: {course.name} ({course.semester}) "
@@ -206,6 +220,9 @@ class CourseService(BaseService):
             if not course:
                 raise ValueError(f"Course with ID {course_id} not found")
 
+            # Track changes
+            changes = {}
+
             # Update fields if provided
             if name is not None:
                 name = name.strip()
@@ -213,10 +230,15 @@ class CourseService(BaseService):
                     raise ValueError("Course name cannot be empty")
                 if len(name) > 255:
                     raise ValueError("Course name cannot exceed 255 characters")
-                course.name = name
+                if course.name != name:
+                    changes["name"] = {"old": course.name, "new": name}
+                    course.name = name
                 # Auto-regenerate slug unless explicitly provided
                 if slug is None:
-                    course.slug = generate_slug(name)
+                    new_slug = generate_slug(name)
+                    if course.slug != new_slug:
+                        changes["slug"] = {"old": course.slug, "new": new_slug}
+                        course.slug = new_slug
 
             if semester is not None:
                 semester = semester.strip()
@@ -225,13 +247,20 @@ class CourseService(BaseService):
                         f"Invalid semester format: {semester}. "
                         "Semester must be in format YYYY_SoSe or YYYY_WiSe"
                     )
-                course.semester = semester
+                if course.semester != semester:
+                    changes["semester"] = {"old": course.semester, "new": semester}
+                    course.semester = semester
 
             if university_id is not None:
                 university = self.query(University).filter_by(id=university_id).first()
                 if not university:
                     raise ValueError(f"University with ID {university_id} not found")
-                course.university_id = university_id
+                if course.university_id != university_id:
+                    changes["university_id"] = {
+                        "old": course.university_id,
+                        "new": university_id,
+                    }
+                    course.university_id = university_id
 
             if slug is not None:
                 slug = slug.strip()
@@ -241,10 +270,20 @@ class CourseService(BaseService):
                     raise ValueError(
                         "Slug can only contain lowercase letters, numbers, and hyphens"
                     )
-                course.slug = slug
+                if course.slug != slug:
+                    changes["slug"] = {"old": course.slug, "new": slug}
+                    course.slug = slug
 
-            self.commit()
-            logger.info(f"Successfully updated course: {course}")
+            if changes:
+                self.commit()
+                # Log update
+                AuditService.log(
+                    action="update",
+                    target_type="Course",
+                    target_id=course.id,
+                    details=changes,
+                )
+                logger.info(f"Successfully updated course: {course}")
             return course
 
         except IntegrityError as e:
@@ -282,8 +321,20 @@ class CourseService(BaseService):
             if not course:
                 raise ValueError(f"Course with ID {course_id} not found")
 
+            course_name = course.name
+            course_id_val = course.id
+
             self.delete(course)
             self.commit()
+
+            # Log deletion
+            AuditService.log(
+                action="delete",
+                target_type="Course",
+                target_id=course_id_val,
+                details={"name": course_name},
+            )
+
             logger.info(f"Successfully deleted course: {course}")
             return True
 

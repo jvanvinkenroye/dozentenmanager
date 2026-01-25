@@ -5,11 +5,13 @@ This module provides common test fixtures for unit and integration tests.
 """
 
 import pytest
+from flask_login import login_user
 
 from app import (
     create_app,
     db as _db,
 )
+from app.models.user import User
 
 
 @pytest.fixture(scope="function")
@@ -73,3 +75,26 @@ def db(app):
         Flask-SQLAlchemy database instance
     """
     return _db
+
+
+@pytest.fixture(scope="function")
+def test_user(db):
+    """Create a test user."""
+    user = User(username="testuser", email="test@example.com", role="admin")
+    user.set_password("password")
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture(scope="function")
+def auth_client(client, test_user):
+    """
+    Return a client that is logged in as the test user.
+    """
+    client.post(
+        "/auth/login",
+        data={"username": "testuser", "password": "password"},
+        follow_redirects=True,
+    )
+    return client

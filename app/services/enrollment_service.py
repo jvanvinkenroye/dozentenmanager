@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.models.course import Course
 from app.models.enrollment import VALID_STATUSES, Enrollment, validate_status
 from app.models.student import Student
+from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
 
 # Configure logging
@@ -69,6 +70,19 @@ class EnrollmentService(BaseService):
 
             self.add(enrollment)
             self.commit()
+
+            # Log enrollment
+            AuditService.log(
+                action="enroll",
+                target_type="Enrollment",
+                target_id=enrollment.id,
+                details={
+                    "student_id": student.id,
+                    "student_number": student.student_id,
+                    "course_id": course.id,
+                    "course_name": course.name,
+                },
+            )
 
             logger.info(
                 f"Successfully enrolled {student.first_name} {student.last_name} "
@@ -215,9 +229,25 @@ class EnrollmentService(BaseService):
             # Get information before deleting
             course_name = enrollment.course.name
             student_name = f"{student.first_name} {student.last_name}"
+            enrollment_id = enrollment.id
+            course_id_val = enrollment.course_id
+            student_db_id = student.id
 
             self.delete(enrollment)
             self.commit()
+
+            # Log unenrollment
+            AuditService.log(
+                action="unenroll",
+                target_type="Enrollment",
+                target_id=enrollment_id,
+                details={
+                    "student_id": student_db_id,
+                    "student_number": student_id_str,
+                    "course_id": course_id_val,
+                    "course_name": course_name,
+                },
+            )
 
             logger.info(
                 f"Successfully removed enrollment for {student_name} from course {course_name}"
@@ -285,6 +315,19 @@ class EnrollmentService(BaseService):
                 enrollment.unenrollment_date = date.today()
 
             self.commit()
+
+            # Log status update
+            AuditService.log(
+                action="update_status",
+                target_type="Enrollment",
+                target_id=enrollment.id,
+                details={
+                    "student_number": student_id_str,
+                    "course_id": course_id,
+                    "old_status": old_status,
+                    "new_status": status,
+                },
+            )
 
             logger.info(
                 f"Updated enrollment status from '{old_status}' to '{status}' for "

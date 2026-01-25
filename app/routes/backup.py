@@ -8,7 +8,9 @@ import logging
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
+from flask_login import login_required
 from flask import (
     Blueprint,
     flash,
@@ -20,6 +22,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
+from app.utils.auth import admin_required
 from cli.backup_cli import create_backup, restore_backup
 
 # Configure logging
@@ -30,6 +33,8 @@ bp = Blueprint("backup", __name__, url_prefix="/backup")
 
 
 @bp.route("/")
+@login_required
+@admin_required
 def index() -> str:
     """
     Show backup management page.
@@ -41,7 +46,9 @@ def index() -> str:
 
 
 @bp.route("/create", methods=["POST"])
-def create() -> tuple[str, int] | str:
+@login_required
+@admin_required
+def create() -> Any:
     """
     Create a new backup and download it.
 
@@ -70,7 +77,7 @@ def create() -> tuple[str, int] | str:
             logger.info(f"Backup created successfully: {backup_path}")
 
             # Send file for download
-            return send_file(
+            return send_file(  # type: ignore[call-arg]
                 backup_path,
                 as_attachment=True,
                 download_name=backup_path.name,
@@ -84,7 +91,9 @@ def create() -> tuple[str, int] | str:
 
 
 @bp.route("/restore", methods=["POST"])
-def restore() -> str:
+@login_required
+@admin_required
+def restore() -> Any:
     """
     Restore data from an uploaded backup file.
 

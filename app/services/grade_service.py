@@ -23,6 +23,7 @@ from app.models.grade import (
     percentage_to_german_grade,
     validate_points,
 )
+from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
 
 # Configure logging
@@ -123,6 +124,21 @@ class GradeService(BaseService):
             self.add(grade)
             self.commit()
 
+            # Log creation
+            AuditService.log(
+                action="create",
+                target_type="Grade",
+                target_id=grade.id,
+                details={
+                    "enrollment_id": grade.enrollment_id,
+                    "exam_id": grade.exam_id,
+                    "component_id": grade.component_id,
+                    "points": grade.points,
+                    "grade_value": grade.grade_value,
+                    "is_final": grade.is_final,
+                },
+            )
+
             logger.info(
                 f"Grade added: {grade.points}/{max_points} = {grade.percentage}% "
                 f"({grade.grade_value} - {grade.grade_label})"
@@ -168,6 +184,9 @@ class GradeService(BaseService):
             raise ValueError(f"Grade with ID {grade_id} not found")
 
         try:
+            # Track changes
+            changes = {}
+
             if points is not None:
                 # Get max points
                 if grade.component_id:
@@ -184,23 +203,37 @@ class GradeService(BaseService):
                 if not validate_points(points, max_points):
                     raise ValueError(f"Points must be between 0 and {max_points}")
 
-                grade.points = points
-                grade.percentage = calculate_percentage(points, max_points)
-                grade.grade_value, grade.grade_label = percentage_to_german_grade(
-                    grade.percentage
-                )
+                if grade.points != points:
+                    changes["points"] = {"old": grade.points, "new": points}
+                    grade.points = points
+                    grade.percentage = calculate_percentage(points, max_points)
+                    old_value = grade.grade_value
+                    grade.grade_value, grade.grade_label = percentage_to_german_grade(
+                        grade.percentage
+                    )
+                    changes["grade_value"] = {"old": old_value, "new": grade.grade_value}
 
-            if is_final is not None:
+            if is_final is not None and grade.is_final != is_final:
+                changes["is_final"] = {"old": grade.is_final, "new": is_final}
                 grade.is_final = is_final
 
-            if notes is not None:
+            if notes is not None and grade.notes != notes:
+                changes["notes"] = {"old": grade.notes, "new": notes}
                 grade.notes = notes
 
-            if graded_by is not None:
+            if graded_by is not None and grade.graded_by != graded_by:
+                changes["graded_by"] = {"old": grade.graded_by, "new": graded_by}
                 grade.graded_by = graded_by
 
-            self.commit()
-            logger.info(f"Grade {grade_id} updated successfully")
+            if changes:
+                self.commit()
+                AuditService.log(
+                    action="update",
+                    target_type="Grade",
+                    target_id=grade.id,
+                    details=changes,
+                )
+                logger.info(f"Grade {grade_id} updated successfully")
             return grade
 
         except ValueError:
@@ -230,8 +263,24 @@ class GradeService(BaseService):
             raise ValueError(f"Grade with ID {grade_id} not found")
 
         try:
+            grade_id_val = grade.id
+            enrollment_id = grade.enrollment_id
+            exam_id = grade.exam_id
+            
             self.delete(grade)
             self.commit()
+
+            # Log deletion
+            AuditService.log(
+                action="delete",
+                target_type="Grade",
+                target_id=grade_id_val,
+                details={
+                    "enrollment_id": enrollment_id,
+                    "exam_id": exam_id,
+                },
+            )
+
             logger.info(f"Grade {grade_id} deleted")
             return True
 
@@ -520,6 +569,19 @@ class GradeService(BaseService):
             )
             self.add(component)
             self.commit()
+
+            # Log creation
+            AuditService.log(
+                action="create",
+                target_type="ExamComponent",
+                target_id=component.id,
+                details={
+                    "exam_id": component.exam_id,
+                    "name": component.name,
+                    "weight": component.weight,
+                    "max_points": component.max_points,
+                },
+            )
 
             logger.info(f"Added component '{name}' to exam {exam_id}")
             return component

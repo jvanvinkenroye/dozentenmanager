@@ -10,6 +10,7 @@ import logging
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.student import Student, validate_email, validate_student_id
+from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
 
 # Configure logging
@@ -104,16 +105,31 @@ class StudentService(BaseService):
             self.add(student)
             self.commit()
 
+            # Log creation
+            AuditService.log(
+                action="create",
+                target_type="Student",
+                target_id=student.id,
+                details={
+                    "first_name": student.first_name,
+                    "last_name": student.last_name,
+                    "student_id": student.student_id,
+                    "email": student.email,
+                    "program": student.program,
+                },
+            )
+
             logger.info(f"Successfully created student: {student}")
             return student
 
         except IntegrityError as e:
             self.rollback()
-            if "student_id" in str(e):
+            error_str = str(e).lower()
+            if "student.student_id" in error_str:
                 raise ValueError(
                     f"Student mit Matrikelnummer '{student_id}' existiert bereits"
                 ) from e
-            if "email" in str(e):
+            if "student.email" in error_str:
                 raise ValueError(
                     f"Student mit E-Mail-Adresse '{email}' existiert bereits"
                 ) from e
@@ -264,6 +280,9 @@ class StudentService(BaseService):
                 logger.warning(f"Student with ID {student_id} not found")
                 return None
 
+            # Keep track of changes for audit log
+            changes = {}
+
             # Update fields if provided
             if first_name is not None:
                 first_name = first_name.strip()
@@ -271,7 +290,9 @@ class StudentService(BaseService):
                     raise ValueError("First name cannot be empty")
                 if len(first_name) > 100:
                     raise ValueError("First name cannot exceed 100 characters")
-                student.first_name = first_name
+                if student.first_name != first_name:
+                    changes["first_name"] = {"old": student.first_name, "new": first_name}
+                    student.first_name = first_name
 
             if last_name is not None:
                 last_name = last_name.strip()
@@ -279,7 +300,9 @@ class StudentService(BaseService):
                     raise ValueError("Last name cannot be empty")
                 if len(last_name) > 100:
                     raise ValueError("Last name cannot exceed 100 characters")
-                student.last_name = last_name
+                if student.last_name != last_name:
+                    changes["last_name"] = {"old": student.last_name, "new": last_name}
+                    student.last_name = last_name
 
             if student_number is not None:
                 student_number = student_number.strip()
@@ -290,7 +313,12 @@ class StudentService(BaseService):
                         f"Ungültiges Matrikelnummer-Format: {student_number}. "
                         "Die Matrikelnummer muss genau 8 Ziffern haben."
                     )
-                student.student_id = student_number
+                if student.student_id != student_number:
+                    changes["student_id"] = {
+                        "old": student.student_id,
+                        "new": student_number,
+                    }
+                    student.student_id = student_number
 
             if email is not None:
                 email = email.strip().lower()
@@ -298,7 +326,9 @@ class StudentService(BaseService):
                     raise ValueError(f"Invalid email format: {email}")
                 if len(email) > 255:
                     raise ValueError("Email cannot exceed 255 characters")
-                student.email = email
+                if student.email != email:
+                    changes["email"] = {"old": student.email, "new": email}
+                    student.email = email
 
             if program is not None:
                 program = program.strip()
@@ -306,19 +336,29 @@ class StudentService(BaseService):
                     raise ValueError("Program cannot be empty")
                 if len(program) > 200:
                     raise ValueError("Program cannot exceed 200 characters")
-                student.program = program
+                if student.program != program:
+                    changes["program"] = {"old": student.program, "new": program}
+                    student.program = program
 
-            self.commit()
-            logger.info(f"Successfully updated student: {student}")
+            if changes:
+                self.commit()
+                AuditService.log(
+                    action="update",
+                    target_type="Student",
+                    target_id=student.id,
+                    details=changes,
+                )
+                logger.info(f"Successfully updated student: {student}")
             return student
 
         except IntegrityError as e:
             self.rollback()
-            if "student_id" in str(e):
+            error_str = str(e).lower()
+            if "student.student_id" in error_str:
                 raise ValueError(
                     f"Student mit Matrikelnummer '{student_number}' existiert bereits"
                 ) from e
-            if "email" in str(e):
+            if "student.email" in error_str:
                 raise ValueError(
                     f"Student mit E-Mail-Adresse '{email}' existiert bereits"
                 ) from e
@@ -353,6 +393,18 @@ class StudentService(BaseService):
 
             student.soft_delete()
             self.commit()
+
+            # Log deletion
+            AuditService.log(
+                action="delete",
+                target_type="Student",
+                target_id=student.id,
+                details={
+                    "name": f"{student.first_name} {student.last_name}",
+                    "student_id": student.student_id,
+                },
+            )
+
             logger.info(f"Successfully deleted student: {student}")
             return True
 

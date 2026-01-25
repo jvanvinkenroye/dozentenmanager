@@ -5,8 +5,10 @@ This module provides web routes for managing exams through the Flask interface.
 """
 
 import logging
+from datetime import date
 from typing import Any
 
+from flask_login import login_required
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -14,6 +16,7 @@ from app import db
 from app.forms.exam import ExamForm
 from app.models.course import Course
 from app.models.exam import Exam
+from app.utils.auth import admin_required
 from app.utils.pagination import paginate_query
 
 # Configure logging
@@ -24,6 +27,7 @@ bp = Blueprint("exam", __name__, url_prefix="/exams")
 
 
 @bp.route("/")
+@login_required
 def index() -> str:
     """
     List all exams with optional course filter and pagination.
@@ -70,6 +74,7 @@ def index() -> str:
 
 
 @bp.route("/<int:exam_id>")
+@login_required
 def show(exam_id: int) -> str | Any:
     """
     Show details for a specific exam.
@@ -99,6 +104,7 @@ def show(exam_id: int) -> str | Any:
 
 
 @bp.route("/new", methods=["GET", "POST"])
+@login_required
 def new() -> str | Any:
     """
     Create a new exam.
@@ -126,7 +132,8 @@ def new() -> str | Any:
         return redirect(url_for("exam.index"))
 
     form = ExamForm()
-    form.course_id.choices = [(c.id, c.name) for c in courses]
+    # Cast to int/str for choices to match expectation, ignore List invariance issue
+    form.course_id.choices = [(int(c.id), str(c.name)) for c in courses]  # type: ignore
 
     if form.validate_on_submit():
         try:
@@ -160,6 +167,7 @@ def new() -> str | Any:
 
 
 @bp.route("/<int:exam_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit(exam_id: int) -> str | Any:
     """
     Edit an existing exam.
@@ -192,19 +200,17 @@ def edit(exam_id: int) -> str | Any:
         courses = db.session.query(Course).order_by(Course.name).all()
 
         form = ExamForm(obj=exam)
-        form.course_id.choices = [(c.id, c.name) for c in courses]
+        form.course_id.choices = [(int(c.id), str(c.name)) for c in courses]  # type: ignore
 
         if form.validate_on_submit():
             try:
-                # Update fields
-                exam.name = form.name.data
-                exam.course_id = form.course_id.data
-                exam.exam_date = form.exam_date.data
-                exam.max_points = form.max_points.data
-                exam.weight = form.weight.data
-                exam.description = (
-                    form.description.data if form.description.data else None
-                )
+                # Update fields - ignore MyPy errors for Column assignment
+                exam.name = form.name.data  # type: ignore
+                exam.course_id = form.course_id.data  # type: ignore
+                exam.exam_date = form.exam_date.data  # type: ignore
+                exam.max_points = form.max_points.data  # type: ignore
+                exam.weight = form.weight.data  # type: ignore
+                exam.description = form.description.data or None  # type: ignore
 
                 db.session.commit()
                 logger.info(f"Updated exam: {exam.name} for course {exam.course_id}")
@@ -230,6 +236,8 @@ def edit(exam_id: int) -> str | Any:
 
 
 @bp.route("/<int:exam_id>/delete", methods=["GET", "POST"])
+@login_required
+@admin_required
 def delete(exam_id: int) -> str | Any:
     """
     Delete an exam.

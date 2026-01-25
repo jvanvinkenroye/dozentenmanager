@@ -10,8 +10,9 @@ import mimetypes
 import os
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
+from flask_login import login_required
 from flask import (
     Blueprint,
     current_app,
@@ -36,13 +37,13 @@ from app.models.course import Course
 from app.models.document import (
     Document,
     allowed_file,
-    get_file_extension,
-    sanitize_filename,
 )
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
 from app.models.student import Student
 from app.models.submission import Submission
+from app.services.document_service import DocumentService
+from app.utils.auth import admin_required, lecturer_required
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -51,46 +52,8 @@ logger = logging.getLogger(__name__)
 bp = Blueprint("document", __name__, url_prefix="/documents")
 
 
-def get_upload_path(enrollment: Enrollment, filename: str) -> str:
-    """
-    Generate organized upload path for a document.
-
-    Path structure: uploads/{university_slug}/{semester}/{course_slug}/{StudentName}/
-
-    Args:
-        enrollment: Enrollment object containing course and student info
-        filename: Sanitized filename
-
-    Returns:
-        Full file path for storage
-    """
-    course = enrollment.course
-    student = enrollment.student
-    university = course.university
-
-    # Create path components
-    base_path = current_app.config.get("UPLOAD_FOLDER", "uploads")
-    university_slug = university.slug
-    semester = course.semester
-    course_slug = course.slug
-    student_folder = f"{student.last_name}{student.first_name}"
-
-    # Build path
-    path = Path(base_path) / university_slug / semester / course_slug / student_folder
-    path.mkdir(parents=True, exist_ok=True)
-
-    # Generate unique filename if file already exists
-    final_path = path / filename
-    counter = 1
-    while final_path.exists():
-        name, ext = os.path.splitext(filename)
-        final_path = path / f"{name}_{counter}{ext}"
-        counter += 1
-
-    return str(final_path)
-
-
 @bp.route("/")
+@login_required
 def index() -> str:
     """
     List all documents with search and filter capabilities.
@@ -105,39 +68,24 @@ def index() -> str:
         Rendered template with list of documents
     """
     form = DocumentSearchForm(request.args)
+    service = DocumentService()
 
     try:
-        # Build query
-        query = (
-            db.session.query(Document)
-            .join(Submission)
-            .join(Enrollment)
-            .join(Student)
-            .join(Course)
-            .filter(Student.deleted_at.is_(None))
-        )
-
-        # Apply filters
+        # Get filter parameters
         course_id = request.args.get("course_id", type=int)
         student_id = request.args.get("student_id", type=int)
         file_type = request.args.get("file_type", "").strip()
         status = request.args.get("status", "").strip()
 
-        if course_id:
-            query = query.filter(Course.id == course_id)
+        # Get documents using service
+        documents = service.list_documents(
+            course_id=course_id,
+            student_id=student_id,
+            file_type=file_type,
+            status=status,
+        )
 
-        if student_id:
-            query = query.filter(Student.id == student_id)
-
-        if file_type:
-            query = query.filter(Document.file_type == file_type.lower())
-
-        if status:
-            query = query.filter(Submission.status == status)
-
-        documents = query.order_by(Document.upload_date.desc()).all()
-
-        # Get filter options
+        # Get filter options (still need direct queries for dropdowns efficiently)
         courses = db.session.query(Course).order_by(Course.name).all()
         students = (
             db.session.query(Student)
@@ -148,11 +96,11 @@ def index() -> str:
 
         # Populate form choices
         form.course_id.choices = [("", "-- Alle Kurse --")] + [
-            (c.id, c.name) for c in courses
-        ]
+            (str(c.id), str(c.name)) for c in courses
+        ]  # type: ignore
         form.student_id.choices = [("", "-- Alle Studierende --")] + [
-            (s.id, f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
-        ]
+            (str(s.id), f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
+        ]  # type: ignore
 
         return render_template(
             "document/list.html",
@@ -175,6 +123,7 @@ def index() -> str:
 
 
 @bp.route("/<int:document_id>")
+@login_required
 def show(document_id: int) -> str | Any:
     """
     Show details for a specific document.
@@ -185,19 +134,19 @@ def show(document_id: int) -> str | Any:
     Returns:
         Rendered template with document details or redirect
     """
+    service = DocumentService()
     try:
-        document = db.session.query(Document).filter_by(id=document_id).first()
-
-        if not document:
-            flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
-            return redirect(url_for("document.index"))
-
+        document = service.get_document(document_id)
         form = SubmissionStatusForm(obj=document.submission)
         return render_template(
             "document/detail.html",
             document=document,
             form=form,
         )
+
+    except ValueError:
+        flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
+        return redirect(url_for("document.index"))
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching document: {e}")
@@ -206,6 +155,7 @@ def show(document_id: int) -> str | Any:
 
 
 @bp.route("/<int:document_id>/download")
+@login_required
 def download(document_id: int) -> Any:
     """
     Download a document.
@@ -216,24 +166,25 @@ def download(document_id: int) -> Any:
     Returns:
         File download response or redirect on error
     """
+    service = DocumentService()
     try:
-        document = db.session.query(Document).filter_by(id=document_id).first()
-
-        if not document:
-            flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
-            return redirect(url_for("document.index"))
-
+        document = service.get_document(document_id)
+        
         file_path = Path(document.file_path)
         if not file_path.exists():
             flash("Datei nicht gefunden auf dem Server.", "error")
             return redirect(url_for("document.show", document_id=document_id))
 
-        return send_file(
+        return send_file(  # type: ignore[call-arg]
             file_path,
             as_attachment=True,
             download_name=document.original_filename,
             mimetype=document.mime_type,
         )
+
+    except ValueError:
+        flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
+        return redirect(url_for("document.index"))
 
     except Exception as e:
         logger.error(f"Error while downloading document: {e}")
@@ -242,6 +193,7 @@ def download(document_id: int) -> Any:
 
 
 @bp.route("/upload", methods=["GET", "POST"])
+@lecturer_required
 def upload() -> str | Any:
     """
     Upload a new document.
@@ -252,6 +204,7 @@ def upload() -> str | Any:
     Returns:
         Rendered form template (GET) or redirect (POST)
     """
+    service = DocumentService()
     try:
         # Get available enrollments and exams for form choices
         enrollments = (
@@ -274,69 +227,38 @@ def upload() -> str | Any:
             for e in enrollments
         ]
         form.exam_id.choices = [("", "-- Keine Prüfung --")] + [
-            (ex.id, f"{ex.name} ({ex.course.name})") for ex in exams
-        ]
+            (str(ex.id), f"{ex.name} ({ex.course.name})") for ex in exams
+        ]  # type: ignore
 
         if form.validate_on_submit():
             file = form.file.data
             original_filename = secure_filename(file.filename)
+            
+            # Save uploaded file temporarily
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                file.save(tmp.name)
+                tmp_path = tmp.name
 
-            if not allowed_file(original_filename):
-                flash("Dateityp nicht erlaubt.", "error")
-                return render_template("document/upload.html", form=form)
+            try:
+                document = service.upload_document(
+                    file_path=tmp_path,
+                    enrollment_id=form.enrollment_id.data,
+                    submission_type=form.submission_type.data,
+                    exam_id=form.exam_id.data if form.exam_id.data else None,
+                    notes=form.notes.data if form.notes.data else None,
+                    original_filename=original_filename,
+                )
 
-            # Get enrollment
-            enrollment = (
-                db.session.query(Enrollment)
-                .filter_by(id=form.enrollment_id.data)
-                .first()
-            )
-
-            if not enrollment:
-                flash("Einschreibung nicht gefunden.", "error")
-                return render_template("document/upload.html", form=form)
-
-            # Sanitize filename and generate path
-            safe_filename = sanitize_filename(original_filename)
-            file_path = get_upload_path(enrollment, safe_filename)
-
-            # Save file
-            file.save(file_path)
-
-            # Get file info
-            file_size = os.path.getsize(file_path)
-            file_type = get_file_extension(original_filename)
-            mime_type, _ = mimetypes.guess_type(original_filename)
-
-            # Create submission
-            submission = Submission(
-                enrollment_id=form.enrollment_id.data,
-                submission_type=form.submission_type.data,
-                exam_id=form.exam_id.data if form.exam_id.data else None,
-                notes=form.notes.data if form.notes.data else None,
-                submission_date=datetime.now(UTC),
-                status="submitted",
-            )
-            db.session.add(submission)
-            db.session.flush()  # Get submission ID
-
-            # Create document record
-            document = Document(
-                submission_id=submission.id,
-                filename=safe_filename,
-                original_filename=original_filename,
-                file_path=file_path,
-                file_type=file_type,
-                file_size=file_size,
-                mime_type=mime_type,
-                upload_date=datetime.now(UTC),
-            )
-            db.session.add(document)
-            db.session.commit()
-
-            logger.info(f"Uploaded document: {original_filename} -> {file_path}")
-            flash(f"Dokument '{original_filename}' erfolgreich hochgeladen.", "success")
-            return redirect(url_for("document.show", document_id=document.id))
+                flash(f"Dokument '{document.original_filename}' erfolgreich hochgeladen.", "success")
+                return redirect(url_for("document.show", document_id=document.id))
+            
+            except ValueError as e:
+                flash(str(e), "error")
+            finally:
+                # Clean up temp file
+                with contextlib.suppress(OSError):
+                    Path(tmp_path).unlink(missing_ok=True)
 
         # Show form validation errors
         for _field, errors in form.errors.items():
@@ -346,13 +268,14 @@ def upload() -> str | Any:
         return render_template("document/upload.html", form=form)
 
     except SQLAlchemyError as e:
-        db.session.rollback()
         logger.error(f"Database error while uploading document: {e}")
         flash("Datenbankfehler beim Hochladen.", "error")
         return redirect(url_for("document.index"))
 
 
 @bp.route("/bulk-upload", methods=["GET", "POST"])
+@login_required
+@admin_required
 def bulk_upload() -> str | Any:
     """
     Upload multiple documents at once.
@@ -363,15 +286,16 @@ def bulk_upload() -> str | Any:
     Returns:
         Rendered form template (GET) or results page (POST)
     """
+    service = DocumentService()
     try:
         courses = db.session.query(Course).order_by(Course.name).all()
         exams = db.session.query(Exam).order_by(Exam.exam_date.desc()).all()
 
         form = BulkDocumentUploadForm()
-        form.course_id.choices = [(c.id, c.name) for c in courses]
+        form.course_id.choices = [(int(c.id), str(c.name)) for c in courses]
         form.exam_id.choices = [("", "-- Keine Prüfung --")] + [
-            (ex.id, f"{ex.name} ({ex.course.name})") for ex in exams
-        ]
+            (str(ex.id), f"{ex.name} ({ex.course.name})") for ex in exams
+        ]  # type: ignore
 
         if form.validate_on_submit():
             files = request.files.getlist("files")
@@ -381,6 +305,8 @@ def bulk_upload() -> str | Any:
             notes = form.notes.data
 
             results: dict[str, list] = {"success": [], "failed": [], "unmatched": []}
+
+            import tempfile
 
             for file in files:
                 if not file or not file.filename:
@@ -397,9 +323,8 @@ def bulk_upload() -> str | Any:
                     )
                     continue
 
-                # Try to match file to student based on filename
-                # Expected format: LastnameFirstname.pdf or Lastname_Firstname.pdf
-                matched_enrollment = match_file_to_enrollment(
+                # Try to match file to student using service
+                matched_enrollment = service.match_file_to_enrollment(
                     original_filename, course_id
                 )
 
@@ -407,41 +332,20 @@ def bulk_upload() -> str | Any:
                     results["unmatched"].append(original_filename)
                     continue
 
+                # Save temp file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=Path(original_filename).suffix) as tmp:
+                    file.save(tmp.name)
+                    tmp_path = tmp.name
+
                 try:
-                    # Sanitize and save file
-                    safe_filename = sanitize_filename(original_filename)
-                    file_path = get_upload_path(matched_enrollment, safe_filename)
-                    file.save(file_path)
-
-                    # Get file info
-                    file_size = os.path.getsize(file_path)
-                    file_type = get_file_extension(original_filename)
-                    mime_type, _ = mimetypes.guess_type(original_filename)
-
-                    # Create submission
-                    submission = Submission(
+                    service.upload_document(
+                        file_path=tmp_path,
                         enrollment_id=matched_enrollment.id,
                         submission_type=submission_type,
                         exam_id=exam_id,
                         notes=notes,
-                        submission_date=datetime.now(UTC),
-                        status="submitted",
-                    )
-                    db.session.add(submission)
-                    db.session.flush()
-
-                    # Create document
-                    document = Document(
-                        submission_id=submission.id,
-                        filename=safe_filename,
                         original_filename=original_filename,
-                        file_path=file_path,
-                        file_type=file_type,
-                        file_size=file_size,
-                        mime_type=mime_type,
-                        upload_date=datetime.now(UTC),
                     )
-                    db.session.add(document)
 
                     results["success"].append(
                         {
@@ -455,8 +359,10 @@ def bulk_upload() -> str | Any:
                     results["failed"].append(
                         {"filename": original_filename, "reason": str(e)}
                     )
-
-            db.session.commit()
+                finally:
+                    # Clean up temp file
+                    with contextlib.suppress(OSError):
+                        Path(tmp_path).unlink(missing_ok=True)
 
             return render_template(
                 "document/bulk_results.html",
@@ -472,62 +378,14 @@ def bulk_upload() -> str | Any:
         return render_template("document/bulk_upload.html", form=form, courses=courses)
 
     except SQLAlchemyError as e:
-        db.session.rollback()
         logger.error(f"Database error during bulk upload: {e}")
         flash("Datenbankfehler beim Hochladen.", "error")
         return redirect(url_for("document.index"))
 
 
-def match_file_to_enrollment(filename: str, course_id: int) -> Enrollment | None:
-    """
-    Try to match a filename to a student enrollment.
-
-    Attempts to extract student name from filename and match to enrollment.
-
-    Args:
-        filename: Original filename
-        course_id: Course ID to search enrollments
-
-    Returns:
-        Matching Enrollment or None if no match found
-    """
-    import re
-
-    # Remove extension
-    name_part = os.path.splitext(filename)[0]
-
-    # Try different patterns
-    # Pattern 1: LastnameFirstname (e.g., MuellerMax.pdf)
-    # Pattern 2: Lastname_Firstname (e.g., Mueller_Max.pdf)
-    # Pattern 3: Lastname-Firstname (e.g., Mueller-Max.pdf)
-
-    # Normalize separators
-    name_part = re.sub(r"[-_\s]+", "", name_part)
-
-    # Get all enrollments for the course
-    enrollments = (
-        db.session.query(Enrollment)
-        .join(Student)
-        .filter(Enrollment.course_id == course_id)
-        .filter(Enrollment.status == "active")
-        .all()
-    )
-
-    for enrollment in enrollments:
-        student = enrollment.student
-        # Create normalized student name patterns
-        pattern1 = f"{student.last_name}{student.first_name}".lower()
-        pattern2 = f"{student.first_name}{student.last_name}".lower()
-
-        name_lower = name_part.lower()
-
-        if name_lower.startswith(pattern1) or name_lower.startswith(pattern2):
-            return enrollment
-
-    return None
-
-
 @bp.route("/<int:document_id>/delete", methods=["GET", "POST"])
+@login_required
+@admin_required
 def delete(document_id: int) -> str | Any:
     """
     Delete a document.
@@ -541,10 +399,11 @@ def delete(document_id: int) -> str | Any:
     Returns:
         Rendered confirmation template (GET) or redirect (POST)
     """
+    service = DocumentService()
     try:
-        document = db.session.query(Document).filter_by(id=document_id).first()
-
-        if not document:
+        try:
+            document = service.get_document(document_id)
+        except ValueError:
             flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
             return redirect(url_for("document.index"))
 
@@ -552,23 +411,13 @@ def delete(document_id: int) -> str | Any:
             return render_template("document/delete.html", document=document)
 
         # POST: Delete document
-        file_path = document.file_path
         document_name = document.original_filename
-
-        db.session.delete(document)
-        db.session.commit()
-
-        # Delete physical file
-        try:
-            Path(file_path).unlink(missing_ok=True)
-        except OSError as e:
-            logger.warning(f"Could not delete file {file_path}: {e}")
+        service.delete_document(document_id)
 
         flash(f"Dokument '{document_name}' erfolgreich gelöscht.", "success")
         return redirect(url_for("document.index"))
 
     except SQLAlchemyError as e:
-        db.session.rollback()
         logger.error(f"Database error while deleting document: {e}")
         flash("Fehler beim Löschen des Dokuments.", "error")
         return redirect(url_for("document.show", document_id=document_id))
@@ -578,6 +427,7 @@ def delete(document_id: int) -> str | Any:
 
 
 @bp.route("/submissions")
+@login_required
 def submissions() -> str:
     """
     List all submissions.
@@ -589,19 +439,17 @@ def submissions() -> str:
     Returns:
         Rendered template with list of submissions
     """
+    service = DocumentService()
     try:
-        query = db.session.query(Submission).join(Enrollment).join(Course)
-
+        # Get filter parameters
         course_id = request.args.get("course_id", type=int)
         status = request.args.get("status", "").strip()
 
-        if course_id:
-            query = query.filter(Course.id == course_id)
-
-        if status:
-            query = query.filter(Submission.status == status)
-
-        submissions_list = query.order_by(Submission.submission_date.desc()).all()
+        # Get submissions using service
+        submissions_list = service.list_submissions(
+            course_id=course_id,
+            status=status,
+        )
 
         courses = db.session.query(Course).order_by(Course.name).all()
 
@@ -626,6 +474,7 @@ def submissions() -> str:
 
 
 @bp.route("/submissions/<int:submission_id>")
+@login_required
 def submission_detail(submission_id: int) -> str | Any:
     """
     Show details for a specific submission.
@@ -636,13 +485,9 @@ def submission_detail(submission_id: int) -> str | Any:
     Returns:
         Rendered template with submission details or redirect
     """
+    service = DocumentService()
     try:
-        submission = db.session.query(Submission).filter_by(id=submission_id).first()
-
-        if not submission:
-            flash(f"Einreichung mit ID {submission_id} nicht gefunden.", "error")
-            return redirect(url_for("document.submissions"))
-
+        submission = service.get_submission(submission_id)
         documents = submission.documents.all()
         form = SubmissionStatusForm(obj=submission)
 
@@ -653,6 +498,10 @@ def submission_detail(submission_id: int) -> str | Any:
             form=form,
         )
 
+    except ValueError:
+        flash(f"Einreichung mit ID {submission_id} nicht gefunden.", "error")
+        return redirect(url_for("document.submissions"))
+
     except SQLAlchemyError as e:
         logger.error(f"Database error while fetching submission: {e}")
         flash("Fehler beim Laden der Einreichung.", "error")
@@ -660,6 +509,7 @@ def submission_detail(submission_id: int) -> str | Any:
 
 
 @bp.route("/submissions/<int:submission_id>/update-status", methods=["POST"])
+@lecturer_required
 def update_submission_status(submission_id: int) -> Any:
     """
     Update the status of a submission.
@@ -670,20 +520,23 @@ def update_submission_status(submission_id: int) -> Any:
     Returns:
         Redirect to submission detail page
     """
+    service = DocumentService()
     try:
-        submission = db.session.query(Submission).filter_by(id=submission_id).first()
-
-        if not submission:
-            flash(f"Einreichung mit ID {submission_id} nicht gefunden.", "error")
-            return redirect(url_for("document.submissions"))
+        # We need to fetch it first to handle "not found" gracefully for redirect
+        try:
+            service.get_submission(submission_id)
+        except ValueError:
+             flash(f"Einreichung mit ID {submission_id} nicht gefunden.", "error")
+             return redirect(url_for("document.submissions"))
 
         form = SubmissionStatusForm()
 
         if form.validate_on_submit():
-            submission.status = form.status.data
-            submission.notes = form.notes.data or None
-            db.session.commit()
-
+            service.update_submission_status(
+                submission_id=submission_id,
+                status=form.status.data,
+                notes=form.notes.data or None
+            )
             flash("Status erfolgreich aktualisiert.", "success")
         else:
             for _field, errors in form.errors.items():
@@ -694,8 +547,13 @@ def update_submission_status(submission_id: int) -> Any:
             url_for("document.submission_detail", submission_id=submission_id)
         )
 
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(
+            url_for("document.submission_detail", submission_id=submission_id)
+        )
+
     except SQLAlchemyError as e:
-        db.session.rollback()
         logger.error(f"Database error while updating submission status: {e}")
         flash("Fehler beim Aktualisieren des Status.", "error")
         return redirect(
@@ -707,6 +565,8 @@ def update_submission_status(submission_id: int) -> Any:
 
 
 @bp.route("/email-import", methods=["GET", "POST"])
+@login_required
+@admin_required
 def email_import() -> str | Any:
     """
     Import documents from email files.
@@ -727,8 +587,8 @@ def email_import() -> str | Any:
 
         form = EmailImportForm()
         form.course_id.choices = [("", "-- Alle Kurse --")] + [
-            (c.id, f"{c.name} ({c.semester})") for c in courses
-        ]
+            (str(c.id), f"{c.name} ({c.semester})") for c in courses
+        ]  # type: ignore
 
         if form.validate_on_submit():
             file = form.file.data

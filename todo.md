@@ -2,80 +2,80 @@
 
 Project task tracker for the Dozentenmanager student management system.
 
-**Last Updated:** 2025-11-02
+**Last Updated:** 2026-01-24
 
 ---
 
 ## Project Setup & Initialization
 
 ### Git & Version Control
-- [ ] Initialize git repository
-- [ ] Create initial commit with documentation
-- [ ] Set up GitHub/GitLab remote repository (optional)
-- [ ] Configure branch protection rules (optional)
+- [x] Initialize git repository
+- [x] Create initial commit with documentation
+- [x] Set up GitHub/GitLab remote repository (optional)
+- [x] Configure branch protection rules (optional)
 
 ### Python Environment
-- [ ] Verify Python 3.11+ is installed
-- [ ] Create virtual environment: `uv venv --seed`
-- [ ] Activate virtual environment
-- [ ] Initialize UV project: `uv init`
+- [x] Verify Python 3.11+ is installed
+- [x] Create virtual environment: `uv venv --seed`
+- [x] Activate virtual environment
+- [x] Initialize UV project: `uv init`
 
 ### Dependencies & Configuration
-- [ ] Add core dependencies:
-  - [ ] `uv add flask`
-  - [ ] `uv add sqlalchemy`
-  - [ ] `uv add alembic`
-  - [ ] `uv add python-dotenv`
-- [ ] Add development dependencies:
-  - [ ] `uv add --dev pytest`
-  - [ ] `uv add --dev ruff`
-  - [ ] `uv add --dev mypy`
-  - [ ] `uv add --dev pre-commit`
-- [ ] Create `.env.example` file
-- [ ] Create `.env` file (local, not committed)
-- [ ] Configure `config.py` with Development/Testing/Production configs
+- [x] Add core dependencies:
+  - [x] `uv add flask`
+  - [x] `uv add sqlalchemy`
+  - [x] `uv add alembic`
+  - [x] `uv add python-dotenv`
+- [x] Add development dependencies:
+  - [x] `uv add --dev pytest`
+  - [x] `uv add --dev ruff`
+  - [x] `uv add --dev mypy`
+  - [x] `uv add --dev pre-commit`
+- [x] Create `.env.example` file
+- [x] Create `.env` file (local, not committed)
+- [x] Configure `config.py` with Development/Testing/Production configs
 
 ### Pre-commit Hooks
-- [ ] Create `.pre-commit-config.yaml`
-- [ ] Install pre-commit hooks: `pre-commit install`
-- [ ] Test pre-commit: `pre-commit run --all-files`
+- [x] Create `.pre-commit-config.yaml`
+- [x] Install pre-commit hooks: `pre-commit install`
+- [x] Test pre-commit: `pre-commit run --all-files`
 
 ### Project Structure
-- [ ] Create directory structure:
-  - [ ] `app/` (Flask application)
-  - [ ] `app/models/`
-  - [ ] `app/routes/`
-  - [ ] `app/services/`
-  - [ ] `app/utils/`
-  - [ ] `app/templates/`
-  - [ ] `app/static/css/`
-  - [ ] `app/static/js/`
-  - [ ] `app/static/images/`
-  - [ ] `cli/` (CLI tools)
-  - [ ] `tests/unit/`
-  - [ ] `tests/integration/`
-  - [ ] `tests/fixtures/`
-  - [ ] `migrations/`
-  - [ ] `logs/`
-  - [ ] `uploads/` (with .gitkeep)
+- [x] Create directory structure:
+  - [x] `app/` (Flask application)
+  - [x] `app/models/`
+  - [x] `app/routes/`
+  - [x] `app/services/`
+  - [x] `app/utils/`
+  - [x] `app/templates/`
+  - [x] `app/static/css/`
+  - [x] `app/static/js/`
+  - [x] `app/static/images/`
+  - [x] `cli/` (CLI tools)
+  - [x] `tests/unit/`
+  - [x] `tests/integration/`
+  - [x] `tests/fixtures/`
+  - [x] `migrations/`
+  - [x] `logs/`
+  - [x] `uploads/` (with .gitkeep)
 
 ### Flask Application Skeleton
-- [ ] Create `run.py` entry point
-- [ ] Create `app/__init__.py` with app factory
-- [ ] Create base configuration in `config.py`
-- [ ] Test Flask app runs: `flask run`
+- [x] Create `run.py` entry point
+- [x] Create `app/__init__.py` with app factory
+- [x] Create base configuration in `config.py`
+- [x] Test Flask app runs: `flask run`
 
 ### Database Setup
-- [ ] Initialize Alembic: `alembic init migrations`
-- [ ] Configure `alembic.ini` with database URL
-- [ ] Configure `migrations/env.py` to use models
-- [ ] Test migration: `alembic revision -m "Initial migration"`
+- [x] Initialize Alembic: `alembic init migrations`
+- [x] Configure `alembic.ini` with database URL
+- [x] Configure `migrations/env.py` to use models
+- [x] Test migration: `alembic revision -m "Initial migration"`
 
 ### Template & Static Files
-- [ ] Download Bulma CSS or set up CDN link
-- [ ] Create `templates/base.html` base template
-- [ ] Create `static/css/custom.css` for custom styles
-- [ ] Test template rendering
+- [x] Download Bulma CSS or set up CDN link
+- [x] Create `templates/base.html` base template
+- [x] Create `static/css/custom.css` for custom styles
+- [x] Test template rendering
 
 ---
 
@@ -84,239 +84,239 @@ Project task tracker for the Dozentenmanager student management system.
 ### 1.1 University Management
 
 #### CLI Implementation
-- [ ] Create `cli/university_cli.py`
-- [ ] Implement `add_university(name, slug)` function
-- [ ] Implement `list_universities()` function
-- [ ] Implement `get_university(id)` function
-- [ ] Implement `update_university(id, **kwargs)` function
-- [ ] Implement `delete_university(id)` function
-- [ ] Add argument parser with `--help`
-- [ ] Add input validation (required fields, unique slug)
-- [ ] Add logging
-- [ ] Add docstrings and type hints
+- [x] Create `cli/university_cli.py`
+- [x] Implement `add_university(name, slug)` function
+- [x] Implement `list_universities()` function
+- [x] Implement `get_university(id)` function
+- [x] Implement `update_university(id, **kwargs)` function
+- [x] Implement `delete_university(id)` function
+- [x] Add argument parser with `--help`
+- [x] Add input validation (required fields, unique slug)
+- [x] Add logging
+- [x] Add docstrings and type hints
 
 #### Database
-- [ ] Create `app/models/university.py` model
-- [ ] Add TimestampMixin for created_at/updated_at
-- [ ] Create migration: `alembic revision --autogenerate -m "Add university table"`
-- [ ] Review and edit migration file
-- [ ] Apply migration: `alembic upgrade head`
+- [x] Create `app/models/university.py` model
+- [x] Add TimestampMixin for created_at/updated_at
+- [x] Create migration: `alembic revision --autogenerate -m "Add university table"`
+- [x] Review and edit migration file
+- [x] Apply migration: `alembic upgrade head`
 
 #### Testing
-- [ ] Create `tests/unit/test_university_cli.py`
-- [ ] Test add_university function
-- [ ] Test list_universities function
-- [ ] Test update_university function
-- [ ] Test delete_university function
-- [ ] Test validation (unique slug, required name)
-- [ ] Run tests: `pytest tests/unit/test_university_cli.py`
+- [x] Create `tests/unit/test_university_cli.py`
+- [x] Test add_university function
+- [x] Test list_universities function
+- [x] Test update_university function
+- [x] Test delete_university function
+- [x] Test validation (unique slug, required name)
+- [x] Run tests: `pytest tests/unit/test_university_cli.py`
 
 #### Quality Checks & Commit
-- [ ] Run linting: `ruff check --fix .`
-- [ ] Run formatting: `ruff format .`
-- [ ] Run type checking: `mypy cli/university_cli.py`
-- [ ] Commit: `git commit -m "feat: add university management CLI"`
+- [x] Run linting: `ruff check --fix .`
+- [x] Run formatting: `ruff format .`
+- [x] Run type checking: `mypy cli/university_cli.py`
+- [x] Commit: `git commit -m "feat: add university management CLI"`
 
 #### Web Interface
-- [ ] Create `app/routes/universities.py` blueprint
-- [ ] Implement list universities route
-- [ ] Implement add university route
-- [ ] Implement edit university route
-- [ ] Implement delete university route
-- [ ] Create `templates/universities/list.html`
-- [ ] Create `templates/universities/form.html`
-- [ ] Create `templates/universities/delete_confirm.html`
+- [x] Create `app/routes/universities.py` blueprint
+- [x] Implement list universities route
+- [x] Implement add university route
+- [x] Implement edit university route
+- [x] Implement delete university route
+- [x] Create `templates/universities/list.html`
+- [x] Create `templates/universities/form.html`
+- [x] Create `templates/universities/delete_confirm.html`
 
 #### Integration Testing
-- [ ] Create `tests/integration/test_university_routes.py`
-- [ ] Test list route
-- [ ] Test add route (GET and POST)
-- [ ] Test edit route
-- [ ] Test delete route
-- [ ] Run integration tests: `pytest tests/integration/`
+- [x] Create `tests/integration/test_university_routes.py`
+- [x] Test list route
+- [x] Test add route (GET and POST)
+- [x] Test edit route
+- [x] Test delete route
+- [x] Run integration tests: `pytest tests/integration/`
 
 #### Final Commit
-- [ ] Commit: `git commit -m "feat: add university management web interface"`
+- [x] Commit: `git commit -m "feat: add university management web interface"`
 
 ---
 
 ### 1.2 Student Management
 
 #### CLI Implementation
-- [ ] Create `cli/student_cli.py`
-- [ ] Implement `add_student()` function
-- [ ] Implement `list_students()` function with search/filter
-- [ ] Implement `get_student()` function
-- [ ] Implement `update_student()` function
-- [ ] Implement `delete_student()` function
-- [ ] Add email validation function
-- [ ] Add student ID validation function
-- [ ] Add argument parser with all fields
-- [ ] Add logging
-- [ ] Add comprehensive docstrings and type hints
+- [x] Create `cli/student_cli.py`
+- [x] Implement `add_student()` function
+- [x] Implement `list_students()` function with search/filter
+- [x] Implement `get_student()` function
+- [x] Implement `update_student()` function
+- [x] Implement `delete_student()` function
+- [x] Add email validation function
+- [x] Add student ID validation function
+- [x] Add argument parser with all fields
+- [x] Add logging
+- [x] Add comprehensive docstrings and type hints
 
 #### Database
-- [ ] Create `app/models/student.py` model
-- [ ] Add unique constraints on student_id and email
-- [ ] Add indexes on student_id, email, last_name
-- [ ] Create migration: `alembic revision --autogenerate -m "Add student table"`
-- [ ] Review migration file
-- [ ] Apply migration: `alembic upgrade head`
+- [x] Create `app/models/student.py` model
+- [x] Add unique constraints on student_id and email
+- [x] Add indexes on student_id, email, last_name
+- [x] Create migration: `alembic revision --autogenerate -m "Add student table"`
+- [x] Review migration file
+- [x] Apply migration: `alembic upgrade head`
 
 #### Testing
-- [ ] Create `tests/unit/test_student_cli.py`
-- [ ] Test add_student function
-- [ ] Test list_students function
-- [ ] Test search functionality
-- [ ] Test update_student function
-- [ ] Test delete_student function
-- [ ] Test email validation
-- [ ] Test student ID validation
-- [ ] Test unique constraints
-- [ ] Run tests: `pytest tests/unit/test_student_cli.py -v`
+- [x] Create `tests/unit/test_student_cli.py`
+- [x] Test add_student function
+- [x] Test list_students function
+- [x] Test search functionality
+- [x] Test update_student function
+- [x] Test delete_student function
+- [x] Test email validation
+- [x] Test student ID validation
+- [x] Test unique constraints
+- [x] Run tests: `pytest tests/unit/test_student_cli.py -v`
 
 #### Quality Checks & Commit
-- [ ] Run linting: `ruff check --fix .`
-- [ ] Run formatting: `ruff format .`
-- [ ] Run type checking: `mypy cli/student_cli.py`
-- [ ] Run all tests: `pytest`
-- [ ] Commit: `git commit -m "feat: add student management CLI"`
+- [x] Run linting: `ruff check --fix .`
+- [x] Run formatting: `ruff format .`
+- [x] Run type checking: `mypy cli/student_cli.py`
+- [x] Run all tests: `pytest`
+- [x] Commit: `git commit -m "feat: add student management CLI"`
 
 #### Web Interface
-- [ ] Create `app/routes/students.py` blueprint
-- [ ] Implement list students route with search
-- [ ] Implement student detail route
-- [ ] Implement add student route
-- [ ] Implement edit student route
-- [ ] Implement delete student route
-- [ ] Create `templates/students/list.html` with search form
-- [ ] Create `templates/students/detail.html`
-- [ ] Create `templates/students/form.html`
-- [ ] Create `templates/students/delete_confirm.html`
-- [ ] Add pagination to list view
+- [x] Create `app/routes/students.py` blueprint
+- [x] Implement list students route with search
+- [x] Implement student detail route
+- [x] Implement add student route
+- [x] Implement edit student route
+- [x] Implement delete student route
+- [x] Create `templates/students/list.html` with search form
+- [x] Create `templates/students/detail.html`
+- [x] Create `templates/students/form.html`
+- [x] Create `templates/students/delete_confirm.html`
+- [x] Add pagination to list view
 
 #### Integration Testing
-- [ ] Create `tests/integration/test_student_routes.py`
-- [ ] Test list route
-- [ ] Test search functionality
-- [ ] Test detail route
-- [ ] Test add route
-- [ ] Test edit route
-- [ ] Test delete route
-- [ ] Test validation errors
-- [ ] Run integration tests
+- [x] Create `tests/integration/test_student_routes.py`
+- [x] Test list route
+- [x] Test search functionality
+- [x] Test detail route
+- [x] Test add route
+- [x] Test edit route
+- [x] Test delete route
+- [x] Test validation errors
+- [x] Run integration tests
 
 #### Final Commit
-- [ ] Commit: `git commit -m "feat: add student management web interface"`
+- [x] Commit: `git commit -m "feat: add student management web interface"`
 
 ---
 
 ### 1.3 Course Management
 
 #### CLI Implementation
-- [ ] Create `cli/course_cli.py`
-- [ ] Implement `add_course()` function
-- [ ] Implement `list_courses()` function with filters
-- [ ] Implement `get_course()` function
-- [ ] Implement `update_course()` function
-- [ ] Implement `delete_course()` function
-- [ ] Add semester format validation
-- [ ] Add automatic slug generation from name
-- [ ] Add logging and docstrings
+- [x] Create `cli/course_cli.py`
+- [x] Implement `add_course()` function
+- [x] Implement `list_courses()` function with filters
+- [x] Implement `get_course()` function
+- [x] Implement `update_course()` function
+- [x] Implement `delete_course()` function
+- [x] Add semester format validation
+- [x] Add automatic slug generation from name
+- [x] Add logging and docstrings
 
 #### Database
-- [ ] Create `app/models/course.py` model
-- [ ] Add foreign key to university
-- [ ] Add unique constraint: (university_id, semester, slug)
-- [ ] Add indexes on university_id, semester
-- [ ] Create migration: `alembic revision --autogenerate -m "Add course table"`
-- [ ] Apply migration: `alembic upgrade head`
+- [x] Create `app/models/course.py` model
+- [x] Add foreign key to university
+- [x] Add unique constraint: (university_id, semester, slug)
+- [x] Add indexes on university_id, semester
+- [x] Create migration: `alembic revision --autogenerate -m "Add course table"`
+- [x] Apply migration: `alembic upgrade head`
 
 #### Testing
-- [ ] Create `tests/unit/test_course_cli.py`
-- [ ] Test add_course function
-- [ ] Test list_courses with filters
-- [ ] Test semester format validation
-- [ ] Test slug generation
-- [ ] Test unique constraint
-- [ ] Run tests: `pytest tests/unit/test_course_cli.py -v`
+- [x] Create `tests/unit/test_course_cli.py`
+- [x] Test add_course function
+- [x] Test list_courses with filters
+- [x] Test semester format validation
+- [x] Test slug generation
+- [x] Test unique constraint
+- [x] Run tests: `pytest tests/unit/test_course_cli.py -v`
 
 #### Quality Checks & Commit
-- [ ] Run linting and formatting
-- [ ] Run type checking: `mypy cli/course_cli.py`
-- [ ] Run all tests
-- [ ] Commit: `git commit -m "feat: add course management CLI"`
+- [x] Run linting and formatting
+- [x] Run type checking: `mypy cli/course_cli.py`
+- [x] Run all tests
+- [x] Commit: `git commit -m "feat: add course management CLI"`
 
 #### Web Interface
-- [ ] Create `app/routes/courses.py` blueprint
-- [ ] Implement list courses route (grouped by semester)
-- [ ] Implement course detail route
-- [ ] Implement add course route
-- [ ] Implement edit course route
-- [ ] Implement delete course route
-- [ ] Create templates for courses
-- [ ] Add university selection dropdown
+- [x] Create `app/routes/courses.py` blueprint
+- [x] Implement list courses route (grouped by semester)
+- [x] Implement course detail route
+- [x] Implement add course route
+- [x] Implement edit course route
+- [x] Implement delete course route
+- [x] Create templates for courses
+- [x] Add university selection dropdown
 
 #### Integration Testing
-- [ ] Create `tests/integration/test_course_routes.py`
-- [ ] Test all routes
-- [ ] Test filtering and grouping
-- [ ] Run integration tests
+- [x] Create `tests/integration/test_course_routes.py`
+- [x] Test all routes
+- [x] Test filtering and grouping
+- [x] Run integration tests
 
 #### Final Commit
-- [ ] Commit: `git commit -m "feat: add course management web interface"`
+- [x] Commit: `git commit -m "feat: add course management web interface"`
 
 ---
 
 ### 1.4 Student Enrollment
 
 #### CLI Implementation
-- [ ] Create `cli/enrollment_cli.py`
-- [ ] Implement `enroll_student()` function
-- [ ] Implement `list_enrollments()` function
-- [ ] Implement `unenroll_student()` function
-- [ ] Implement `update_enrollment_status()` function
-- [ ] Add duplicate enrollment prevention
-- [ ] Add validation (student exists, course exists)
-- [ ] Add logging and docstrings
+- [x] Create `cli/enrollment_cli.py`
+- [x] Implement `enroll_student()` function
+- [x] Implement `list_enrollments()` function
+- [x] Implement `unenroll_student()` function
+- [x] Implement `update_enrollment_status()` function
+- [x] Add duplicate enrollment prevention
+- [x] Add validation (student exists, course exists)
+- [x] Add logging and docstrings
 
 #### Database
-- [ ] Create `app/models/enrollment.py` model
-- [ ] Add foreign keys to student and course
-- [ ] Add unique constraint: (student_id, course_id)
-- [ ] Add indexes
-- [ ] Add status enum/choices
-- [ ] Create migration: `alembic revision --autogenerate -m "Add enrollment table"`
-- [ ] Apply migration: `alembic upgrade head`
+- [x] Create `app/models/enrollment.py` model
+- [x] Add foreign keys to student and course
+- [x] Add unique constraint: (student_id, course_id)
+- [x] Add indexes
+- [x] Add status enum/choices
+- [x] Create migration: `alembic revision --autogenerate -m "Add enrollment table"`
+- [x] Apply migration: `alembic upgrade head`
 
 #### Testing
-- [ ] Create `tests/unit/test_enrollment_cli.py`
-- [ ] Test enroll_student function
-- [ ] Test duplicate prevention
-- [ ] Test unenroll_student function
-- [ ] Test status transitions
-- [ ] Run tests
+- [x] Create `tests/unit/test_enrollment_cli.py`
+- [x] Test enroll_student function
+- [x] Test duplicate prevention
+- [x] Test unenroll_student function
+- [x] Test status transitions
+- [x] Run tests
 
 #### Quality Checks & Commit
-- [ ] Linting, formatting, type checking
-- [ ] Run all tests
-- [ ] Commit: `git commit -m "feat: add enrollment management CLI"`
+- [x] Linting, formatting, type checking
+- [x] Run all tests
+- [x] Commit: `git commit -m "feat: add enrollment management CLI"`
 
 #### Web Interface
-- [ ] Create `app/routes/enrollments.py` blueprint
-- [ ] Add enrollment form to student detail page
-- [ ] Add enrollment form to course detail page
-- [ ] Implement bulk enrollment (CSV upload)
-- [ ] Create enrollment management templates
+- [x] Create `app/routes/enrollments.py` blueprint
+- [x] Add enrollment form to student detail page
+- [x] Add enrollment form to course detail page
+- [x] Implement bulk enrollment (CSV upload)
+- [x] Create enrollment management templates
 
 #### Integration Testing
-- [ ] Create `tests/integration/test_enrollment_routes.py`
-- [ ] Test enrollment workflows
-- [ ] Test bulk enrollment
-- [ ] Run integration tests
+- [x] Create `tests/integration/test_enrollment_routes.py`
+- [x] Test enrollment workflows
+- [x] Test bulk enrollment
+- [x] Run integration tests
 
 #### Final Commit
-- [ ] Commit: `git commit -m "feat: add enrollment web interface"`
+- [x] Commit: `git commit -m "feat: add enrollment web interface"`
 
 ---
 
@@ -325,142 +325,142 @@ Project task tracker for the Dozentenmanager student management system.
 ### 2.1 Exam Creation
 
 #### CLI Implementation
-- [ ] Create `cli/exam_cli.py`
-- [ ] Implement `add_exam()` function
-- [ ] Implement `list_exams()` function
-- [ ] Implement `get_exam()` function
-- [ ] Implement `update_exam()` function
-- [ ] Implement `delete_exam()` function
-- [ ] Add validation (weight 0-1, positive points, due date)
-- [ ] Add logging and docstrings
+- [x] Create `cli/exam_cli.py`
+- [x] Implement `add_exam()` function
+- [x] Implement `list_exams()` function
+- [x] Implement `get_exam()` function
+- [x] Implement `update_exam()` function
+- [x] Implement `delete_exam()` function
+- [x] Add validation (weight 0-1, positive points, due date)
+- [x] Add logging and docstrings
 
 #### Database
-- [ ] Create `app/models/exam.py` model
-- [ ] Add foreign key to course
-- [ ] Add indexes
-- [ ] Create migration
-- [ ] Apply migration
+- [x] Create `app/models/exam.py` model
+- [x] Add foreign key to course
+- [x] Add indexes
+- [x] Create migration
+- [x] Apply migration
 
 #### Testing & Commit
-- [ ] Create `tests/unit/test_exam_cli.py`
-- [ ] Test all functions
-- [ ] Test validations
-- [ ] Linting and type checking
-- [ ] Commit CLI
+- [x] Create `tests/unit/test_exam_cli.py`
+- [x] Test all functions
+- [x] Test validations
+- [x] Linting and type checking
+- [x] Commit CLI
 
 #### Web Interface & Integration Tests
-- [ ] Create `app/routes/exams.py` blueprint
-- [ ] Create exam management templates
-- [ ] Add date picker for due date
-- [ ] Create integration tests
-- [ ] Commit web interface
+- [x] Create `app/routes/exams.py` blueprint
+- [x] Create exam management templates
+- [x] Add date picker for due date
+- [x] Create integration tests
+- [x] Commit web interface
 
 ---
 
 ### 2.2 Multi-Part Exams (Components)
 
 #### CLI Implementation
-- [ ] Create `cli/exam_component_cli.py`
-- [ ] Implement component CRUD functions
-- [ ] Add weight validation (sum to 1.0)
-- [ ] Add order management
+- [x] Create `cli/exam_component_cli.py` (Implemented in `grade_cli.py`)
+- [x] Implement component CRUD functions
+- [x] Add weight validation (sum to 1.0)
+- [x] Add order management
 
 #### Database
-- [ ] Create `app/models/exam_component.py` model
-- [ ] Create migration
-- [ ] Apply migration
+- [x] Create `app/models/exam_component.py` model
+- [x] Create migration
+- [x] Apply migration
 
 #### Testing & Commit
-- [ ] Create unit tests
-- [ ] Test weight sum validation
-- [ ] Test order management
-- [ ] Commit CLI
+- [x] Create unit tests
+- [x] Test weight sum validation
+- [x] Test order management
+- [x] Commit CLI
 
 #### Web Interface
-- [ ] Add component management to exam detail page
-- [ ] Add inline editing
-- [ ] Add reorder functionality (drag-drop or buttons)
-- [ ] Create integration tests
-- [ ] Commit web interface
+- [x] Add component management to exam detail page
+- [x] Add inline editing
+- [x] Add reorder functionality (drag-drop or buttons)
+- [x] Create integration tests
+- [x] Commit web interface
 
 ---
 
 ### 2.3 Submission Tracking
 
 #### CLI Implementation
-- [ ] Create `cli/submission_cli.py`
-- [ ] Implement `create_submission()` function
-- [ ] Implement `list_submissions()` function
-- [ ] Implement `update_submission()` function
-- [ ] Add points validation (≤ max_points)
-- [ ] Add enrollment validation
+- [x] Create `cli/submission_cli.py` (Implemented in `document_cli.py`)
+- [x] Implement `create_submission()` function
+- [x] Implement `list_submissions()` function
+- [x] Implement `update_submission()` function
+- [x] Add points validation (≤ max_points)
+- [x] Add enrollment validation
 
 #### Database
-- [ ] Create `app/models/submission.py` model
-- [ ] Add foreign keys to student, exam, component
-- [ ] Add unique constraint
-- [ ] Create migration
-- [ ] Apply migration
+- [x] Create `app/models/submission.py` model
+- [x] Add foreign keys to student, exam, component
+- [x] Add unique constraint
+- [x] Create migration
+- [x] Apply migration
 
 #### Testing & Commit
-- [ ] Create unit tests
-- [ ] Test validations
-- [ ] Commit CLI
+- [x] Create unit tests
+- [x] Test validations
+- [x] Commit CLI
 
 #### Web Interface
-- [ ] Create submission overview for exam
-- [ ] Add submission table with all students
-- [ ] Add bulk update functionality
-- [ ] Create integration tests
-- [ ] Commit web interface
+- [x] Create submission overview for exam
+- [x] Add submission table with all students
+- [x] Add bulk update functionality
+- [x] Create integration tests
+- [x] Commit web interface
 
 ---
 
 ### 2.4 Grading System
 
 #### CLI Implementation
-- [ ] Create `cli/grading_cli.py`
-- [ ] Implement `calculate_grade()` function
-- [ ] Implement `batch_calculate_grades()` function
-- [ ] Implement grade scale configuration
-- [ ] Add grade export to CSV
+- [x] Create `cli/grading_cli.py` (Implemented as `grade_cli.py`)
+- [x] Implement `calculate_grade()` function
+- [x] Implement `batch_calculate_grades()` function
+- [x] Implement grade scale configuration
+- [x] Add grade export to CSV (Partially implemented in `stats` command)
 
 #### Business Logic
-- [ ] Create `app/services/grading_service.py`
-- [ ] Implement grade calculation algorithms
-- [ ] Support German grading scale (1.0-5.0)
-- [ ] Support weighted component grades
-- [ ] Add configurable grade scales
+- [x] Create `app/services/grading_service.py` (Implemented as `grade_service.py`)
+- [x] Implement grade calculation algorithms
+- [x] Support German grading scale (1.0-5.0)
+- [x] Support weighted component grades
+- [x] Add configurable grade scales
 
 #### Testing & Commit
-- [ ] Create unit tests for grade calculation
-- [ ] Test different grading scales
-- [ ] Test weighted grades
-- [ ] Commit grading system
+- [x] Create unit tests for grade calculation
+- [x] Test different grading scales
+- [x] Test weighted grades
+- [x] Commit grading system
 
 #### Web Interface
-- [ ] Create grade entry interface (table view)
-- [ ] Add automatic calculation on points entry
-- [ ] Add manual override option
-- [ ] Add grade distribution chart (Chart.js)
-- [ ] Add export to CSV/Excel
-- [ ] Create integration tests
-- [ ] Commit web interface
+- [x] Create grade entry interface (table view)
+- [x] Add automatic calculation on points entry
+- [x] Add manual override option
+- [x] Add grade distribution chart (Chart.js)
+- [x] Add export to CSV/Excel
+- [x] Create integration tests
+- [x] Commit web interface
 
 ---
 
 ### 2.5 Grade Monitoring
 
 #### CLI Implementation
-- [ ] Create grade status reporting functions
+- [x] Create grade status reporting functions
 - [ ] Implement missing grade detection
 
 #### Web Interface
-- [ ] Create grading dashboard
-- [ ] Show ungraded submissions
+- [x] Create grading dashboard
+- [x] Show ungraded submissions
 - [ ] Show grading progress per course
 - [ ] Add alerts for overdue grading
-- [ ] Commit
+- [x] Commit
 
 ---
 
@@ -469,75 +469,75 @@ Project task tracker for the Dozentenmanager student management system.
 ### 3.1 File Storage System
 
 #### CLI Implementation
-- [ ] Create `cli/file_cli.py`
-- [ ] Implement `upload_file()` function
-- [ ] Implement `list_files()` function
-- [ ] Implement directory organization function
+- [x] Create `cli/file_cli.py` (Implemented as `document_cli.py`)
+- [x] Implement `upload_file()` function
+- [x] Implement `list_files()` function
+- [x] Implement directory organization function
 
 #### Utilities
-- [ ] Create `app/utils/file_manager.py`
-- [ ] Implement `sanitize_filename()` function
-- [ ] Implement `allowed_file()` function
-- [ ] Implement `validate_file_size()` function
-- [ ] Implement automatic directory creation
-- [ ] Implement unique filename generation
+- [x] Create `app/utils/file_manager.py` (Implemented in `document_service.py`)
+- [x] Implement `sanitize_filename()` function
+- [x] Implement `allowed_file()` function
+- [x] Implement `validate_file_size()` function
+- [x] Implement automatic directory creation
+- [x] Implement unique filename generation
 
 #### Database
-- [ ] Create `app/models/document.py` model
-- [ ] Add file metadata fields
-- [ ] Create migration
-- [ ] Apply migration
+- [x] Create `app/models/document.py` model
+- [x] Add file metadata fields
+- [x] Create migration
+- [x] Apply migration
 
 #### Testing & Commit
-- [ ] Create unit tests
-- [ ] Test filename sanitization
-- [ ] Test file validation
-- [ ] Test directory structure
-- [ ] Commit CLI
+- [x] Create unit tests
+- [x] Test filename sanitization
+- [x] Test file validation
+- [x] Test directory structure
+- [x] Commit CLI
 
 #### Web Interface
-- [ ] Create file upload form (drag-and-drop)
-- [ ] Add file browser
-- [ ] Add download functionality
-- [ ] Add delete functionality
-- [ ] Create integration tests
-- [ ] Commit web interface
+- [x] Create file upload form (drag-and-drop)
+- [x] Add file browser
+- [x] Add download functionality
+- [x] Add delete functionality
+- [x] Create integration tests
+- [x] Commit web interface
 
 ---
 
 ### 3.2 Email Parser
 
 #### CLI Implementation
-- [ ] Create `cli/email_parser_cli.py`
-- [ ] Implement `.mbox` file parsing
-- [ ] Implement `.eml` file parsing
+- [x] Create `cli/email_parser_cli.py` (Implemented as `email_cli.py`)
+- [x] Implement `.mbox` file parsing
+- [x] Implement `.eml` file parsing
 - [ ] Implement IMAP connection (optional)
-- [ ] Implement attachment extraction
+- [x] Implement attachment extraction
 
 #### Business Logic
-- [ ] Create `app/services/email_parser.py`
-- [ ] Implement email header parsing
-- [ ] Implement student matching by email
-- [ ] Implement student matching by student ID in subject/body
-- [ ] Implement student matching by name
-- [ ] Add unmatched email flagging
+- [x] Create `app/services/email_parser.py` (Integrated into CLI/Service)
+- [x] Implement email header parsing
+- [x] Implement student matching by email
+- [x] Implement student matching by student ID in subject/body
+- [x] Implement student matching by name
+- [x] Add unmatched email flagging
 
 #### Dependencies
 - [ ] Add `imapclient` if needed: `uv add imapclient`
 
 #### Testing & Commit
-- [ ] Create test fixtures (sample emails)
+- [x] Create test fixtures (sample emails)
 - [ ] Create unit tests
-- [ ] Test parsing various email formats
-- [ ] Test student matching algorithms
-- [ ] Commit CLI
+- [x] Test parsing various email formats
+- [x] Test student matching algorithms
+- [x] Commit CLI
 
 #### Web Interface
-- [ ] Create email import page
-- [ ] Add email list view
-- [ ] Add attachment assignment interface
-- [ ] Create integration tests
-- [ ] Commit web interface
+- [x] Create email import page
+- [x] Add email list view
+- [x] Add attachment assignment interface
+- [x] Create integration tests
+- [x] Commit web interface
 
 ---
 
@@ -580,16 +580,16 @@ Project task tracker for the Dozentenmanager student management system.
 ### 3.4 Manual Document Assignment
 
 #### CLI Implementation
-- [ ] Create assignment functions in `cli/document_cli.py`
-- [ ] Implement `assign_document()` function
-- [ ] Implement `list_unassigned_documents()` function
+- [x] Create assignment functions in `cli/document_cli.py`
+- [x] Implement `assign_document()` function (via upload/update-status)
+- [x] Implement `list_unassigned_documents()` function
 
 #### Web Interface
 - [ ] Create unassigned documents dashboard
-- [ ] Add search and assign interface
-- [ ] Add bulk assignment
-- [ ] Add document preview
-- [ ] Commit
+- [x] Add search and assign interface
+- [x] Add bulk assignment
+- [x] Add document preview
+- [x] Commit
 
 ---
 
@@ -719,37 +719,37 @@ Project task tracker for the Dozentenmanager student management system.
 ### 6.1 UI Components (Bulma CSS)
 
 #### Base Templates
-- [ ] Enhance `templates/base.html`
-- [ ] Add navigation menu
-- [ ] Add breadcrumb navigation
-- [ ] Style flash messages
-- [ ] Add footer
+- [x] Enhance `templates/base.html`
+- [x] Add navigation menu
+- [x] Add breadcrumb navigation
+- [x] Style flash messages
+- [x] Add footer
 
 #### Components
-- [ ] Create `templates/components/nav.html`
+- [x] Create `templates/components/nav.html` (Implemented in base.html)
 - [ ] Create `templates/components/breadcrumb.html`
-- [ ] Create `templates/components/pagination.html`
-- [ ] Create `templates/components/table.html`
-- [ ] Create `templates/components/form_field.html`
+- [x] Create `templates/components/pagination.html`
+- [x] Create `templates/components/table.html` (Implemented per view)
+- [x] Create `templates/components/form_field.html` (Implemented per view)
 - [ ] Create `templates/components/modal.html`
 - [ ] Add loading indicators
 
 #### Styling
-- [ ] Create `static/css/custom.css`
-- [ ] Ensure responsive design (mobile-friendly)
-- [ ] Add custom Bulma variables
-- [ ] Test on different screen sizes
+- [x] Create `static/css/custom.css`
+- [x] Ensure responsive design (mobile-friendly)
+- [x] Add custom Bulma variables
+- [x] Test on different screen sizes
 
 ---
 
 ### 6.2 Dashboard
 
 #### Implementation
-- [ ] Create `app/routes/dashboard.py` blueprint
-- [ ] Implement homepage dashboard
-- [ ] Add statistics (students, courses, exams)
-- [ ] Add recent activity feed
-- [ ] Add quick actions
+- [ ] Create `app/routes/dashboard.py` blueprint (Using home.html)
+- [x] Implement homepage dashboard
+- [x] Add statistics (students, courses, exams)
+- [x] Add recent activity feed
+- [x] Add quick actions
 - [ ] Add alerts (missing grades, etc.)
 
 #### Visualizations
@@ -758,38 +758,38 @@ Project task tracker for the Dozentenmanager student management system.
 - [ ] Create enrollment trends chart
 
 #### Template
-- [ ] Create `templates/dashboard/index.html`
-- [ ] Commit dashboard
+- [x] Create `templates/dashboard/index.html` (home.html)
+- [x] Commit dashboard
 
 ---
 
 ### 6.3 Search & Filtering
 
 #### Implementation
-- [ ] Implement global search
-- [ ] Add advanced filters to all list pages
+- [x] Implement global search (Per module)
+- [x] Add advanced filters to all list pages
 - [ ] Add filter presets
 - [ ] Add export filtered results
 
 #### Testing
-- [ ] Test search functionality
-- [ ] Test filters
-- [ ] Commit
+- [x] Test search functionality
+- [x] Test filters
+- [x] Commit
 
 ---
 
 ## Documentation & Deployment
 
 ### Documentation
-- [ ] Update README.md with installation instructions
+- [x] Update README.md with installation instructions
 - [ ] Add usage examples to README
 - [ ] Document API endpoints (if created)
 - [ ] Create user guide (optional)
 
 ### Testing & Quality
-- [ ] Run full test suite: `pytest`
-- [ ] Check test coverage: `pytest --cov=app --cov=cli`
-- [ ] Ensure >80% code coverage
+- [x] Run full test suite: `pytest`
+- [x] Check test coverage: `pytest --cov=app --cov=cli`
+- [ ] Ensure >80% code coverage (Current: ~49%)
 - [ ] Fix any failing tests
 
 ### Production Preparation

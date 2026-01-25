@@ -17,6 +17,7 @@ from app.models.exam import (
     validate_max_points,
     validate_weight,
 )
+from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
 
 # Configure logging
@@ -105,6 +106,20 @@ class ExamService(BaseService):
             self.add(exam)
             self.commit()
 
+            # Log creation
+            AuditService.log(
+                action="create",
+                target_type="Exam",
+                target_id=exam.id,
+                details={
+                    "name": exam.name,
+                    "course_id": exam.course_id,
+                    "exam_date": str(exam.exam_date),
+                    "max_points": exam.max_points,
+                    "weight": exam.weight,
+                },
+            )
+
             logger.info(
                 f"Successfully added exam: {exam.name} for course {course.name} "
                 f"on {exam_date}"
@@ -189,6 +204,9 @@ class ExamService(BaseService):
             if not exam:
                 raise ValueError(f"Exam with ID {exam_id} not found")
 
+            # Track changes
+            changes = {}
+
             # Update name
             if name is not None:
                 name = name.strip()
@@ -196,42 +214,61 @@ class ExamService(BaseService):
                     raise ValueError("Exam name cannot be empty")
                 if len(name) > 255:
                     raise ValueError("Exam name cannot exceed 255 characters")
-                exam.name = name
+                if exam.name != name:
+                    changes["name"] = {"old": exam.name, "new": name}
+                    exam.name = name
 
             # Update course
             if course_id is not None:
                 course = self.query(Course).filter_by(id=course_id).first()
                 if not course:
                     raise ValueError(f"Course with ID {course_id} not found")
-                exam.course_id = course_id
+                if exam.course_id != course_id:
+                    changes["course_id"] = {"old": exam.course_id, "new": course_id}
+                    exam.course_id = course_id
 
             # Update exam date
             if exam_date is not None:
                 if not validate_exam_date(exam_date):
                     raise ValueError("Invalid exam date")
-                exam.exam_date = exam_date
+                if exam.exam_date != exam_date:
+                    changes["exam_date"] = {"old": str(exam.exam_date), "new": str(exam_date)}
+                    exam.exam_date = exam_date
 
             # Update max points
             if max_points is not None:
                 if not validate_max_points(max_points):
                     raise ValueError("Maximum points must be greater than 0")
-                exam.max_points = max_points
+                if exam.max_points != max_points:
+                    changes["max_points"] = {"old": exam.max_points, "new": max_points}
+                    exam.max_points = max_points
 
             # Update weight
             if weight is not None:
                 if not validate_weight(weight):
                     raise ValueError("Weight must be between 0 and 100")
-                exam.weight = weight
+                if exam.weight != weight:
+                    changes["weight"] = {"old": exam.weight, "new": weight}
+                    exam.weight = weight
 
             # Update description
             if description is not None:
                 description = description.strip()
                 if len(description) > 500:
                     raise ValueError("Description cannot exceed 500 characters")
-                exam.description = description
+                if exam.description != description:
+                    changes["description"] = {"old": exam.description, "new": description}
+                    exam.description = description
 
-            self.commit()
-            logger.info(f"Successfully updated exam: {exam.name}")
+            if changes:
+                self.commit()
+                AuditService.log(
+                    action="update",
+                    target_type="Exam",
+                    target_id=exam.id,
+                    details=changes,
+                )
+                logger.info(f"Successfully updated exam: {exam.name}")
             return exam
 
         except SQLAlchemyError as e:
@@ -259,8 +296,17 @@ class ExamService(BaseService):
                 raise ValueError(f"Exam with ID {exam_id} not found")
 
             exam_name = exam.name
+            exam_id_val = exam.id
             self.delete(exam)
             self.commit()
+
+            # Log deletion
+            AuditService.log(
+                action="delete",
+                target_type="Exam",
+                target_id=exam_id_val,
+                details={"name": exam_name},
+            )
 
             logger.info(f"Successfully deleted exam: {exam_name}")
             return True

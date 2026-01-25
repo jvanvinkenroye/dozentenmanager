@@ -95,7 +95,7 @@ def export_database_to_json(output_path: Path) -> None:
         ("documents", Document),
     ]
 
-    backup_data = {
+    backup_data: dict[str, Any] = {
         "version": BACKUP_VERSION,
         "timestamp": datetime.now(UTC).isoformat(),
         "tables": {},

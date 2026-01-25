@@ -5,8 +5,9 @@ This module provides web routes for managing courses through the Flask interface
 """
 
 import logging
-from typing import Any
+from typing import Any, cast
 
+from flask_login import login_required
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -16,6 +17,7 @@ from app.models.course import Course
 from app.models.student import Student
 from app.models.university import University
 from app.services.course_service import CourseService
+from app.utils.auth import admin_required, lecturer_required
 from app.utils.pagination import paginate_query
 
 # Configure logging
@@ -26,6 +28,7 @@ bp = Blueprint("course", __name__, url_prefix="/courses")
 
 
 @bp.route("/")
+@login_required
 def index() -> str:
     """
     List all courses with optional search, filters, and pagination.
@@ -89,6 +92,7 @@ def index() -> str:
 
 
 @bp.route("/<int:course_id>")
+@login_required
 def show(course_id: int) -> str | Any:
     """
     Show details for a specific course.
@@ -163,6 +167,7 @@ def show(course_id: int) -> str | Any:
 
 
 @bp.route("/new", methods=["GET", "POST"])
+@lecturer_required
 def new() -> str | Any:
     """
     Create a new course.
@@ -190,14 +195,14 @@ def new() -> str | Any:
         return redirect(url_for("course.index"))
 
     form = CourseForm()
-    form.university_id.choices = [(u.id, u.name) for u in universities]
+    form.university_id.choices = [(int(u.id), str(u.name)) for u in universities]
 
     if form.validate_on_submit():
         try:
             # Create new course using service
             course = service.add_course(
-                name=form.name.data,
-                semester=form.semester.data,
+                name=cast(str, form.name.data),
+                semester=cast(str, form.semester.data),
                 university_id=form.university_id.data,
                 slug=form.slug.data,
             )
@@ -225,6 +230,7 @@ def new() -> str | Any:
 
 
 @bp.route("/<int:course_id>/edit", methods=["GET", "POST"])
+@lecturer_required
 def edit(course_id: int) -> str | Any:
     """
     Edit an existing course.
@@ -257,7 +263,7 @@ def edit(course_id: int) -> str | Any:
         universities = db.session.query(University).order_by(University.name).all()
 
         form = CourseForm(course=course, obj=course)
-        form.university_id.choices = [(u.id, u.name) for u in universities]
+        form.university_id.choices = [(int(u.id), str(u.name)) for u in universities]
 
         if form.validate_on_submit():
             try:
@@ -299,6 +305,8 @@ def edit(course_id: int) -> str | Any:
 
 
 @bp.route("/<int:course_id>/delete", methods=["GET", "POST"])
+@login_required
+@admin_required
 def delete(course_id: int) -> str | Any:
     """
     Delete a course.

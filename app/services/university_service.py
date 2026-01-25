@@ -11,6 +11,7 @@ import re
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.university import University
+from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
 
 # Configure logging
@@ -125,6 +126,14 @@ class UniversityService(BaseService):
             self.add(university)
             self.commit()
 
+            # Log creation
+            AuditService.log(
+                action="create",
+                target_type="University",
+                target_id=university.id,
+                details={"name": university.name, "slug": university.slug},
+            )
+
             logger.info(f"Successfully created university: {university}")
             return university
 
@@ -223,12 +232,17 @@ class UniversityService(BaseService):
                 logger.warning(f"University with ID {university_id} not found")
                 return None
 
+            # Track changes
+            changes = {}
+
             # Update fields if provided
             if name is not None:
                 name = name.strip()
                 if not name:
                     raise ValueError("University name cannot be empty")
-                university.name = name
+                if university.name != name:
+                    changes["name"] = {"old": university.name, "new": name}
+                    university.name = name
 
             if slug is not None:
                 slug = slug.strip().lower()
@@ -237,10 +251,20 @@ class UniversityService(BaseService):
                         f"Invalid slug format: {slug}. "
                         "Slug must contain only lowercase letters, numbers, and hyphens."
                     )
-                university.slug = slug
+                if university.slug != slug:
+                    changes["slug"] = {"old": university.slug, "new": slug}
+                    university.slug = slug
 
-            self.commit()
-            logger.info(f"Successfully updated university: {university}")
+            if changes:
+                self.commit()
+                # Log update
+                AuditService.log(
+                    action="update",
+                    target_type="University",
+                    target_id=university.id,
+                    details=changes,
+                )
+                logger.info(f"Successfully updated university: {university}")
             return university
 
         except IntegrityError as e:
@@ -273,9 +297,21 @@ class UniversityService(BaseService):
                 logger.warning(f"University with ID {university_id} not found")
                 return False
 
+            university_name = university.name
+            university_id_val = university.id
+
             self.delete(university)
             self.commit()
-            logger.info(f"Successfully deleted university: {university}")
+
+            # Log deletion
+            AuditService.log(
+                action="delete",
+                target_type="University",
+                target_id=university_id_val,
+                details={"name": university_name},
+            )
+
+            logger.info(f"Successfully deleted university: {university_name}")
             return True
 
         except SQLAlchemyError as e:

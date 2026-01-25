@@ -11,6 +11,8 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from flask import Flask
+from flask_login import LoginManager, login_required
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 
@@ -19,8 +21,17 @@ from config import get_config
 # Create Flask-SQLAlchemy instance
 db = SQLAlchemy()
 
+# Initialize Flask-Migrate
+migrate = Migrate()
+
 # CSRF Protection
 csrf = CSRFProtect()
+
+# Login Manager
+login_manager = LoginManager()
+login_manager.login_view = "auth.login"
+login_manager.login_message = "Bitte melden Sie sich an, um auf diese Seite zuzugreifen."
+login_manager.login_message_category = "warning"
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -44,6 +55,15 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # Initialize CSRF protection
     csrf.init_app(app)
+
+    # Initialize Login Manager
+    login_manager.init_app(app)
+
+    @login_manager.user_loader
+    def load_user(user_id: str):
+        from app.models.user import User
+
+        return db.session.get(User, int(user_id))
 
     # Initialize database
     init_db(app)
@@ -78,14 +98,17 @@ def init_db(app: Flask) -> None:
     """
     # Initialize Flask-SQLAlchemy
     db.init_app(app)
+    
+    # Initialize Flask-Migrate
+    migrate.init_app(app, db)
 
     # Import models here to avoid circular imports
     from app import models  # noqa: F401
 
     # Create tables if they don't exist (in development/testing)
-    with app.app_context():
-        if app.config["DEBUG"] or app.config["TESTING"]:
-            db.create_all()
+    # with app.app_context():
+    #     if app.config["DEBUG"] or app.config["TESTING"]:
+    #         db.create_all()
 
 
 def setup_logging(app: Flask) -> None:
@@ -132,6 +155,9 @@ def register_blueprints(app: Flask) -> None:
         app: Flask application instance
     """
     # Import blueprints here to avoid circular imports
+    from app.routes.admin import bp as admin_bp
+    from app.routes.api import bp as api_bp
+    from app.routes.auth import bp as auth_bp
     from app.routes.backup import bp as backup_bp
     from app.routes.course import bp as course_bp
     from app.routes.document import bp as document_bp
@@ -142,6 +168,9 @@ def register_blueprints(app: Flask) -> None:
     from app.routes.university import bp as university_bp
 
     # Register blueprints
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(api_bp)
+    app.register_blueprint(auth_bp)
     app.register_blueprint(backup_bp)
     app.register_blueprint(course_bp)
     app.register_blueprint(document_bp)
@@ -153,6 +182,7 @@ def register_blueprints(app: Flask) -> None:
 
     # Register index route
     @app.route("/")
+    @login_required
     def index():
         """
         Render the home page with dashboard statistics.

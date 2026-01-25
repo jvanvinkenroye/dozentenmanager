@@ -167,6 +167,7 @@ class DocumentService(BaseService):
         submission_type: str = "document",
         exam_id: int | None = None,
         notes: str | None = None,
+        original_filename: str | None = None,
     ) -> Document:
         """
         Upload a document for a student enrollment.
@@ -177,6 +178,7 @@ class DocumentService(BaseService):
             submission_type: Type of submission
             exam_id: Optional exam ID if document is for an exam
             notes: Optional notes about the submission
+            original_filename: Optional original filename (if different from file_path)
 
         Returns:
             Created Document object
@@ -191,9 +193,11 @@ class DocumentService(BaseService):
         if not source_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
+        # Determine filename to use
+        filename_to_use = original_filename or source_path.name
+
         # Validate file extension
-        original_filename = source_path.name
-        if not allowed_file(original_filename):
+        if not allowed_file(filename_to_use):
             raise ValueError(
                 f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
             )
@@ -204,12 +208,12 @@ class DocumentService(BaseService):
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
 
         # Sanitize filename
-        safe_filename = sanitize_filename(original_filename)
+        safe_filename = sanitize_filename(filename_to_use)
 
         # Get file info
         file_size = source_path.stat().st_size
-        file_type = get_file_extension(original_filename)
-        mime_type, _ = mimetypes.guess_type(original_filename)
+        file_type = get_file_extension(filename_to_use)
+        mime_type, _ = mimetypes.guess_type(filename_to_use)
 
         try:
             # Create submission first
@@ -230,7 +234,7 @@ class DocumentService(BaseService):
             document = Document(
                 submission_id=submission.id,
                 filename=safe_filename,
-                original_filename=original_filename,
+                original_filename=filename_to_use,
                 file_path=dest_path,
                 file_type=file_type,
                 file_size=file_size,
@@ -241,7 +245,7 @@ class DocumentService(BaseService):
             self.commit()
 
             logger.info(
-                f"Uploaded document: {original_filename} -> {dest_path} "
+                f"Uploaded document: {filename_to_use} -> {dest_path} "
                 f"(submission ID: {submission.id})"
             )
             return document

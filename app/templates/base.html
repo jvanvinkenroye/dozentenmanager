@@ -65,6 +65,12 @@
                     <span class="icon"><i class="fas fa-save"></i></span>
                     <span>Backup</span>
                 </a>
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <a class="navbar-item" href="{{ url_for('admin.audit_logs') }}">
+                    <span class="icon"><i class="fas fa-history"></i></span>
+                    <span>Audit Logs</span>
+                </a>
+                {% endif %}
                 {# Future navigation items will be added as features are implemented
                 <a class="navbar-item" href="{{ url_for('students.list') }}">
                     <span class="icon"><i class="fas fa-user-graduate"></i></span>
@@ -85,12 +91,32 @@
                 <div class="navbar-item">
                     <div class="buttons">
                         <!-- Theme Switcher -->
-                        <button id="theme-switcher-btn" class="button is-small is-light" title="Theme wechseln">
+                        <button id="theme-switcher-btn" class="button is-small is-light mr-2" title="Theme wechseln">
                             <span class="icon">
                                 <i id="theme-icon" class="fas fa-graduation-cap"></i>
                             </span>
                             <span>Theme</span>
                         </button>
+
+                        {% if current_user.is_authenticated %}
+                            <div class="navbar-item has-dropdown is-hoverable">
+                                <a class="navbar-link">
+                                    <span class="icon mr-1"><i class="fas fa-user-circle"></i></span>
+                                    {{ current_user.username }}
+                                </a>
+                                <div class="navbar-dropdown is-right">
+                                    <a class="navbar-item" href="{{ url_for('auth.logout') }}">
+                                        <span class="icon mr-1"><i class="fas fa-sign-out-alt"></i></span>
+                                        Abmelden
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <a class="button is-light" href="{{ url_for('auth.login') }}">
+                                <span class="icon mr-1"><i class="fas fa-sign-in-alt"></i></span>
+                                <span>Anmelden</span>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -131,7 +131,7 @@ class TestAddStudent:
         with app.app_context():
             import pytest
 
-            with pytest.raises(ValueError, match="Invalid student ID format"):
+            with pytest.raises(ValueError, match="Ungültiges Matrikelnummer-Format"):
                 service.add_student(
                     first_name="Max",
                     last_name="Mustermann",
@@ -181,7 +181,7 @@ class TestAddStudent:
                 program="Computer Science",
             )
 
-            with pytest.raises(ValueError, match="already exists"):
+            with pytest.raises(ValueError, match="existiert bereits"):
                 service.add_student(
                     first_name="Anna",
                     last_name="Schmidt",
@@ -203,7 +203,7 @@ class TestAddStudent:
                 program="Computer Science",
             )
 
-            with pytest.raises(ValueError, match="already exists"):
+            with pytest.raises(ValueError, match="existiert bereits"):
                 service.add_student(
                     first_name="Anna",
                     last_name="Schmidt",
@@ -403,7 +403,7 @@ class TestUpdateStudent:
                 "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
             )
 
-            with pytest.raises(ValueError, match="already exists"):
+            with pytest.raises(ValueError, match="existiert bereits"):
                 service.update_student(student2.id, email="max@example.com")
 
 

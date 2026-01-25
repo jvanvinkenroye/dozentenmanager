@@ -7,6 +7,7 @@ This module provides web routes for managing student enrollments in courses.
 import logging
 from typing import Any
 
+from flask_login import login_required
 from flask import Blueprint, flash, redirect, request, url_for
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
@@ -22,6 +23,7 @@ bp = Blueprint("enrollment", __name__, url_prefix="/enrollments")
 
 
 @bp.route("/enroll", methods=["POST"])
+@login_required
 def enroll() -> Any:
     """
     Enroll a student in a course.
@@ -95,6 +97,7 @@ def enroll() -> Any:
 
 
 @bp.route("/unenroll", methods=["POST"])
+@login_required
 def unenroll() -> Any:
     """
     Unenroll a student from a course.
@@ -169,6 +172,7 @@ def unenroll() -> Any:
 
 
 @bp.route("/status", methods=["POST"])
+@login_required
 def update_status() -> Any:
     """
     Update enrollment status.

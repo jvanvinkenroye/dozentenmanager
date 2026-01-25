@@ -6,7 +6,9 @@ and viewing grade statistics/analytics.
 """
 
 import logging
+from typing import cast
 
+from flask_login import login_required
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import func
 
@@ -30,6 +32,7 @@ from app.models.grade import (
     percentage_to_german_grade,
 )
 from app.services.grade_service import GradeService
+from app.utils.auth import admin_required
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +40,7 @@ bp = Blueprint("grade", __name__, url_prefix="/grades")
 
 
 @bp.route("/")
+@login_required
 def index():
     """List all grades with filtering options."""
     form = GradeFilterForm(request.args)
@@ -44,13 +48,13 @@ def index():
     # Populate filter dropdowns
     courses = Course.query.order_by(Course.name).all()
     form.course_id.choices = [(0, "Alle Kurse")] + [
-        (c.id, f"{c.name} ({c.semester})") for c in courses
-    ]
+        (int(c.id), f"{c.name} ({c.semester})") for c in courses
+    ]  # type: ignore
 
     exams = Exam.query.order_by(Exam.exam_date.desc()).all()
     form.exam_id.choices = [(0, "Alle Prüfungen")] + [
-        (e.id, f"{e.name} - {e.exam_date}") for e in exams
-    ]
+        (int(e.id), f"{e.name} - {e.exam_date}") for e in exams
+    ]  # type: ignore
 
     students = (
         Student.query.filter(Student.deleted_at.is_(None))
@@ -58,8 +62,8 @@ def index():
         .all()
     )
     form.student_id.choices = [(0, "Alle Studierenden")] + [
-        (s.id, f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
-    ]
+        (int(s.id), f"{s.last_name}, {s.first_name} ({s.student_id})") for s in students
+    ]  # type: ignore
 
     # Build query
     query = (
@@ -104,6 +108,7 @@ def index():
 
 
 @bp.route("/<int:grade_id>")
+@login_required
 def show(grade_id: int):
     """Show grade details."""
     grade = Grade.query.get_or_404(grade_id)
@@ -111,6 +116,7 @@ def show(grade_id: int):
 
 
 @bp.route("/new", methods=["GET", "POST"])
+@login_required
 def new():
     """Add a new grade."""
     form = GradeForm()
@@ -146,9 +152,9 @@ def new():
             )
 
             grade = service.add_grade(
-                enrollment_id=form.enrollment_id.data,
-                exam_id=form.exam_id.data,
-                points=form.points.data,
+                enrollment_id=cast(int, form.enrollment_id.data),
+                exam_id=cast(int, form.exam_id.data),
+                points=cast(float, form.points.data),
                 component_id=component_id,
                 graded_by=form.graded_by.data,
                 is_final=form.is_final.data,
@@ -170,6 +176,7 @@ def new():
 
 
 @bp.route("/<int:grade_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit(grade_id: int):
     """Edit an existing grade."""
     grade = Grade.query.get_or_404(grade_id)
@@ -210,6 +217,8 @@ def edit(grade_id: int):
 
 
 @bp.route("/<int:grade_id>/delete", methods=["GET", "POST"])
+@login_required
+@admin_required
 def delete(grade_id: int):
     """Delete a grade."""
     grade = Grade.query.get_or_404(grade_id)
@@ -228,6 +237,7 @@ def delete(grade_id: int):
 
 
 @bp.route("/bulk", methods=["GET", "POST"])
+@login_required
 def bulk():
     """Bulk grading interface for an exam."""
     form = BulkGradeForm()
@@ -238,7 +248,7 @@ def bulk():
 
     exam_id = request.args.get("exam_id", type=int)
     if exam_id:
-        form.exam_id.data = exam_id
+        form.exam_id.data = str(exam_id)
         components = (
             ExamComponent.query.filter_by(exam_id=exam_id)
             .order_by(ExamComponent.order)
@@ -317,6 +327,7 @@ def bulk():
 
 
 @bp.route("/dashboard")
+@login_required
 def dashboard():
     """Grade monitoring dashboard with statistics."""
     # Get overall statistics
@@ -355,7 +366,7 @@ def dashboard():
         .all()
     )
 
-    grade_distribution = dict(distribution)
+    grade_distribution = {row[0]: row[1] for row in distribution}
 
     # Get recent exams with grades
     recent_exams = (
@@ -411,6 +422,7 @@ def dashboard():
 
 
 @bp.route("/exam/<int:exam_id>/stats")
+@login_required
 def exam_stats(exam_id: int):
     """Show detailed statistics for an exam."""
     exam = Exam.query.get_or_404(exam_id)
@@ -444,6 +456,7 @@ def exam_stats(exam_id: int):
 
 
 @bp.route("/student/<int:student_id>")
+@login_required
 def student_grades(student_id: int):
     """Show all grades for a student."""
     student = (
@@ -474,6 +487,7 @@ def student_grades(student_id: int):
 
 
 @bp.route("/components/<int:exam_id>")
+@login_required
 def components(exam_id: int):
     """Manage exam components."""
     exam = Exam.query.get_or_404(exam_id)
@@ -491,21 +505,22 @@ def components(exam_id: int):
 
 
 @bp.route("/components/<int:exam_id>/new", methods=["GET", "POST"])
+@login_required
 def new_component(exam_id: int):
     """Add a new exam component."""
     exam = Exam.query.get_or_404(exam_id)
     form = ExamComponentForm()
-    form.exam_id.data = exam_id
+    form.exam_id.data = str(exam_id)
 
     if form.validate_on_submit():
         service = GradeService()
         try:
             component = service.add_exam_component(
                 exam_id=exam_id,
-                name=form.name.data,
-                weight=form.weight.data,
-                max_points=form.max_points.data,
-                order=form.order.data or 0,
+                name=cast(str, form.name.data),
+                weight=cast(float, form.weight.data),
+                max_points=cast(float, form.max_points.data),
+                order=cast(int, form.order.data) or 0,
                 description=form.description.data,
             )
 
@@ -523,6 +538,8 @@ def new_component(exam_id: int):
 
 
 @bp.route("/components/<int:component_id>/delete", methods=["POST"])
+@login_required
+@admin_required
 def delete_component(component_id: int):
     """Delete an exam component."""
     component = ExamComponent.query.get_or_404(component_id)
@@ -549,6 +566,7 @@ def delete_component(component_id: int):
 
 
 @bp.route("/api/exam/<int:exam_id>/components")
+@login_required
 def api_exam_components(exam_id: int):
     """API endpoint to get components for an exam."""
     components = (
@@ -577,6 +595,7 @@ def api_exam_components(exam_id: int):
 
 
 @bp.route("/api/calculate", methods=["POST"])
+@login_required
 def api_calculate_grade():
     """API endpoint to calculate grade from points."""
     data = request.get_json()

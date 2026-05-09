@@ -2,9 +2,8 @@
 Application entry point for Dozentenmanager.
 
 Usage:
-    dozentenmanager          # Start the server
-    dozentenmanager init     # Create user config interactively
-    dozentenmanager migrate  # Run database migrations
+    dozentenmanager        # Start the server (runs migrations automatically)
+    dozentenmanager init   # Create user config interactively
 """
 
 import os
@@ -77,11 +76,11 @@ def cmd_init() -> None:
     CONFIG_FILE.chmod(0o600)
 
     print(f"\nConfig gespeichert: {CONFIG_FILE}")
-    print("Starte jetzt mit: dozentenmanager migrate && dozentenmanager")
+    print("Starte jetzt mit: dozentenmanager")
 
 
-def cmd_migrate() -> None:
-    """Run database migrations (flask db upgrade)."""
+def cmd_serve() -> None:
+    """Start the web server (runs migrations automatically)."""
     from flask_migrate import upgrade
 
     from app import create_app
@@ -89,14 +88,6 @@ def cmd_migrate() -> None:
     app = create_app()
     with app.app_context():
         upgrade()
-    print("Migrationen erfolgreich angewendet.")
-
-
-def cmd_serve() -> None:
-    """Start the web server."""
-    from app import create_app
-
-    app = create_app()
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") == "development"
     app.run(host="0.0.0.0", port=port, debug=debug)
@@ -106,7 +97,6 @@ def main() -> None:
     command = sys.argv[1] if len(sys.argv) > 1 else "serve"
     commands = {
         "init": cmd_init,
-        "migrate": cmd_migrate,
         "serve": cmd_serve,
     }
     if command not in commands:

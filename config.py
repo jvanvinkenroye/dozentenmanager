@@ -53,13 +53,25 @@ class Config:
     WTF_CSRF_SSL_STRICT = True  # Require HTTPS in production
 
 
+def _resolve_db_url(env_url: str | None, default_path: Path) -> str:
+    """Resolve database URL, creating the parent directory if needed."""
+    if env_url:
+        if env_url.startswith("sqlite:///"):
+            db_path = Path(env_url[len("sqlite:///") :]).expanduser()
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+        return env_url
+    default_path.parent.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{default_path}"
+
+
 class DevelopmentConfig(Config):
     """Development environment configuration."""
 
     DEBUG = True
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = (
-        os.environ.get("DATABASE_URL") or f"sqlite:///{BASE_DIR}/dev_dozentenmanager.db"
+    SQLALCHEMY_DATABASE_URI = _resolve_db_url(
+        os.environ.get("DATABASE_URL"),
+        BASE_DIR / "dev_dozentenmanager.db",
     )
     SQLALCHEMY_ECHO = True  # Log SQL queries in development
     WTF_CSRF_SSL_STRICT = False  # Allow HTTP in development
@@ -81,8 +93,9 @@ class ProductionConfig(Config):
 
     DEBUG = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = (
-        os.environ.get("DATABASE_URL") or f"sqlite:///{BASE_DIR}/dozentenmanager.db"
+    SQLALCHEMY_DATABASE_URI = _resolve_db_url(
+        os.environ.get("DATABASE_URL"),
+        Path.home() / ".local" / "share" / "dozentenmanager" / "dozentenmanager.db",
     )
 
     # Ensure secret key is set in production

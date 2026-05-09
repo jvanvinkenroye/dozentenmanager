@@ -12,8 +12,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load user config first (~/.config/dozentenmanager/config.env), then local .env
+# Local .env takes precedence (override=False means first loaded value wins)
+_user_config = Path.home() / ".config" / "dozentenmanager" / "config.env"
+if _user_config.exists():
+    load_dotenv(_user_config)
+load_dotenv(override=False)
 
 # Base directory of the application
 BASE_DIR = Path(__file__).resolve().parent

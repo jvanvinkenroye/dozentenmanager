@@ -79,3 +79,14 @@ class Enrollment(db.Model):  # type: ignore[name-defined]
     def __repr__(self) -> str:
         """String representation of Enrollment."""
         return f"<Enrollment(id={self.id}, student_id={self.student_id}, course_id={self.course_id}, status={self.status})>"
+
+    def to_dict(self) -> dict:
+        """Convert Enrollment instance to dictionary."""
+        return {
+            "id": self.id,
+            "student_id": self.student_id,
+            "course_id": self.course_id,
+            "enrollment_date": self.enrollment_date.isoformat() if self.enrollment_date else None,
+            "unenrollment_date": self.unenrollment_date.isoformat() if self.unenrollment_date else None,
+            "status": self.status,
+        }

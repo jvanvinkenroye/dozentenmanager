@@ -72,7 +72,7 @@ class CourseForm(FlaskForm):
         """
         # Generate slug if not provided or empty
         if not field.data or not field.data.strip():
-            field.data = generate_slug(self.name.data)
+            field.data = generate_slug(self.name.data or "")
             return
 
         # Skip uniqueness check if editing the same course

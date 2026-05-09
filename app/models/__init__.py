@@ -15,8 +15,11 @@ from app.models.grade import Grade, GradeThreshold, GradingScale  # noqa: F401
 from app.models.student import Student  # noqa: F401
 from app.models.submission import Submission  # noqa: F401
 from app.models.university import University  # noqa: F401
+from app.models.user import User  # noqa: F401
+from app.models.audit_log import AuditLog  # noqa: F401
 
 __all__ = [
+    "AuditLog",
     "Course",
     "Document",
     "Enrollment",
@@ -28,4 +31,5 @@ __all__ = [
     "Student",
     "Submission",
     "University",
+    "User",
 ]

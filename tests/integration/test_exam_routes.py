@@ -34,58 +34,56 @@ def exam_service():
 class TestExamListRoute:
     """Test exam list route."""
 
-    def test_list_exams_empty(self, app, client, university_service, course_service):
+    def test_list_exams_empty(self, app, auth_client, university_service, course_service):
         """Test listing exams when none exist."""
-        response = client.get("/exams/")
+        response = auth_client.get("/exams/")
         assert response.status_code == 200
         assert "Keine Prüfungen gefunden" in response.data.decode("utf-8")
 
     def test_list_exams_with_data(
-        self, app, client, university_service, course_service, exam_service
+        self, app, auth_client, university_service, course_service, exam_service
     ):
         """Test listing exams with existing data."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            exam_service.add_exam(
-                name="Midterm Exam",
-                course_id=course.id,
-                exam_date=date(2024, 6, 15),
-                max_points=100.0,
-            )
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        exam_service.add_exam(
+            name="Midterm Exam",
+            course_id=course.id,
+            exam_date=date(2024, 6, 15),
+            max_points=100.0,
+        )
 
-        response = client.get("/exams/")
+        response = auth_client.get("/exams/")
         assert response.status_code == 200
         assert "Midterm Exam" in response.data.decode("utf-8")
 
     def test_list_exams_filter_by_course(
-        self, app, client, university_service, course_service, exam_service
+        self, app, auth_client, university_service, course_service, exam_service
     ):
         """Test filtering exams by course."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            course1 = course_service.add_course(
-                name="Programming I",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course2 = course_service.add_course(
-                name="Programming II",
-                semester="2024_SoSe",
-                university_id=university.id,
-            )
-            exam_service.add_exam("Exam 1", course1.id, date(2024, 6, 15), 100.0)
-            exam_service.add_exam("Exam 2", course2.id, date(2024, 7, 20), 100.0)
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        course1 = course_service.add_course(
+            name="Programming I",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course2 = course_service.add_course(
+            name="Programming II",
+            semester="2024_SoSe",
+            university_id=university.id,
+        )
+        exam_service.add_exam("Exam 1", course1.id, date(2024, 6, 15), 100.0)
+        exam_service.add_exam("Exam 2", course2.id, date(2024, 7, 20), 100.0)
 
-            course1_id = course1.id
+        course1_id = course1.id
 
-        response = client.get(f"/exams/?course_id={course1_id}")
+        response = auth_client.get(f"/exams/?course_id={course1_id}")
         assert response.status_code == 200
         assert "Exam 1" in response.data.decode("utf-8")
         assert "Exam 2" not in response.data.decode("utf-8")
@@ -94,27 +92,26 @@ class TestExamListRoute:
 class TestExamShowRoute:
     """Test exam detail route."""
 
-    def test_show_exam_success(self, app, client, university_service, course_service, exam_service):
+    def test_show_exam_success(self, app, auth_client, university_service, course_service, exam_service):
         """Test showing exam details."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            exam = exam_service.add_exam(
-                name="Final Exam",
-                course_id=course.id,
-                exam_date=date(2024, 7, 15),
-                max_points=120.0,
-                weight=60.0,
-                description="Written final exam",
-            )
-            exam_id = exam.id
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        exam = exam_service.add_exam(
+            name="Final Exam",
+            course_id=course.id,
+            exam_date=date(2024, 7, 15),
+            max_points=120.0,
+            weight=60.0,
+            description="Written final exam",
+        )
+        exam_id = exam.id
 
-        response = client.get(f"/exams/{exam_id}")
+        response = auth_client.get(f"/exams/{exam_id}")
         assert response.status_code == 200
         response_text = response.data.decode("utf-8")
         assert "Final Exam" in response_text
@@ -122,36 +119,35 @@ class TestExamShowRoute:
         assert "60.0" in response_text
         assert "Written final exam" in response_text
 
-    def test_show_exam_not_found(self, app, client, university_service, course_service):
+    def test_show_exam_not_found(self, app, auth_client, university_service, course_service):
         """Test showing non-existent exam."""
-        response = client.get("/exams/99999")
+        response = auth_client.get("/exams/99999")
         assert response.status_code == 302  # Redirect to list
 
 
 class TestExamNewRoute:
     """Test exam creation route."""
 
-    def test_new_exam_get(self, app, client, university_service, course_service):
+    def test_new_exam_get(self, app, auth_client, university_service, course_service):
         """Test GET request to new exam form."""
-        response = client.get("/exams/new")
+        response = auth_client.get("/exams/new")
         assert response.status_code == 200
         assert "Neue Prüfung" in response.data.decode("utf-8")
 
     def test_new_exam_post_success(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test successful exam creation."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course_id = course.id
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "name": "Midterm Exam",
@@ -171,19 +167,18 @@ class TestExamNewRoute:
         assert "Prüfungsdetails" in response_text
 
     def test_new_exam_missing_name(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test exam creation with missing name."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course_id = course.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "course_id": str(course_id),
@@ -196,10 +191,10 @@ class TestExamNewRoute:
         assert "required" in response.data.decode("utf-8").lower()
 
     def test_new_exam_missing_course(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test exam creation with missing course."""
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "name": "Test Exam",
@@ -212,19 +207,18 @@ class TestExamNewRoute:
         assert "required" in response.data.decode("utf-8").lower()
 
     def test_new_exam_missing_date(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test exam creation with missing date."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course_id = course.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "name": "Test Exam",
@@ -237,19 +231,18 @@ class TestExamNewRoute:
         assert "required" in response.data.decode("utf-8").lower()
 
     def test_new_exam_missing_max_points(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test exam creation with missing max points."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course_id = course.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "name": "Test Exam",
@@ -262,19 +255,18 @@ class TestExamNewRoute:
         assert "required" in response.data.decode("utf-8").lower()
 
     def test_new_exam_invalid_max_points(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test exam creation with invalid max points."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course_id = course.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "name": "Test Exam",
@@ -288,19 +280,18 @@ class TestExamNewRoute:
         assert "greater than 0" in response.data.decode("utf-8")
 
     def test_new_exam_invalid_weight(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test exam creation with invalid weight."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            course_id = course.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             "/exams/new",
             data={
                 "name": "Test Exam",
@@ -318,39 +309,37 @@ class TestExamNewRoute:
 class TestExamEditRoute:
     """Test exam edit route."""
 
-    def test_edit_exam_get(self, app, client, university_service, course_service, exam_service):
+    def test_edit_exam_get(self, app, auth_client, university_service, course_service, exam_service):
         """Test GET request to edit exam form."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
-            exam_id = exam.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
+        exam_id = exam.id
 
-        response = client.get(f"/exams/{exam_id}/edit")
+        response = auth_client.get(f"/exams/{exam_id}/edit")
         assert response.status_code == 200
         assert "bearbeiten" in response.data.decode("utf-8").lower()
         assert "Test Exam" in response.data.decode("utf-8")
 
     def test_edit_exam_post_success(
-        self, app, client, university_service, course_service, exam_service
+        self, app, auth_client, university_service, course_service, exam_service
     ):
         """Test successful exam update."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            exam = exam_service.add_exam("Original Name", course.id, date(2024, 6, 15), 100.0)
-            exam_id = exam.id
-            course_id = course.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        exam = exam_service.add_exam("Original Name", course.id, date(2024, 6, 15), 100.0)
+        exam_id = exam.id
+        course_id = course.id
 
-        response = client.post(
+        response = auth_client.post(
             f"/exams/{exam_id}/edit",
             data={
                 "name": "Updated Name",
@@ -368,48 +357,46 @@ class TestExamEditRoute:
         assert "Updated Name" in response_text
         assert "Prüfungsdetails" in response_text
 
-    def test_edit_exam_not_found(self, app, client, university_service, course_service):
+    def test_edit_exam_not_found(self, app, auth_client, university_service, course_service):
         """Test editing non-existent exam."""
-        response = client.get("/exams/99999/edit")
+        response = auth_client.get("/exams/99999/edit")
         assert response.status_code == 302  # Redirect
 
 
 class TestExamDeleteRoute:
     """Test exam delete route."""
 
-    def test_delete_exam_get(self, app, client, university_service, course_service, exam_service):
+    def test_delete_exam_get(self, app, auth_client, university_service, course_service, exam_service):
         """Test GET request to delete confirmation page."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
-            exam_id = exam.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
+        exam_id = exam.id
 
-        response = client.get(f"/exams/{exam_id}/delete")
+        response = auth_client.get(f"/exams/{exam_id}/delete")
         assert response.status_code == 200
         response_text = response.data.decode("utf-8")
         assert "löschen" in response_text.lower()
         assert "Test Exam" in response_text
 
     def test_delete_exam_post_success(
-        self, app, client, university_service, course_service, exam_service
+        self, app, auth_client, university_service, course_service, exam_service
     ):
         """Test successful exam deletion."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
-            exam_id = exam.id
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        exam = exam_service.add_exam("Test Exam", course.id, date(2024, 6, 15), 100.0)
+        exam_id = exam.id
 
-        response = client.post(f"/exams/{exam_id}/delete", follow_redirects=True)
+        response = auth_client.post(f"/exams/{exam_id}/delete", follow_redirects=True)
 
         assert response.status_code == 200
         response_text = response.data.decode("utf-8")
@@ -417,8 +404,8 @@ class TestExamDeleteRoute:
         assert "Prüfungen" in response_text
 
     def test_delete_exam_not_found(
-        self, app, client, university_service, course_service
+        self, app, auth_client, university_service, course_service
     ):
         """Test deleting non-existent exam."""
-        response = client.get("/exams/99999/delete")
+        response = auth_client.get("/exams/99999/delete")
         assert response.status_code == 302  # Redirect

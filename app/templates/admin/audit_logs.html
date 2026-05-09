@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="columns">
+        <div class="column">
+            <h1 class="title">
+                <span class="icon mr-2"><i class="fas fa-history"></i></span>
+                Audit Logs
+            </h1>
+            <p class="subtitle is-6">Protokoll aller wichtigen Systemaktionen.</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="box">
+        <form method="get">
+            <div class="field is-grouped is-grouped-multiline">
+                <div class="control">
+                    <label class="label is-small">Aktion</label>
+                    <div class="select is-small">
+                        <select name="action">
+                            <option value="">Alle Aktionen</option>
+                            <option value="create" {% if current_action == 'create' %}selected{% endif %}>Erstellen</option>
+                            <option value="update" {% if current_action == 'update' %}selected{% endif %}>Aktualisieren</option>
+                            <option value="delete" {% if current_action == 'delete' %}selected{% endif %}>Löschen</option>
+                            <option value="login" {% if current_action == 'login' %}selected{% endif %}>Login</option>
+                            <option value="login_failed" {% if current_action == 'login_failed' %}selected{% endif %}>Login Fehlgeschlagen</option>
+                            <option value="logout" {% if current_action == 'logout' %}selected{% endif %}>Logout</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control">
+                    <label class="label is-small">Entität</label>
+                    <div class="select is-small">
+                        <select name="target_type">
+                            <option value="">Alle Entitäten</option>
+                            <option value="Student" {% if current_target_type == 'Student' %}selected{% endif %}>Student</option>
+                            <option value="Course" {% if current_target_type == 'Course' %}selected{% endif %}>Kurs</option>
+                            <option value="University" {% if current_target_type == 'University' %}selected{% endif %}>Universität</option>
+                            <option value="Exam" {% if current_target_type == 'Exam' %}selected{% endif %}>Prüfung</option>
+                            <option value="Grade" {% if current_target_type == 'Grade' %}selected{% endif %}>Note</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="control" style="margin-top: auto;">
+                    <div class="buttons">
+                        <button type="submit" class="button is-primary is-small">
+                            <span class="icon is-small"><i class="fas fa-filter"></i></span>
+                            <span>Filtern</span>
+                        </button>
+                        <a href="{{ url_for('admin.audit_logs') }}" class="button is-light is-small">
+                            <span>Zurücksetzen</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="box p-0">
+        <table class="table is-fullwidth is-hoverable is-striped">
+            <thead>
+                <tr>
+                    <th>Zeitpunkt (UTC)</th>
+                    <th>Benutzer</th>
+                    <th>Aktion</th>
+                    <th>Typ</th>
+                    <th>ID</th>
+                    <th>Details</th>
+                    <th>IP-Adresse</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                    <td class="is-narrow" style="white-space: nowrap;">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        {% if log.user %}
+                            <span class="tag is-info is-light">{{ log.user.username }}</span>
+                        {% else %}
+                            <span class="has-text-grey-light is-size-7">System / Gast</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if log.action == 'create' %}
+                            <span class="tag is-success">Erstellen</span>
+                        {% elif log.action == 'update' %}
+                            <span class="tag is-warning">Ändern</span>
+                        {% elif log.action == 'delete' %}
+                            <span class="tag is-danger">Löschen</span>
+                        {% elif log.action == 'login' %}
+                            <span class="tag is-primary">Login</span>
+                        {% elif log.action == 'login_failed' %}
+                            <span class="tag is-black">Login Fehler</span>
+                        {% else %}
+                            <span class="tag is-light">{{ log.action }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.target_type or '-' }}</td>
+                    <td>{{ log.target_id or '-' }}</td>
+                    <td>
+                        <button class="button is-small is-text p-0 js-modal-trigger" data-target="modal-{{ log.id }}">
+                            Anzeigen
+                        </button>
+                        
+                        <div id="modal-{{ log.id }}" class="modal">
+                            <div class="modal-background"></div>
+                            <div class="modal-card">
+                                <header class="modal-card-head">
+                                    <p class="modal-card-title is-size-5">Details (Log #{{ log.id }})</p>
+                                    <button class="delete" aria-label="close"></button>
+                                </header>
+                                <section class="modal-card-body">
+                                    <pre class="is-size-7" style="background: transparent; padding: 0;">{{ log.details | tojson(indent=2) if log.details else '{}' }}</pre>
+                                </section>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="is-narrow has-text-grey is-size-7">{{ log.ip_address or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="has-text-centered py-6 has-text-grey">
+                        Keine Protokolle gefunden.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination and pagination.pages > 1 %}
+    <nav class="pagination is-centered" role="navigation" aria-label="pagination">
+        {% with pagination=pagination, endpoint='admin.audit_logs' %}
+            {% include "_pagination.html" %}
+        {% endwith %}
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Functions to open and close a modal
+        function openModal($el) {
+            $el.classList.add('is-active');
+        }
+
+        function closeModal($el) {
+            $el.classList.remove('is-active');
+        }
+
+        function closeAllModals() {
+            (document.querySelectorAll('.modal') || []).forEach(($modal) => {
+                closeModal($modal);
+            });
+        }
+
+        // Add a click event on buttons to open a specific modal
+        (document.querySelectorAll('.js-modal-trigger') || []).forEach(($trigger) => {
+            const modal = $trigger.dataset.target;
+            const $target = document.getElementById(modal);
+
+            $trigger.addEventListener('click', () => {
+                openModal($target);
+            });
+        });
+
+        // Add a click event on various child elements to close the parent modal
+        (document.querySelectorAll('.modal-background, .modal-close, .modal-card-head .delete, .modal-card-foot .button') || []).forEach(($close) => {
+            const $target = $close.closest('.modal');
+
+            $close.addEventListener('click', () => {
+                closeModal($target);
+            });
+        });
+
+        // Add a keyboard event to close all modals
+        document.addEventListener('keydown', (event) => {
+            if (event.key === "Escape") {
+                closeAllModals();
+            }
+        });
+    });
+</script>
+{% endblock %}

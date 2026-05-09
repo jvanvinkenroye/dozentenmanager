@@ -9,7 +9,7 @@ import io
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from flask import (
@@ -22,6 +22,7 @@ from flask import (
     request,
     url_for,
 )
+from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.datastructures import FileStorage
 
@@ -33,6 +34,7 @@ from app.models.grade import Grade
 from app.models.student import Student, validate_email
 from app.models.submission import Submission
 from app.services.student_service import StudentService
+from app.utils.auth import admin_required
 from app.utils.pagination import paginate_query
 
 # Configure logging
@@ -91,6 +93,9 @@ def _load_xlsx_rows(file: FileStorage) -> tuple[list[str], list[dict[str, str]]]
         data_only=True,
     )
     sheet = workbook.active
+    if sheet is None:
+        raise ValueError("XLSX file has no active sheet.")
+
     rows_iter = sheet.iter_rows(values_only=True)
     try:
         headers = next(rows_iter)
@@ -266,6 +271,7 @@ def _save_import_file(file: FileStorage) -> tuple[str, Path, str]:
 
 
 @bp.route("/")
+@login_required
 def index() -> str:
     """
     List all students with optional search, program filter, and pagination.
@@ -323,6 +329,7 @@ def index() -> str:
 
 
 @bp.route("/<int:student_id>")
+@login_required
 def show(student_id: int) -> str | Any:
     """
     Show details for a specific student.
@@ -379,6 +386,7 @@ def show(student_id: int) -> str | Any:
 
 
 @bp.route("/new", methods=["GET", "POST"])
+@login_required
 def new() -> str | Any:
     """
     Create a new student.
@@ -403,11 +411,11 @@ def new() -> str | Any:
         try:
             # Create new student using service
             student = service.add_student(
-                first_name=form.first_name.data,
-                last_name=form.last_name.data,
-                student_id=form.student_id.data,
-                email=form.email.data,
-                program=form.program.data,
+                first_name=cast(str, form.first_name.data),
+                last_name=cast(str, form.last_name.data),
+                student_id=cast(str, form.student_id.data),
+                email=cast(str, form.email.data),
+                program=cast(str, form.program.data),
             )
 
             logger.info(
@@ -436,7 +444,8 @@ def new() -> str | Any:
 
 
 @bp.route("/export")
-def export_students() -> Response:
+@login_required
+def export_students() -> Response | Any:
     """Export students to CSV with optional filters."""
     search_term = request.args.get("search", "").strip()
     program_filter = request.args.get("program", "").strip()
@@ -487,6 +496,8 @@ def export_students() -> Response:
 
 
 @bp.route("/import", methods=["GET", "POST"])
+@login_required
+@admin_required
 def import_students() -> str | Any:
     """Import students from CSV/XLSX/XLS."""
     form = StudentImportForm()
@@ -660,7 +671,7 @@ def import_students() -> str | Any:
                     continue
                 if form.on_duplicate.data == "update":
                     if existing.deleted_at:
-                        existing.deleted_at = None
+                        existing.deleted_at = None  # type: ignore
                     try:
                         existing_id = int(existing.id)
                         updated_student = service.update_student(
@@ -745,6 +756,7 @@ def import_students() -> str | Any:
 
 
 @bp.route("/<int:student_id>/edit", methods=["GET", "POST"])
+@login_required
 def edit(student_id: int) -> str | Any:
     """
     Edit an existing student.
@@ -820,6 +832,8 @@ def edit(student_id: int) -> str | Any:
 
 
 @bp.route("/<int:student_id>/delete", methods=["GET", "POST"])
+@login_required
+@admin_required
 def delete(student_id: int) -> str | Any:
     """
     Delete a student.

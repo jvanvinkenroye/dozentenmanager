@@ -87,7 +87,7 @@ class TestEnrollmentCLI:
     def test_add_enrollment_student_not_found(self, app, db, service, sample_course):
         """Test adding enrollment with non-existent student."""
         with app.app_context():
-            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+            with pytest.raises(ValueError, match="nicht gefunden"):
                 service.add_enrollment("99999999", sample_course)
 
     def test_add_enrollment_course_not_found(self, app, db, service, sample_student):
@@ -156,7 +156,7 @@ class TestEnrollmentCLI:
     def test_list_enrollments_student_not_found(self, app, db, service):
         """Test listing enrollments for non-existent student."""
         with app.app_context():
-            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+            with pytest.raises(ValueError, match="nicht gefunden"):
                 service.list_enrollments(student_id_str="99999999")
 
     def test_list_enrollments_empty(self, app, db, service, sample_course):
@@ -197,7 +197,7 @@ class TestEnrollmentCLI:
     def test_remove_enrollment_student_not_found(self, app, db, service, sample_course):
         """Test removing enrollment with non-existent student."""
         with app.app_context():
-            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+            with pytest.raises(ValueError, match="nicht gefunden"):
                 service.remove_enrollment("99999999", sample_course)
 
     def test_remove_enrollment_not_found(
@@ -278,7 +278,7 @@ class TestEnrollmentCLI:
     ):
         """Test updating enrollment status with non-existent student."""
         with app.app_context():
-            with pytest.raises(ValueError, match="Student with ID 99999999 not found"):
+            with pytest.raises(ValueError, match="nicht gefunden"):
                 service.update_enrollment_status("99999999", sample_course, "completed")
 
     def test_update_enrollment_status_enrollment_not_found(

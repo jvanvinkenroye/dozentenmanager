@@ -22,76 +22,75 @@ from app.models import (
 @pytest.fixture
 def sample_data(app):
     """Create sample data for testing."""
-    with app.app_context():
-        # Create university
-        university = University(name="Test University", slug="test-uni")
-        db.session.add(university)
-        db.session.flush()
+    # Create university
+    university = University(name="Test University", slug="test-uni")
+    db.session.add(university)
+    db.session.flush()
 
-        # Create course
-        course = Course(
-            name="Test Course",
-            slug="test-course",
-            semester="2024_WiSe",
-            university_id=university.id,
-        )
-        db.session.add(course)
-        db.session.flush()
+    # Create course
+    course = Course(
+        name="Test Course",
+        slug="test-course",
+        semester="2024_WiSe",
+        university_id=university.id,
+    )
+    db.session.add(course)
+    db.session.flush()
 
-        # Create student
-        student = Student(
-            first_name="Max",
-            last_name="Mustermann",
-            email="max@test.com",
-            student_id="12345678",
-            program="Computer Science",
-        )
-        db.session.add(student)
-        db.session.flush()
+    # Create student
+    student = Student(
+        first_name="Max",
+        last_name="Mustermann",
+        email="max@test.com",
+        student_id="12345678",
+        program="Computer Science",
+    )
+    db.session.add(student)
+    db.session.flush()
 
-        # Create enrollment
-        enrollment = Enrollment(
-            student_id=student.id,
-            course_id=course.id,
-            status="active",
-        )
-        db.session.add(enrollment)
-        db.session.flush()
+    # Create enrollment
+    enrollment = Enrollment(
+        student_id=student.id,
+        course_id=course.id,
+        status="active",
+    )
+    db.session.add(enrollment)
+    db.session.flush()
 
-        # Create exam
-        from datetime import date
+    # Create exam
+    from datetime import date
 
-        exam = Exam(
-            name="Test Exam",
-            course_id=course.id,
-            exam_date=date(2024, 1, 15),
-            max_points=100,
-            weight=100,
-        )
-        db.session.add(exam)
-        db.session.flush()
+    exam = Exam(
+        name="Test Exam",
+        course_id=course.id,
+        exam_date=date(2024, 1, 15),
+        max_points=100,
+        weight=100,
+    )
+    db.session.add(exam)
+    db.session.flush()
 
-        db.session.commit()
+    db.session.commit()
 
-        yield {
-            "university": university,
-            "course": course,
-            "student": student,
-            "enrollment": enrollment,
-            "exam": exam,
-        }
+    yield {
+        "university": university,
+        "course": course,
+        "student": student,
+        "enrollment": enrollment,
+        "exam": exam,
+    }
 
 
 class TestGradeIndexRoute:
     """Tests for grade list route."""
 
-    def test_index_empty(self, client):
+    def test_index_empty(self, auth_client):
         """Test empty grade list."""
-        response = client.get("/grades/")
+        response = auth_client.get("/grades/")
         assert response.status_code == 200
         assert b"Noten" in response.data
 
-    def test_index_with_grades(self, client, sample_data):
+    def test_index_with_grades(self, auth_client, sample_data):
         """Test grade list with data."""
         # Add a grade
         grade = Grade(
@@ -106,7 +105,7 @@ class TestGradeIndexRoute:
         db.session.add(grade)
         db.session.commit()
 
-        response = client.get("/grades/")
+        response = auth_client.get("/grades/")
         assert response.status_code == 200
         assert b"Mustermann" in response.data
         assert b"80" in response.data
@@ -115,15 +114,15 @@ class TestGradeIndexRoute:
 class TestGradeNewRoute:
     """Tests for new grade route."""
 
-    def test_new_get(self, client, sample_data):
+    def test_new_get(self, auth_client, sample_data):
         """Test new grade form page."""
-        response = client.get("/grades/new")
+        response = auth_client.get("/grades/new")
         assert response.status_code == 200
         assert b"Neue Note" in response.data
 
-    def test_new_post_success(self, client, sample_data):
+    def test_new_post_success(self, auth_client, sample_data):
         """Test creating a new grade via POST."""
-        response = client.post(
+        response = auth_client.post(
             "/grades/new",
             data={
                 "enrollment_id": sample_data["enrollment"].id,
@@ -146,9 +145,9 @@ class TestGradeNewRoute:
         assert grade.points == 85
         assert grade.is_final is True
 
-    def test_new_post_validation_error(self, client, sample_data):
+    def test_new_post_validation_error(self, auth_client, sample_data):
         """Test POST with validation errors."""
-        response = client.post(
+        response = auth_client.post(
             "/grades/new",
             data={
                 "enrollment_id": sample_data["enrollment"].id,
@@ -164,7 +163,7 @@ class TestGradeNewRoute:
 class TestGradeEditRoute:
     """Tests for edit grade route."""
 
-    def test_edit_get(self, client, sample_data):
+    def test_edit_get(self, auth_client, sample_data):
         """Test edit grade form page."""
         # Create a grade first
         grade = Grade(
@@ -179,11 +178,11 @@ class TestGradeEditRoute:
         db.session.add(grade)
         db.session.commit()
 
-        response = client.get(f"/grades/{grade.id}/edit")
+        response = auth_client.get(f"/grades/{grade.id}/edit")
         assert response.status_code == 200
         assert b"Note bearbeiten" in response.data
 
-    def test_edit_post_success(self, client, sample_data):
+    def test_edit_post_success(self, auth_client, sample_data):
         """Test updating a grade via POST."""
         # Create a grade first
         grade = Grade(
@@ -200,7 +199,7 @@ class TestGradeEditRoute:
 
         grade_id = grade.id
 
-        response = client.post(
+        response = auth_client.post(
             f"/grades/{grade_id}/edit",
             data={
                 "enrollment_id": sample_data["enrollment"].id,
@@ -219,22 +218,22 @@ class TestGradeEditRoute:
         assert updated_grade.points == 90
         assert updated_grade.is_final is True
 
-    def test_edit_not_found(self, client):
+    def test_edit_not_found(self, auth_client):
         """Test editing non-existent grade."""
-        response = client.get("/grades/999/edit")
+        response = auth_client.get("/grades/999/edit")
         assert response.status_code == 404
 
 
 class TestGradeDashboardRoute:
     """Tests for grade dashboard route."""
 
-    def test_dashboard_empty(self, client):
+    def test_dashboard_empty(self, auth_client):
         """Test dashboard with no grades."""
-        response = client.get("/grades/dashboard")
+        response = auth_client.get("/grades/dashboard")
         assert response.status_code == 200
         assert b"Noten-Dashboard" in response.data
 
-    def test_dashboard_with_data(self, client, sample_data):
+    def test_dashboard_with_data(self, auth_client, sample_data):
         """Test dashboard with grades."""
         # Add some grades
         grade = Grade(
@@ -249,7 +248,7 @@ class TestGradeDashboardRoute:
         db.session.add(grade)
         db.session.commit()
 
-        response = client.get("/grades/dashboard")
+        response = auth_client.get("/grades/dashboard")
         assert response.status_code == 200
         assert b"Gesamt Noten" in response.data
 
@@ -257,13 +256,13 @@ class TestGradeDashboardRoute:
 class TestGradeExamStatsRoute:
     """Tests for exam statistics route."""
 
-    def test_exam_stats_no_grades(self, client, sample_data):
+    def test_exam_stats_no_grades(self, auth_client, sample_data):
         """Test exam stats page with no grades."""
-        response = client.get(f"/grades/exam/{sample_data['exam'].id}/stats")
+        response = auth_client.get(f"/grades/exam/{sample_data['exam'].id}/stats")
         assert response.status_code == 200
         assert b"Test Exam" in response.data
 
-    def test_exam_stats_with_grades(self, client, sample_data):
+    def test_exam_stats_with_grades(self, auth_client, sample_data):
         """Test exam stats page with grades."""
         grade = Grade(
             enrollment_id=sample_data["enrollment"].id,
@@ -277,16 +276,16 @@ class TestGradeExamStatsRoute:
         db.session.add(grade)
         db.session.commit()
 
-        response = client.get(f"/grades/exam/{sample_data['exam'].id}/stats")
+        response = auth_client.get(f"/grades/exam/{sample_data['exam'].id}/stats")
         assert response.status_code == 200
 
 
 class TestGradeStudentGradesRoute:
     """Tests for student grades route."""
 
-    def test_student_grades(self, client, sample_data):
+    def test_student_grades(self, auth_client, sample_data):
         """Test student grades page."""
-        response = client.get(f"/grades/student/{sample_data['student'].id}")
+        response = auth_client.get(f"/grades/student/{sample_data['student'].id}")
         assert response.status_code == 200
         assert b"Mustermann" in response.data
 
@@ -294,13 +293,13 @@ class TestGradeStudentGradesRoute:
 class TestGradeComponentsRoute:
     """Tests for exam components route."""
 
-    def test_components_empty(self, client, sample_data):
+    def test_components_empty(self, auth_client, sample_data):
         """Test components page with no components."""
-        response = client.get(f"/grades/components/{sample_data['exam'].id}")
+        response = auth_client.get(f"/grades/components/{sample_data['exam'].id}")
         assert response.status_code == 200
         assert "Prüfungskomponenten".encode() in response.data
 
-    def test_components_with_data(self, client, sample_data):
+    def test_components_with_data(self, auth_client, sample_data):
         """Test components page with components."""
         component = ExamComponent(
             exam_id=sample_data["exam"].id,
@@ -312,7 +311,7 @@ class TestGradeComponentsRoute:
         db.session.add(component)
         db.session.commit()
 
-        response = client.get(f"/grades/components/{sample_data['exam'].id}")
+        response = auth_client.get(f"/grades/components/{sample_data['exam'].id}")
         assert response.status_code == 200
         assert b"Written Test" in response.data
         assert b"60%" in response.data
@@ -321,9 +320,9 @@ class TestGradeComponentsRoute:
 class TestGradeNewComponentRoute:
     """Tests for new component route."""
 
-    def test_new_component_get(self, client, sample_data):
+    def test_new_component_get(self, auth_client, sample_data):
         """Test new component form page."""
-        response = client.get(f"/grades/components/{sample_data['exam'].id}/new")
+        response = auth_client.get(f"/grades/components/{sample_data['exam'].id}/new")
         assert response.status_code == 200
         assert "Neue Prüfungskomponente".encode() in response.data
 
@@ -331,15 +330,15 @@ class TestGradeNewComponentRoute:
 class TestGradeBulkRoute:
     """Tests for bulk grading route."""
 
-    def test_bulk_get_no_exam(self, client):
+    def test_bulk_get_no_exam(self, auth_client):
         """Test bulk grading page without exam selected."""
-        response = client.get("/grades/bulk")
+        response = auth_client.get("/grades/bulk")
         assert response.status_code == 200
         assert b"Sammelbenotung" in response.data
 
-    def test_bulk_get_with_exam(self, client, sample_data):
+    def test_bulk_get_with_exam(self, auth_client, sample_data):
         """Test bulk grading page with exam selected."""
-        response = client.get(f"/grades/bulk?exam_id={sample_data['exam'].id}")
+        response = auth_client.get(f"/grades/bulk?exam_id={sample_data['exam'].id}")
         assert response.status_code == 200
         assert b"Sammelbenotung" in response.data
 
@@ -347,15 +346,15 @@ class TestGradeBulkRoute:
 class TestGradeApiRoutes:
     """Tests for API routes."""
 
-    def test_api_exam_components_empty(self, client, sample_data):
+    def test_api_exam_components_empty(self, auth_client, sample_data):
         """Test API for exam components when empty."""
-        response = client.get(f"/grades/api/exam/{sample_data['exam'].id}/components")
+        response = auth_client.get(f"/grades/api/exam/{sample_data['exam'].id}/components")
         assert response.status_code == 200
         data = response.get_json()
         assert "components" in data
         assert len(data["components"]) == 0
 
-    def test_api_exam_components_with_data(self, client, sample_data):
+    def test_api_exam_components_with_data(self, auth_client, sample_data):
         """Test API for exam components with data."""
         component = ExamComponent(
             exam_id=sample_data["exam"].id,
@@ -366,15 +365,15 @@ class TestGradeApiRoutes:
         db.session.add(component)
         db.session.commit()
 
-        response = client.get(f"/grades/api/exam/{sample_data['exam'].id}/components")
+        response = auth_client.get(f"/grades/api/exam/{sample_data['exam'].id}/components")
         assert response.status_code == 200
         data = response.get_json()
         assert len(data["components"]) == 1
         assert data["components"][0]["name"] == "Part 1"
 
-    def test_api_calculate_grade(self, client):
+    def test_api_calculate_grade(self, auth_client):
         """Test grade calculation API."""
-        response = client.post(
+        response = auth_client.post(
             "/grades/api/calculate",
             json={"points": 85, "max_points": 100},
             content_type="application/json",
@@ -389,12 +388,12 @@ class TestGradeApiRoutes:
 class TestGradeShowRoute:
     """Tests for grade detail route."""
 
-    def test_show_not_found(self, client):
+    def test_show_not_found(self, auth_client):
         """Test grade detail for non-existent grade."""
-        response = client.get("/grades/999")
+        response = auth_client.get("/grades/999")
         assert response.status_code == 404
 
-    def test_show_existing(self, client, sample_data):
+    def test_show_existing(self, auth_client, sample_data):
         """Test grade detail for existing grade."""
         grade = Grade(
             enrollment_id=sample_data["enrollment"].id,
@@ -408,7 +407,7 @@ class TestGradeShowRoute:
         db.session.add(grade)
         db.session.commit()
 
-        response = client.get(f"/grades/{grade.id}")
+        response = auth_client.get(f"/grades/{grade.id}")
         assert response.status_code == 200
         assert b"Note Details" in response.data
         assert b"90" in response.data
@@ -417,12 +416,12 @@ class TestGradeShowRoute:
 class TestGradeDeleteRoute:
     """Tests for grade delete route."""
 
-    def test_delete_not_found(self, client):
+    def test_delete_not_found(self, auth_client):
         """Test delete for non-existent grade."""
-        response = client.get("/grades/999/delete")
+        response = auth_client.get("/grades/999/delete")
         assert response.status_code == 404
 
-    def test_delete_get(self, client, sample_data):
+    def test_delete_get(self, auth_client, sample_data):
         """Test delete confirmation page."""
         grade = Grade(
             enrollment_id=sample_data["enrollment"].id,
@@ -435,6 +434,6 @@ class TestGradeDeleteRoute:
         db.session.add(grade)
         db.session.commit()
 
-        response = client.get(f"/grades/{grade.id}/delete")
+        response = auth_client.get(f"/grades/{grade.id}/delete")
         assert response.status_code == 200
         assert "Note löschen".encode() in response.data

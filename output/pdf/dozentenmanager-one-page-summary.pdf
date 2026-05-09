@@ -1,0 +1,97 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1373 >>
+stream
+BT
+/F1 16 Tf
+54 736 Td
+(Dozentenmanager - One-Page Summary) Tj
+ET
+BT
+/F1 11 Tf
+54 708 Td
+14 TL
+(WHAT IT IS) Tj
+T*
+(A Flask-based administration app for managing university teaching data:) Tj
+T*
+(students, courses, enrollments, exams, grades, and documents.) Tj
+T*
+() Tj
+T*
+(WHO IT IS FOR) Tj
+T*
+(Primary users are university lecturers or academic administrators who manage) Tj
+T*
+(courses, enrollments, exams, and submissions.) Tj
+T*
+() Tj
+T*
+(WHAT IT DOES) Tj
+T*
+(- Manage universities with CRUD operations and slugged URLs.) Tj
+T*
+(- Manage students with validation and search and filter tools.) Tj
+T*
+(- Manage courses by semester and university.) Tj
+T*
+(- Track enrollments with status and dates.) Tj
+T*
+(- Manage exams, grades, and grading statistics.) Tj
+T*
+(- Upload and organize documents; import from email \(.eml\).) Tj
+T*
+() Tj
+T*
+(HOW IT WORKS) Tj
+T*
+(- Browser -> Flask routes \(blueprints\) -> service layer -> SQLAlchemy ORM ->) Tj
+T*
+(SQLite database.) Tj
+T*
+(- CLI tools call the same services and convert exceptions to exit codes.) Tj
+T*
+(- Uploaded files stored on disk under uploads/ organized by university,) Tj
+T*
+(semester, course, and student.) Tj
+T*
+() Tj
+T*
+(HOW TO RUN \(MINIMAL\)) Tj
+T*
+(- uv venv --seed; source .venv/bin/activate) Tj
+T*
+(- uv sync) Tj
+T*
+(- alembic upgrade head) Tj
+T*
+(- python run.py \(open http://127.0.0.1:5009\)) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1736
+%%EOF

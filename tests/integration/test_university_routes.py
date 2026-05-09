@@ -18,27 +18,33 @@ def service():
 class TestUniversityIndexRoute:
     """Test university list route."""
 
-    def test_index_empty(self, app, client, service):
+    def test_index_unauthorized(self, app, client):
+        """Test accessing index without login."""
+        response = client.get("/universities/")
+        assert response.status_code == 302
+        assert b"/auth/login" in response.data
+
+    def test_index_empty(self, app, auth_client, service):
         """Test listing universities when none exist."""
         with app.app_context():
-            response = client.get("/universities/")
+            response = auth_client.get("/universities/")
             assert response.status_code == 200
             assert b"Keine Hochschulen gefunden" in response.data
 
-    def test_index_with_universities(self, app, client, service):
+    def test_index_with_universities(self, app, auth_client, service):
         """Test listing universities with data."""
         with app.app_context():
             service.add_university("TH Köln")
             service.add_university("RWTH Aachen")
 
-            response = client.get("/universities/")
+            response = auth_client.get("/universities/")
             assert response.status_code == 200
             assert b"TH K" in response.data  # Partial match for encoded umlaut
             assert b"RWTH Aachen" in response.data
             assert b"Hochschule(n) gefunden" in response.data
             assert b"<strong>2</strong>" in response.data
 
-    def test_index_with_search(self, app, client, service):
+    def test_index_with_search(self, app, auth_client, service):
         """Test searching universities."""
         with app.app_context():
             service.add_university("TH Köln")
@@ -46,19 +52,19 @@ class TestUniversityIndexRoute:
             service.add_university("Uni Köln")
 
             # Search by name
-            response = client.get("/universities/?search=Köln")
+            response = auth_client.get("/universities/?search=Köln")
             assert response.status_code == 200
             assert b"TH K" in response.data  # Partial match
             assert b"Uni K" in response.data  # Partial match
             assert b"RWTH Aachen" not in response.data
 
-    def test_index_search_by_slug(self, app, client, service):
+    def test_index_search_by_slug(self, app, auth_client, service):
         """Test searching universities by slug."""
         with app.app_context():
             service.add_university("TH Köln", "th-koeln")
             service.add_university("RWTH Aachen", "rwth-aachen")
 
-            response = client.get("/universities/?search=rwth")
+            response = auth_client.get("/universities/?search=rwth")
             assert response.status_code == 200
             assert b"RWTH Aachen" in response.data
             assert b"TH K" not in response.data
@@ -67,20 +73,20 @@ class TestUniversityIndexRoute:
 class TestUniversityShowRoute:
     """Test university detail route."""
 
-    def test_show_existing_university(self, app, client, service):
+    def test_show_existing_university(self, app, auth_client, service):
         """Test showing details of existing university."""
         with app.app_context():
             university = service.add_university("TH Köln")
 
-            response = client.get(f"/universities/{university.id}")
+            response = auth_client.get(f"/universities/{university.id}")
             assert response.status_code == 200
             assert b"TH K" in response.data
             assert b"th-koeln" in response.data
 
-    def test_show_nonexistent_university(self, app, client, service):
+    def test_show_nonexistent_university(self, app, auth_client, service):
         """Test showing details of non-existent university."""
         with app.app_context():
-            response = client.get("/universities/999")
+            response = auth_client.get("/universities/999")
             assert response.status_code == 302  # Redirect
             assert b"/universities/" in response.data  # Redirects to list
 
@@ -88,19 +94,19 @@ class TestUniversityShowRoute:
 class TestUniversityNewRoute:
     """Test university creation route."""
 
-    def test_new_get(self, app, client, service):
+    def test_new_get(self, app, auth_client, service):
         """Test GET request to new university form."""
         with app.app_context():
-            response = client.get("/universities/new")
+            response = auth_client.get("/universities/new")
             assert response.status_code == 200
             assert b"Neue Hochschule" in response.data
             assert b"Name" in response.data
             assert b"Slug" in response.data
 
-    def test_new_post_success(self, app, client, service):
+    def test_new_post_success(self, app, auth_client, service):
         """Test POST request to create new university."""
         with app.app_context():
-            response = client.post(
+            response = auth_client.post(
                 "/universities/new",
                 data={"name": "TH Köln", "slug": "th-koeln"},
                 follow_redirects=False,
@@ -117,10 +123,10 @@ class TestUniversityNewRoute:
             assert university is not None
             assert university.slug == "th-koeln"
 
-    def test_new_post_auto_slug(self, app, client, service):
+    def test_new_post_auto_slug(self, app, auth_client, service):
         """Test POST request with auto-generated slug."""
         with app.app_context():
-            response = client.post(
+            response = auth_client.post(
                 "/universities/new",
                 data={"name": "TH Köln", "slug": ""},
                 follow_redirects=False,
@@ -136,32 +142,32 @@ class TestUniversityNewRoute:
             assert university is not None
             assert university.slug == "th-koeln"
 
-    def test_new_post_empty_name(self, app, client, service):
+    def test_new_post_empty_name(self, app, auth_client, service):
         """Test POST request with empty name."""
         with app.app_context():
-            response = client.post(
+            response = auth_client.post(
                 "/universities/new", data={"name": "", "slug": "test"}
             )
 
             assert response.status_code == 200  # Stays on form
             assert b"University name is required" in response.data
 
-    def test_new_post_invalid_slug(self, app, client, service):
+    def test_new_post_invalid_slug(self, app, auth_client, service):
         """Test POST request with invalid slug."""
         with app.app_context():
-            response = client.post(
+            response = auth_client.post(
                 "/universities/new", data={"name": "TH Köln", "slug": "TH Köln"}
             )
 
             assert response.status_code == 200
             assert b"Invalid slug format" in response.data
 
-    def test_new_post_duplicate_name(self, app, client, service):
+    def test_new_post_duplicate_name(self, app, auth_client, service):
         """Test POST request with duplicate name."""
         with app.app_context():
             service.add_university("TH Köln")
 
-            response = client.post(
+            response = auth_client.post(
                 "/universities/new", data={"name": "TH Köln", "slug": "test"}
             )
 
@@ -172,28 +178,28 @@ class TestUniversityNewRoute:
 class TestUniversityEditRoute:
     """Test university edit route."""
 
-    def test_edit_get(self, app, client, service):
+    def test_edit_get(self, app, auth_client, service):
         """Test GET request to edit university form."""
         with app.app_context():
             university = service.add_university("TH Köln")
 
-            response = client.get(f"/universities/{university.id}/edit")
+            response = auth_client.get(f"/universities/{university.id}/edit")
             assert response.status_code == 200
             assert b"Hochschule bearbeiten" in response.data
             assert b"TH K" in response.data
 
-    def test_edit_get_nonexistent(self, app, client, service):
+    def test_edit_get_nonexistent(self, app, auth_client, service):
         """Test GET request to edit non-existent university."""
         with app.app_context():
-            response = client.get("/universities/999/edit")
+            response = auth_client.get("/universities/999/edit")
             assert response.status_code == 302  # Redirect
 
-    def test_edit_post_success(self, app, client, service):
+    def test_edit_post_success(self, app, auth_client, service):
         """Test POST request to update university."""
         with app.app_context():
             university = service.add_university("TH Köln", "th-koeln")
 
-            response = client.post(
+            response = auth_client.post(
                 f"/universities/{university.id}/edit",
                 data={"name": "Technische Hochschule Köln", "slug": "thk"},
                 follow_redirects=False,
@@ -209,12 +215,12 @@ class TestUniversityEditRoute:
             assert updated.name == "Technische Hochschule Köln"
             assert updated.slug == "thk"
 
-    def test_edit_post_empty_name(self, app, client, service):
+    def test_edit_post_empty_name(self, app, auth_client, service):
         """Test POST request with empty name."""
         with app.app_context():
             university = service.add_university("TH Köln")
 
-            response = client.post(
+            response = auth_client.post(
                 f"/universities/{university.id}/edit",
                 data={"name": "", "slug": "th-koeln"},
             )
@@ -222,12 +228,12 @@ class TestUniversityEditRoute:
             assert response.status_code == 200
             assert b"University name is required" in response.data
 
-    def test_edit_post_invalid_slug(self, app, client, service):
+    def test_edit_post_invalid_slug(self, app, auth_client, service):
         """Test POST request with invalid slug."""
         with app.app_context():
             university = service.add_university("TH Köln")
 
-            response = client.post(
+            response = auth_client.post(
                 f"/universities/{university.id}/edit",
                 data={"name": "TH Köln", "slug": "TH_Köln"},
             )
@@ -239,29 +245,29 @@ class TestUniversityEditRoute:
 class TestUniversityDeleteRoute:
     """Test university delete route."""
 
-    def test_delete_get(self, app, client, service):
+    def test_delete_get(self, app, auth_client, service):
         """Test GET request to delete confirmation page."""
         with app.app_context():
             university = service.add_university("TH Köln")
 
-            response = client.get(f"/universities/{university.id}/delete")
+            response = auth_client.get(f"/universities/{university.id}/delete")
             assert response.status_code == 200
             assert b"Hochschule l" in response.data  # "löschen" with encoding
             assert b"TH K" in response.data
 
-    def test_delete_get_nonexistent(self, app, client, service):
+    def test_delete_get_nonexistent(self, app, auth_client, service):
         """Test GET request to delete non-existent university."""
         with app.app_context():
-            response = client.get("/universities/999/delete")
+            response = auth_client.get("/universities/999/delete")
             assert response.status_code == 302
 
-    def test_delete_post_success(self, app, client, service):
+    def test_delete_post_success(self, app, auth_client, service):
         """Test POST request to delete university."""
         with app.app_context():
             university = service.add_university("TH Köln")
             university_id = university.id
 
-            response = client.post(
+            response = auth_client.post(
                 f"/universities/{university_id}/delete", follow_redirects=False
             )
 
@@ -275,8 +281,8 @@ class TestUniversityDeleteRoute:
             deleted = db.session.query(University).filter_by(id=university_id).first()
             assert deleted is None
 
-    def test_delete_post_nonexistent(self, app, client, service):
+    def test_delete_post_nonexistent(self, app, auth_client, service):
         """Test POST request to delete non-existent university."""
         with app.app_context():
-            response = client.post("/universities/999/delete", follow_redirects=False)
+            response = auth_client.post("/universities/999/delete", follow_redirects=False)
             assert response.status_code == 302

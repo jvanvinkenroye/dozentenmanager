@@ -8,6 +8,7 @@ import logging
 from typing import Any
 
 from flask import Blueprint, flash, redirect, request, url_for
+from flask_login import login_required
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.enrollment import VALID_STATUSES
@@ -22,6 +23,7 @@ bp = Blueprint("enrollment", __name__, url_prefix="/enrollments")
 
 
 @bp.route("/enroll", methods=["POST"])
+@login_required
 def enroll() -> Any:
     """
     Enroll one or more students in a course.
@@ -111,6 +113,7 @@ def enroll() -> Any:
 
 
 @bp.route("/unenroll", methods=["POST"])
+@login_required
 def unenroll() -> Any:
     """
     Unenroll a student from a course.
@@ -185,6 +188,7 @@ def unenroll() -> Any:
 
 
 @bp.route("/status", methods=["POST"])
+@login_required
 def update_status() -> Any:
     """
     Update enrollment status.

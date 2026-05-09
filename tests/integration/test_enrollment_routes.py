@@ -42,281 +42,272 @@ class TestEnrollmentRoute:
     def test_enroll_success(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test successful student enrollment in course."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            # Enroll student
-            response = client.post(
-                "/enrollments/enroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                },
-                follow_redirects=True,
-            )
+        # Enroll student
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+            },
+            follow_redirects=True,
+        )
 
-            assert response.status_code == 200
-            assert "erfolgreich" in response.data.decode("utf-8")
-            assert "eingeschrieben" in response.data.decode("utf-8")
+        assert response.status_code == 200
+        assert "erfolgreich" in response.data.decode("utf-8")
+        assert "eingeschrieben" in response.data.decode("utf-8")
 
     def test_enroll_duplicate_prevented(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that duplicate enrollments are prevented."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            # First enrollment
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        # First enrollment
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            # Try to enroll again
-            response = client.post(
-                "/enrollments/enroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                },
-            )
+        # Try to enroll again
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+            },
+        )
 
-            # Should redirect due to error
-            assert response.status_code == 302
+        # Should redirect due to error
+        assert response.status_code == 302
 
     def test_enroll_missing_student_id(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test enrollment with missing student ID."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            response = client.post(
-                "/enrollments/enroll",
-                data={"course_id": str(course.id)},
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={"course_id": str(course.id)},
+        )
 
-            # Should redirect due to error
-            assert response.status_code == 302
+        # Should redirect due to error
+        assert response.status_code == 302
 
     def test_enroll_missing_course_id(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test enrollment with missing course ID."""
-        with app.app_context():
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
 
-            response = client.post(
-                "/enrollments/enroll",
-                data={"student_id": str(student.id)},
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={"student_id": str(student.id)},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_enroll_invalid_student_id(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test enrollment with non-existent student."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            response = client.post(
-                "/enrollments/enroll",
-                data={"student_id": "99999", "course_id": str(course.id)},
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={"student_id": "99999", "course_id": str(course.id)},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_enroll_invalid_course_id(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test enrollment with non-existent course."""
-        with app.app_context():
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
 
-            response = client.post(
-                "/enrollments/enroll",
-                data={"student_id": str(student.id), "course_id": "99999"},
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={"student_id": str(student.id), "course_id": "99999"},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_enroll_non_numeric_ids(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test enrollment with non-numeric IDs."""
-        with app.app_context():
-            response = client.post(
-                "/enrollments/enroll",
-                data={"student_id": "abc", "course_id": "xyz"},
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={"student_id": "abc", "course_id": "xyz"},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_enroll_redirect_to_course(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that enrollment redirects to course page by default."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            response = client.post(
-                "/enrollments/enroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                },
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+            },
+        )
 
-            # Should redirect to course detail page
-            assert response.status_code == 302
-            assert f"/courses/{course.id}" in response.location
+        # Should redirect to course detail page
+        assert response.status_code == 302
+        assert f"/courses/{course.id}" in response.location
 
     def test_enroll_redirect_to_student(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that enrollment can redirect to student page."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            response = client.post(
-                "/enrollments/enroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "redirect_to": "student",
-                },
-            )
+        response = auth_client.post(
+            "/enrollments/enroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "redirect_to": "student",
+            },
+        )
 
-            # Should redirect to student detail page
-            assert response.status_code == 302
-            assert "/students/12345678" in response.location
+        # Should redirect to student detail page
+        assert response.status_code == 302
+        assert f"/students/{student.id}" in response.location
 
 
 class TestUnenrollmentRoute:
@@ -325,231 +316,224 @@ class TestUnenrollmentRoute:
     def test_unenroll_success(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test successful student unenrollment from course."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            # Unenroll student
-            response = client.post(
-                "/enrollments/unenroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                },
-                follow_redirects=True,
-            )
+        # Unenroll student
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+            },
+            follow_redirects=True,
+        )
 
-            assert response.status_code == 200
-            assert "erfolgreich" in response.data.decode("utf-8")
-            assert "ausgetragen" in response.data.decode("utf-8")
+        assert response.status_code == 200
+        assert "erfolgreich" in response.data.decode("utf-8")
+        assert "ausgetragen" in response.data.decode("utf-8")
 
     def test_unenroll_non_existent(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test unenrolling a non-existent enrollment."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            # Try to unenroll without enrollment
-            response = client.post(
-                "/enrollments/unenroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                },
-            )
+        # Try to unenroll without enrollment
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+            },
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_unenroll_missing_student_id(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test unenrollment with missing student ID."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            response = client.post(
-                "/enrollments/unenroll",
-                data={"course_id": str(course.id)},
-            )
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={"course_id": str(course.id)},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_unenroll_missing_course_id(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test unenrollment with missing course ID."""
-        with app.app_context():
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
 
-            response = client.post(
-                "/enrollments/unenroll",
-                data={"student_id": str(student.id)},
-            )
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={"student_id": str(student.id)},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_unenroll_non_numeric_ids(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test unenrollment with non-numeric IDs."""
-        with app.app_context():
-            response = client.post(
-                "/enrollments/unenroll",
-                data={"student_id": "abc", "course_id": "xyz"},
-            )
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={"student_id": "abc", "course_id": "xyz"},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_unenroll_redirect_to_course(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that unenrollment redirects to course page by default."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            response = client.post(
-                "/enrollments/unenroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                },
-            )
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+            },
+        )
 
-            # Should redirect to course detail page
-            assert response.status_code == 302
-            assert f"/courses/{course.id}" in response.location
+        # Should redirect to course detail page
+        assert response.status_code == 302
+        assert f"/courses/{course.id}" in response.location
 
     def test_unenroll_redirect_to_student(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that unenrollment can redirect to student page."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            response = client.post(
-                "/enrollments/unenroll",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "redirect_to": "student",
-                },
-            )
+        response = auth_client.post(
+            "/enrollments/unenroll",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "redirect_to": "student",
+            },
+        )
 
-            # Should redirect to student detail page
-            assert response.status_code == 302
-            assert "/students/12345678" in response.location
+        # Should redirect to student detail page
+        assert response.status_code == 302
+        assert f"/students/{student.id}" in response.location
 
 
 class TestUpdateStatusRoute:
@@ -558,325 +542,316 @@ class TestUpdateStatusRoute:
     def test_update_status_success(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test successful enrollment status update."""
-        with app.app_context():
-            # Create test data
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        # Create test data
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            # Update status
-            response = client.post(
-                "/enrollments/status",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "status": "completed",
-                },
-                follow_redirects=True,
-            )
+        # Update status
+        response = auth_client.post(
+            "/enrollments/status",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "status": "completed",
+            },
+            follow_redirects=True,
+        )
 
-            assert response.status_code == 200
-            assert "Status" in response.data.decode("utf-8")
-            assert "aktualisiert" in response.data.decode("utf-8")
+        assert response.status_code == 200
+        assert "Status" in response.data.decode("utf-8")
+        assert "aktualisiert" in response.data.decode("utf-8")
 
     def test_update_status_to_dropped(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test updating status to dropped sets unenrollment date."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            # Update status to dropped
-            response = client.post(
-                "/enrollments/status",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "status": "dropped",
-                },
-                follow_redirects=True,
-            )
+        # Update status to dropped
+        response = auth_client.post(
+            "/enrollments/status",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "status": "dropped",
+            },
+            follow_redirects=True,
+        )
 
-            assert response.status_code == 200
-            assert "aktualisiert" in response.data.decode("utf-8")
+        assert response.status_code == 200
+        assert "aktualisiert" in response.data.decode("utf-8")
 
     def test_update_status_invalid(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test updating status with invalid status value."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            # Try invalid status
-            response = client.post(
-                "/enrollments/status",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "status": "invalid_status",
-                },
-            )
+        # Try invalid status
+        response = auth_client.post(
+            "/enrollments/status",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "status": "invalid_status",
+            },
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_update_status_non_existent_enrollment(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test updating status for non-existent enrollment."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
 
-            # Try to update without enrollment
-            response = client.post(
-                "/enrollments/status",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "status": "completed",
-                },
-            )
+        # Try to update without enrollment
+        response = auth_client.post(
+            "/enrollments/status",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "status": "completed",
+            },
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_update_status_missing_parameters(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test updating status with missing required parameters."""
-        with app.app_context():
-            response = client.post(
-                "/enrollments/status",
-                data={"student_id": "1"},
-            )
+        response = auth_client.post(
+            "/enrollments/status",
+            data={"student_id": "1"},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_update_status_non_numeric_ids(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test updating status with non-numeric IDs."""
-        with app.app_context():
-            response = client.post(
-                "/enrollments/status",
-                data={"student_id": "abc", "course_id": "xyz", "status": "active"},
-            )
+        response = auth_client.post(
+            "/enrollments/status",
+            data={"student_id": "abc", "course_id": "xyz", "status": "active"},
+        )
 
-            assert response.status_code == 302
+        assert response.status_code == 302
 
     def test_update_status_redirect_to_course(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that status update redirects to course page by default."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            response = client.post(
-                "/enrollments/status",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "status": "completed",
-                },
-            )
+        response = auth_client.post(
+            "/enrollments/status",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "status": "completed",
+            },
+        )
 
-            # Should redirect to course detail page
-            assert response.status_code == 302
-            assert f"/courses/{course.id}" in response.location
+        # Should redirect to course detail page
+        assert response.status_code == 302
+        assert f"/courses/{course.id}" in response.location
 
     def test_update_status_redirect_to_student(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test that status update can redirect to student page."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
-            )
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
 
-            response = client.post(
-                "/enrollments/status",
-                data={
-                    "student_id": str(student.id),
-                    "course_id": str(course.id),
-                    "status": "completed",
-                    "redirect_to": "student",
-                },
-            )
+        response = auth_client.post(
+            "/enrollments/status",
+            data={
+                "student_id": str(student.id),
+                "course_id": str(course.id),
+                "status": "completed",
+                "redirect_to": "student",
+            },
+        )
 
-            # Should redirect to student detail page
-            assert response.status_code == 302
-            assert "/students/12345678" in response.location
+        # Should redirect to student detail page
+        assert response.status_code == 302
+        assert f"/students/{student.id}" in response.location
 
     def test_update_all_valid_statuses(
         self,
         app,
-        client,
+        auth_client,
         student_service,
         university_service,
         course_service,
         enrollment_service,
     ):
         """Test updating to all valid status values."""
-        with app.app_context():
-            university = university_service.add_university("TH Köln")
-            student = student_service.add_student(
-                first_name="Max",
-                last_name="Mustermann",
-                student_id="12345678",
-                email="max.mustermann@example.com",
-                program="Computer Science",
-            )
-            course = course_service.add_course(
-                name="Introduction to Programming",
-                semester="2024_WiSe",
-                university_id=university.id,
-            )
-            enrollment_service.add_enrollment(
-                student_id_str="12345678", course_id=course.id
+        university = university_service.add_university("TH Köln")
+        student = student_service.add_student(
+            first_name="Max",
+            last_name="Mustermann",
+            student_id="12345678",
+            email="max.mustermann@example.com",
+            program="Computer Science",
+        )
+        course = course_service.add_course(
+            name="Introduction to Programming",
+            semester="2024_WiSe",
+            university_id=university.id,
+        )
+        enrollment_service.add_enrollment(
+            student_id_str="12345678", course_id=course.id
+        )
+
+        valid_statuses = ["active", "completed", "dropped"]
+
+        for status in valid_statuses:
+            response = auth_client.post(
+                "/enrollments/status",
+                data={
+                    "student_id": str(student.id),
+                    "course_id": str(course.id),
+                    "status": status,
+                },
+                follow_redirects=True,
             )
 
-            valid_statuses = ["active", "completed", "dropped"]
-
-            for status in valid_statuses:
-                response = client.post(
-                    "/enrollments/status",
-                    data={
-                        "student_id": str(student.id),
-                        "course_id": str(course.id),
-                        "status": status,
-                    },
-                    follow_redirects=True,
-                )
-
-                assert response.status_code == 200
-                assert "aktualisiert" in response.data.decode("utf-8")
+            assert response.status_code == 200
+            assert "aktualisiert" in response.data.decode("utf-8")

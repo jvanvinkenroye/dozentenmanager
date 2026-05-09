@@ -30,7 +30,9 @@ csrf = CSRFProtect()
 # Login Manager
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
-login_manager.login_message = "Bitte melden Sie sich an, um auf diese Seite zuzugreifen."
+login_manager.login_message = (
+    "Bitte melden Sie sich an, um auf diese Seite zuzugreifen."
+)
 login_manager.login_message_category = "warning"
 
 
@@ -74,6 +76,9 @@ def create_app(config_name: str | None = None) -> Flask:
     # Register blueprints
     register_blueprints(app)
 
+    # Seed admin user from environment variables if configured
+    _seed_admin_user(app)
+
     # Create upload directory if it doesn't exist
     upload_folder = Path(app.config["UPLOAD_FOLDER"])
     upload_folder.mkdir(parents=True, exist_ok=True)
@@ -98,7 +103,7 @@ def init_db(app: Flask) -> None:
     """
     # Initialize Flask-SQLAlchemy
     db.init_app(app)
-    
+
     # Initialize Flask-Migrate
     migrate.init_app(app, db)
 
@@ -225,6 +230,31 @@ def register_error_handlers(app: Flask) -> None:
         db.session.rollback()
         app.logger.error(f"Internal server error: {error}")
         return render_template("errors/500.html"), 500
+
+
+def _seed_admin_user(app: Flask) -> None:
+    """Create an admin user from environment variables if configured and not yet present."""
+    username = app.config.get("ADMIN_USERNAME")
+    password = app.config.get("ADMIN_PASSWORD")
+
+    if not username or not password:
+        return
+
+    email = app.config.get("ADMIN_EMAIL") or f"{username}@localhost"
+
+    with app.app_context():
+        from app.models.user import User
+
+        existing = db.session.query(User).filter_by(username=username).first()
+        if existing:
+            app.logger.info("Admin user '%s' already exists, skipping seed.", username)
+            return
+
+        user = User(username=username, email=email, role="admin")
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        app.logger.info("Admin user '%s' created from environment variables.", username)
 
 
 def register_context_processors(app: Flask) -> None:

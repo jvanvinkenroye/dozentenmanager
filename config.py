@@ -42,6 +42,11 @@ class Config:
     LOG_MAX_BYTES = 10 * 1024 * 1024  # 10MB
     LOG_BACKUP_COUNT = 10
 
+    # Initial admin user seeding (optional)
+    ADMIN_USERNAME: str | None = os.environ.get("ADMIN_USERNAME")
+    ADMIN_EMAIL: str | None = os.environ.get("ADMIN_EMAIL")
+    ADMIN_PASSWORD: str | None = os.environ.get("ADMIN_PASSWORD")
+
     # CSRF Protection (Flask-WTF)
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None  # No time limit for CSRF tokens

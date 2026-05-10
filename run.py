@@ -80,14 +80,15 @@ def cmd_init() -> None:
 
 
 def cmd_serve() -> None:
-    """Start the web server (runs migrations automatically)."""
+    """Start the web server (runs migrations and admin seeding automatically)."""
     from flask_migrate import upgrade
 
-    from app import create_app
+    from app import _seed_admin_user, create_app
 
     app = create_app()
     with app.app_context():
         upgrade()
+        _seed_admin_user(app)
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") == "development"
     app.run(host="0.0.0.0", port=port, debug=debug)
@@ -106,7 +107,7 @@ def main() -> None:
     commands[command]()
 
 
-# Flask requires a top-level `app` for `flask` CLI compatibility
+# Top-level app instance for `flask` CLI compatibility (no seeding here)
 def _get_app():
     from app import create_app
 

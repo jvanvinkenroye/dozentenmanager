@@ -76,9 +76,6 @@ def create_app(config_name: str | None = None) -> Flask:
     # Register blueprints
     register_blueprints(app)
 
-    # Seed admin user from environment variables if configured
-    _seed_admin_user(app)
-
     # Create upload directory if it doesn't exist
     upload_folder = Path(app.config["UPLOAD_FOLDER"])
     upload_folder.mkdir(parents=True, exist_ok=True)

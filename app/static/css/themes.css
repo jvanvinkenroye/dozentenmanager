@@ -469,6 +469,24 @@ p, .content {
     color: var(--text-primary);
 }
 
+.content ul li,
+.content ol li,
+.content li strong,
+.content p strong,
+.box .content li,
+.box .content strong {
+    color: var(--text-primary) !important;
+}
+
+.breadcrumb li a,
+.breadcrumb li.is-active a {
+    color: var(--text-secondary) !important;
+}
+
+.breadcrumb li:last-child a {
+    color: var(--text-primary) !important;
+}
+
 .label {
     color: var(--text-secondary) !important;
 }

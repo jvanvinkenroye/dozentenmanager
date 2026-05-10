@@ -107,14 +107,12 @@ def main() -> None:
     commands[command]()
 
 
-# Top-level app instance for `flask` CLI compatibility (no seeding here)
-def _get_app():
-    from app import create_app
+def create_app():
+    """Expose create_app for `flask --app run:create_app` compatibility."""
+    from app import create_app as _create_app
 
-    return create_app()
+    return _create_app()
 
-
-app = _get_app()
 
 if __name__ == "__main__":
     main()

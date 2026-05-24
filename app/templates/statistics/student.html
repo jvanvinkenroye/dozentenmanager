@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Statistik: {{ stats.student_name }} - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('statistics.index') }}">Statistiken</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ stats.student_name }}</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">{{ stats.student_name }}</h1>
+<p class="subtitle">Matrikelnummer: {{ stats.student_number }}</p>
+
+<div class="columns">
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Prüfungen</p>
+            <p class="title is-3">{{ stats.grades | length }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Bestanden</p>
+            <p class="title is-3 has-text-success">{{ stats.passed_count }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Nicht bestanden</p>
+            <p class="title is-3 has-text-danger">{{ stats.failed_count }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Ø Note</p>
+            <p class="title is-3">
+                {% if stats.average_grade %}
+                    {{ "%.2f"|format(stats.average_grade)|replace(".", ",") }}
+                {% else %}—{% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Ø Prozent</p>
+            <p class="title is-3">
+                {% if stats.average_percentage %}
+                    {{ stats.average_percentage }}%
+                {% else %}—{% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+{% if stats.grades %}
+<div class="box">
+    <h2 class="subtitle">Alle Prüfungsergebnisse</h2>
+    <table class="table is-fullwidth is-hoverable is-striped">
+        <thead>
+            <tr>
+                <th>Prüfung</th>
+                <th>Lehrveranstaltung</th>
+                <th>Note</th>
+                <th>Prozent</th>
+                <th>Punkte</th>
+                <th>Datum</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for g in stats.grades %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('exam.show', exam_id=g.exam_id) }}">{{ g.exam_name }}</a>
+                </td>
+                <td>
+                    <a href="{{ url_for('course.show', course_id=g.course_id) }}">{{ g.course_name }}</a>
+                </td>
+                <td>
+                    {% if g.grade_value %}
+                    <span class="tag {% if g.grade_value <= 4.0 %}is-success{% else %}is-danger{% endif %}">
+                        {{ "%.1f"|format(g.grade_value)|replace(".", ",") }}
+                        {% if g.grade_label %} — {{ g.grade_label }}{% endif %}
+                    </span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ g.percentage }}%</td>
+                <td>{{ g.points }}</td>
+                <td>{{ g.graded_at.strftime('%d.%m.%Y') if g.graded_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="notification">
+    Keine Benotungen für diesen Studierenden vorhanden.
+</div>
+{% endif %}
+{% endblock %}

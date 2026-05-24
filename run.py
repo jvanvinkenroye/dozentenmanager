@@ -81,16 +81,29 @@ def cmd_init() -> None:
 
 def cmd_serve() -> None:
     """Start the web server (runs migrations and admin seeding automatically)."""
+    import logging
+
     from flask_migrate import upgrade
 
     from app import _seed_admin_user, create_app
+
+    # Suppress noisy startup output in production
+    logging.getLogger("alembic").setLevel(logging.WARNING)
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
     app = create_app()
     with app.app_context():
         upgrade()
         _seed_admin_user(app)
+
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV") == "development"
+
+    if debug:
+        logging.getLogger("alembic").setLevel(logging.INFO)
+        logging.getLogger("werkzeug").setLevel(logging.INFO)
+
+    print(f"Dozentenmanager läuft auf http://localhost:{port}")
     app.run(host="0.0.0.0", port=port, debug=debug)
 
 

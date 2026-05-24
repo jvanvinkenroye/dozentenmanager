@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiken - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Statistiken</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">Statistiken</h1>
+
+<!-- KPI Cards -->
+<div class="columns">
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Studierende</p>
+            <p class="title is-3">{{ stats.total_students }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Lehrveranstaltungen</p>
+            <p class="title is-3">{{ stats.total_courses }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Prüfungen</p>
+            <p class="title is-3">{{ stats.total_exams }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Benotungen</p>
+            <p class="title is-3">{{ stats.total_grades }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Durchschnittsnote</p>
+            <p class="title is-3">
+                {% if stats.overall_average_grade %}
+                    {{ "%.2f"|format(stats.overall_average_grade)|replace(".", ",") }}
+                {% else %}
+                    —
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Bestehensquote</p>
+            <p class="title is-3 {% if stats.overall_pass_rate >= 70 %}has-text-success{% elif stats.overall_pass_rate >= 50 %}has-text-warning{% else %}has-text-danger{% endif %}">
+                {{ stats.overall_pass_rate }}%
+            </p>
+        </div>
+    </div>
+</div>
+
+{% if stats.total_grades > 0 %}
+<div class="columns">
+    <!-- Grade Distribution Chart -->
+    <div class="column is-two-thirds">
+        <div class="box">
+            <h2 class="subtitle">Notenverteilung (gesamt)</h2>
+            <canvas id="globalDistChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Pass/Fail Donut -->
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle">Bestehen / Durchfall</h2>
+            <canvas id="globalPassChart"></canvas>
+            <p class="has-text-centered mt-3">
+                <span class="tag is-success is-medium mr-2">{{ stats.distribution.passed }} bestanden</span>
+                <span class="tag is-danger is-medium">{{ stats.distribution.failed }} durchgefallen</span>
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if stats.top_courses %}
+<div class="box">
+    <h2 class="subtitle">Lehrveranstaltungen (nach Einschreibungen)</h2>
+    <table class="table is-fullwidth is-hoverable is-striped">
+        <thead>
+            <tr>
+                <th>Lehrveranstaltung</th>
+                <th>Eingeschrieben</th>
+                <th>Benotet</th>
+                <th>Ø Note</th>
+                <th>Bestehensquote</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in stats.top_courses %}
+            <tr>
+                <td>{{ c.course_name }}</td>
+                <td>{{ c.enrollment_count }}</td>
+                <td>{{ c.graded_count }}</td>
+                <td>
+                    {% if c.average_grade %}
+                        {{ "%.2f"|format(c.average_grade)|replace(".", ",") }}
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if c.distribution.total > 0 %}
+                        <progress class="progress {% if c.distribution.pass_rate >= 70 %}is-success{% elif c.distribution.pass_rate >= 50 %}is-warning{% else %}is-danger{% endif %}"
+                            value="{{ c.distribution.pass_rate }}" max="100" style="max-width:120px; display:inline-block; vertical-align:middle;"></progress>
+                        {{ c.distribution.pass_rate }}%
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('statistics.course', course_id=c.course_id) }}" class="button is-small is-info is-light">
+                        <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+const dangerColor = getComputedStyle(document.documentElement).getPropertyValue('--danger-color').trim();
+const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success-color').trim();
+const warningColor = getComputedStyle(document.documentElement).getPropertyValue('--warning-color').trim();
+const infoColor = getComputedStyle(document.documentElement).getPropertyValue('--info-color').trim();
+
+{% if stats.total_grades > 0 %}
+// Grade distribution bar chart
+new Chart(document.getElementById('globalDistChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ stats.distribution.labels | tojson }},
+        datasets: [{
+            label: 'Anzahl Studierende',
+            data: {{ stats.distribution.counts | tojson }},
+            backgroundColor: {{ stats.distribution.labels | tojson }}.map((l, i) => {
+                const val = parseFloat(l.replace(',', '.'));
+                return val <= 4.0 ? primaryColor : dangerColor;
+            }),
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+
+// Pass/fail donut
+new Chart(document.getElementById('globalPassChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Bestanden', 'Durchgefallen'],
+        datasets: [{
+            data: [{{ stats.distribution.passed }}, {{ stats.distribution.failed }}],
+            backgroundColor: [successColor, dangerColor],
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

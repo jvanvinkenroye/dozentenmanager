@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Statistik: {{ stats.course_name }} - Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('statistics.index') }}">Statistiken</a></li>
+                <li class="is-active"><a href="#" aria-current="page">{{ stats.course_name }}</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<h1 class="title">{{ stats.course_name }}</h1>
+<p class="subtitle">Kursstatistik</p>
+
+<div class="columns">
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Eingeschrieben</p>
+            <p class="title is-3">{{ stats.enrollment_count }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Benotet</p>
+            <p class="title is-3">{{ stats.graded_count }}</p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Ø Note</p>
+            <p class="title is-3">
+                {% if stats.average_grade %}
+                    {{ "%.2f"|format(stats.average_grade)|replace(".", ",") }}
+                {% else %}—{% endif %}
+            </p>
+        </div>
+    </div>
+    <div class="column">
+        <div class="box has-text-centered">
+            <p class="heading">Bestehensquote</p>
+            <p class="title is-3 {% if stats.distribution.pass_rate >= 70 %}has-text-success{% elif stats.distribution.pass_rate >= 50 %}has-text-warning{% else %}has-text-danger{% endif %}">
+                {{ stats.distribution.pass_rate }}%
+            </p>
+        </div>
+    </div>
+</div>
+
+{% if stats.graded_count > 0 %}
+<div class="columns">
+    <div class="column is-two-thirds">
+        <div class="box">
+            <h2 class="subtitle">Notenverteilung</h2>
+            <canvas id="courseDistChart" height="100"></canvas>
+        </div>
+    </div>
+    <div class="column is-one-third">
+        <div class="box">
+            <h2 class="subtitle">Bestehen / Durchfall</h2>
+            <canvas id="coursePassChart"></canvas>
+            <p class="has-text-centered mt-3">
+                <span class="tag is-success is-medium mr-2">{{ stats.distribution.passed }} bestanden</span>
+                <span class="tag is-danger is-medium">{{ stats.distribution.failed }} durchgefallen</span>
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if stats.exam_stats %}
+<div class="box">
+    <h2 class="subtitle">Prüfungen</h2>
+    {% for exam in stats.exam_stats %}
+    <div class="mb-5">
+        <h3 class="is-size-6 has-text-weight-bold mb-2">
+            <a href="{{ url_for('exam.show', exam_id=exam.exam_id) }}">{{ exam.exam_name }}</a>
+            <span class="tag is-light ml-2">{{ exam.total_grades }} Benotungen</span>
+            {% if exam.average_grade %}
+            <span class="tag is-info is-light ml-1">Ø {{ "%.2f"|format(exam.average_grade)|replace(".", ",") }}</span>
+            {% endif %}
+            {% if exam.distribution.total > 0 %}
+            <span class="tag {% if exam.distribution.pass_rate >= 70 %}is-success{% elif exam.distribution.pass_rate >= 50 %}is-warning{% else %}is-danger{% endif %} is-light ml-1">
+                {{ exam.distribution.pass_rate }}% bestanden
+            </span>
+            {% endif %}
+        </h3>
+        {% if exam.total_grades > 0 %}
+        <canvas id="examChart{{ loop.index }}" height="60"></canvas>
+        {% else %}
+        <p class="has-text-grey is-size-7">Keine Benotungen vorhanden.</p>
+        {% endif %}
+    </div>
+    {% if not loop.last %}<hr>{% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+const dangerColor = getComputedStyle(document.documentElement).getPropertyValue('--danger-color').trim();
+const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success-color').trim();
+
+{% if stats.graded_count > 0 %}
+new Chart(document.getElementById('courseDistChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ stats.distribution.labels | tojson }},
+        datasets: [{
+            label: 'Studierende',
+            data: {{ stats.distribution.counts | tojson }},
+            backgroundColor: {{ stats.distribution.labels | tojson }}.map(l => parseFloat(l.replace(',', '.')) <= 4.0 ? primaryColor : dangerColor),
+            borderRadius: 4,
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+new Chart(document.getElementById('coursePassChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Bestanden', 'Durchgefallen'],
+        datasets: [{ data: [{{ stats.distribution.passed }}, {{ stats.distribution.failed }}], backgroundColor: [successColor, dangerColor], borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+{% endif %}
+
+{% for exam in stats.exam_stats %}
+{% if exam.total_grades > 0 %}
+new Chart(document.getElementById('examChart{{ loop.index }}'), {
+    type: 'bar',
+    data: {
+        labels: {{ exam.distribution.labels | tojson }},
+        datasets: [{
+            data: {{ exam.distribution.counts | tojson }},
+            backgroundColor: {{ exam.distribution.labels | tojson }}.map(l => parseFloat(l.replace(',', '.')) <= 4.0 ? primaryColor + 'bb' : dangerColor + 'bb'),
+            borderRadius: 3,
+        }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+{% endif %}
+{% endfor %}
+</script>
+{% endblock %}

@@ -5,11 +5,10 @@ This module provides web routes for managing exams through the Flask interface.
 """
 
 import logging
-from datetime import date
 from typing import Any
 
-from flask_login import login_required
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
@@ -92,9 +91,14 @@ def show(exam_id: int) -> str | Any:
             flash(f"Exam with ID {exam_id} not found.", "error")
             return redirect(url_for("exam.index"))
 
+        from app.services.statistics_service import get_exam_stats
+
+        exam_stats = get_exam_stats(exam_id)
+
         return render_template(
             "exam/detail.html",
             exam=exam,
+            exam_stats=exam_stats,
         )
 
     except SQLAlchemyError as e:

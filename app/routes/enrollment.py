@@ -63,9 +63,9 @@ def enroll() -> Any:
 
     # Parse all student IDs first
     student_id_ints: list[int] = []
-    for student_db_id in student_ids:
+    for student_id_str in student_ids:
         try:
-            student_id_ints.append(int(student_db_id))
+            student_id_ints.append(int(student_id_str))
         except ValueError:
             errors += 1
 

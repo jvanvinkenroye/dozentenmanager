@@ -10,6 +10,7 @@ from typing import Any, cast
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.forms.course import CourseForm
@@ -106,8 +107,6 @@ def show(course_id: int) -> str | Any:
     service = CourseService()
 
     try:
-        from sqlalchemy.orm import joinedload
-
         from app.models.enrollment import Enrollment
         from app.models.exam import Exam
         from app.models.submission import Submission

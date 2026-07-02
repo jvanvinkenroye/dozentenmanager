@@ -7,9 +7,10 @@ This module provides web routes for managing courses through the Flask interface
 import logging
 from typing import Any, cast
 
-from flask_login import login_required
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.forms.course import CourseForm
@@ -119,6 +120,7 @@ def show(course_id: int) -> str | Any:
         # Get enrollments for this course
         enrollments = (
             db.session.query(Enrollment)
+            .options(joinedload(Enrollment.student))
             .join(Student)
             .filter(Enrollment.course_id == course_id)
             .filter(Student.deleted_at.is_(None))

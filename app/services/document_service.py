@@ -259,6 +259,61 @@ class DocumentService(BaseService):
             logger.error(f"Database error while uploading document: {e}")
             raise ValueError(f"Failed to upload document: {e}") from e
 
+    def build_documents_query(
+        self,
+        enrollment_id: int | None = None,
+        submission_id: int | None = None,
+        file_type: str | None = None,
+        course_id: int | None = None,
+        student_id: int | None = None,
+        status: str | None = None,
+    ):
+        """
+        Build a filtered documents query without executing it.
+
+        This allows callers to apply pagination or further modifications
+        before executing the query.
+
+        Args:
+            enrollment_id: Optional enrollment ID filter
+            submission_id: Optional submission ID filter
+            file_type: Optional file type filter
+            course_id: Optional course ID filter
+            student_id: Optional student ID filter
+            status: Optional submission status filter
+
+        Returns:
+            SQLAlchemy Query object ordered by upload_date desc
+        """
+        query = (
+            self.query(Document)
+            .join(Submission)
+            .join(Enrollment)
+            .join(Student)
+            .join(Course)
+            .filter(Student.deleted_at.is_(None))
+        )
+
+        if enrollment_id:
+            query = query.filter(Submission.enrollment_id == enrollment_id)
+
+        if submission_id:
+            query = query.filter(Document.submission_id == submission_id)
+
+        if file_type:
+            query = query.filter(Document.file_type == file_type.lower())
+
+        if course_id:
+            query = query.filter(Course.id == course_id)
+
+        if student_id:
+            query = query.filter(Student.id == student_id)
+
+        if status:
+            query = query.filter(Submission.status == status)
+
+        return query.order_by(Document.upload_date.desc())
+
     def list_documents(
         self,
         enrollment_id: int | None = None,
@@ -283,34 +338,14 @@ class DocumentService(BaseService):
             List of Document objects matching the filters
         """
         try:
-            query = (
-                self.query(Document)
-                .join(Submission)
-                .join(Enrollment)
-                .join(Student)
-                .join(Course)
-                .filter(Student.deleted_at.is_(None))
-            )
-
-            if enrollment_id:
-                query = query.filter(Submission.enrollment_id == enrollment_id)
-
-            if submission_id:
-                query = query.filter(Document.submission_id == submission_id)
-
-            if file_type:
-                query = query.filter(Document.file_type == file_type.lower())
-
-            if course_id:
-                query = query.filter(Course.id == course_id)
-
-            if student_id:
-                query = query.filter(Student.id == student_id)
-
-            if status:
-                query = query.filter(Submission.status == status)
-
-            return query.order_by(Document.upload_date.desc()).all()
+            return self.build_documents_query(
+                enrollment_id=enrollment_id,
+                submission_id=submission_id,
+                file_type=file_type,
+                course_id=course_id,
+                student_id=student_id,
+                status=status,
+            ).all()
 
         except SQLAlchemyError as e:
             logger.error(f"Database error while listing documents: {e}")

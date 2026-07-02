@@ -8,9 +8,10 @@ and viewing grade statistics/analytics.
 import logging
 from typing import cast
 
-from flask_login import login_required
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import login_required
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
 
 from app import db
 from app.forms.grade import (
@@ -123,7 +124,11 @@ def new():
 
     # Populate dropdowns
     enrollments = (
-        Enrollment.query.join(Student)
+        Enrollment.query.options(
+            joinedload(Enrollment.student),
+            joinedload(Enrollment.course),
+        )
+        .join(Student)
         .join(Course)
         .filter(Enrollment.status == "active")
         .order_by(Student.last_name, Student.first_name)
@@ -303,7 +308,8 @@ def bulk():
         exam = Exam.query.get(exam_id)
         if exam:
             enrollments = (
-                Enrollment.query.join(Student)
+                Enrollment.query.options(joinedload(Enrollment.student))
+                .join(Student)
                 .filter(Enrollment.course_id == exam.course_id)
                 .filter(Enrollment.status == "active")
                 .order_by(Student.last_name, Student.first_name)
@@ -467,9 +473,14 @@ def student_grades(student_id: int):
 
     # Get all enrollments with their grades
     enrollments_with_grades = []
-    for enrollment in student.enrollments:
-        grades = Grade.query.filter_by(enrollment_id=enrollment.id).all()
-        service = GradeService()
+    service = GradeService()
+    student_enrollments = (
+        Enrollment.query.options(selectinload(Enrollment.grades))
+        .filter_by(student_id=student.id)
+        .all()
+    )
+    for enrollment in student_enrollments:
+        grades = enrollment.grades
         weighted_avg = service.calculate_weighted_average(enrollment.id)
         enrollments_with_grades.append(
             {

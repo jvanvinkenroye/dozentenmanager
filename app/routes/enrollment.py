@@ -60,24 +60,33 @@ def enroll() -> Any:
     already_enrolled = 0
     errors = 0
     first_student_db_id: int | None = None
-    for student_db_id in student_ids:
+
+    # Parse all student IDs first
+    student_id_ints: list[int] = []
+    for student_id_str in student_ids:
         try:
-            student_id_int = int(student_db_id)
+            student_id_ints.append(int(student_id_str))
         except ValueError:
+            errors += 1
+
+    # Batch-load all requested students in a single query
+    students_by_id: dict[int, Student] = {}
+    if student_id_ints:
+        loaded = (
+            service.query(Student)
+            .filter(Student.id.in_(student_id_ints))
+            .filter(Student.deleted_at.is_(None))
+            .all()
+        )
+        students_by_id = {s.id: s for s in loaded}
+
+    for student_id_int in student_id_ints:
+        student = students_by_id.get(student_id_int)
+        if not student:
             errors += 1
             continue
 
         try:
-            student = (
-                service.query(Student)
-                .filter_by(id=student_id_int)
-                .filter(Student.deleted_at.is_(None))
-                .first()
-            )
-            if not student:
-                errors += 1
-                continue
-
             if first_student_db_id is None:
                 first_student_db_id = student.id
 

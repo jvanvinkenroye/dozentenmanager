@@ -20,6 +20,7 @@ from flask import (
 )
 from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from app import db
@@ -38,6 +39,7 @@ from app.models.exam import Exam
 from app.models.student import Student
 from app.services.document_service import DocumentService
 from app.utils.auth import admin_required, lecturer_required
+from app.utils.pagination import paginate_query
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -71,13 +73,15 @@ def index() -> str:
         file_type = request.args.get("file_type", "").strip()
         status = request.args.get("status", "").strip()
 
-        # Get documents using service
-        documents = service.list_documents(
+        # Build paginated query via service
+        documents_query = service.build_documents_query(
             course_id=course_id,
             student_id=student_id,
-            file_type=file_type,
-            status=status,
+            file_type=file_type or None,
+            status=status or None,
         )
+        pagination = paginate_query(documents_query, per_page=25)
+        documents = pagination.items
 
         # Get filter options (still need direct queries for dropdowns efficiently)
         courses = db.session.query(Course).order_by(Course.name).all()
@@ -100,9 +104,14 @@ def index() -> str:
         return render_template(
             "document/list.html",
             documents=documents,
+            pagination=pagination,
             form=form,
             courses=courses,
             students=students,
+            course_id=course_id,
+            student_id=student_id,
+            file_type=file_type,
+            status=status,
         )
 
     except SQLAlchemyError as e:
@@ -204,6 +213,10 @@ def upload() -> str | Any:
         # Get available enrollments and exams for form choices
         enrollments = (
             db.session.query(Enrollment)
+            .options(
+                joinedload(Enrollment.student),
+                joinedload(Enrollment.course),
+            )
             .join(Student)
             .join(Course)
             .filter(Enrollment.status == "active")
@@ -211,7 +224,12 @@ def upload() -> str | Any:
             .all()
         )
 
-        exams = db.session.query(Exam).order_by(Exam.exam_date.desc()).all()
+        exams = (
+            db.session.query(Exam)
+            .options(joinedload(Exam.course))
+            .order_by(Exam.exam_date.desc())
+            .all()
+        )
 
         form = DocumentUploadForm()
         form.enrollment_id.choices = [
@@ -288,7 +306,12 @@ def bulk_upload() -> str | Any:
     service = DocumentService()
     try:
         courses = db.session.query(Course).order_by(Course.name).all()
-        exams = db.session.query(Exam).order_by(Exam.exam_date.desc()).all()
+        exams = (
+            db.session.query(Exam)
+            .options(joinedload(Exam.course))
+            .order_by(Exam.exam_date.desc())
+            .all()
+        )
 
         form = BulkDocumentUploadForm()
         form.course_id.choices = [(int(c.id), str(c.name)) for c in courses]

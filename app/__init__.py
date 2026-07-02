@@ -193,15 +193,35 @@ def register_blueprints(app: Flask) -> None:
             Rendered home template with statistics
         """
         from flask import render_template
+        from sqlalchemy import func, select
 
+        from app import db
         from app.models import Course, Enrollment, Student, University
 
-        # Get statistics from database
+        # Fetch all four counts in a single round-trip using scalar subqueries
+        university_count = select(func.count(University.id)).scalar_subquery()
+        student_count = select(func.count(Student.id)).scalar_subquery()
+        course_count = select(func.count(Course.id)).scalar_subquery()
+        enrollment_count = (
+            select(func.count(Enrollment.id))
+            .where(Enrollment.status == "active")
+            .scalar_subquery()
+        )
+
+        row = db.session.execute(
+            select(
+                university_count.label("universities"),
+                student_count.label("students"),
+                course_count.label("courses"),
+                enrollment_count.label("enrollments"),
+            )
+        ).one()
+
         stats = {
-            "universities": University.query.count(),
-            "students": Student.query.count(),
-            "courses": Course.query.count(),
-            "enrollments": Enrollment.query.filter_by(status="active").count(),
+            "universities": row.universities,
+            "students": row.students,
+            "courses": row.courses,
+            "enrollments": row.enrollments,
         }
 
         return render_template("home.html", stats=stats)

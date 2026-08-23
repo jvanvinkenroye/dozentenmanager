@@ -348,7 +348,9 @@ class TestGradeApiRoutes:
 
     def test_api_exam_components_empty(self, auth_client, sample_data):
         """Test API for exam components when empty."""
-        response = auth_client.get(f"/grades/api/exam/{sample_data['exam'].id}/components")
+        response = auth_client.get(
+            f"/grades/api/exam/{sample_data['exam'].id}/components"
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert "components" in data
@@ -365,7 +367,9 @@ class TestGradeApiRoutes:
         db.session.add(component)
         db.session.commit()
 
-        response = auth_client.get(f"/grades/api/exam/{sample_data['exam'].id}/components")
+        response = auth_client.get(
+            f"/grades/api/exam/{sample_data['exam'].id}/components"
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert len(data["components"]) == 1

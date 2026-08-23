@@ -3,7 +3,7 @@ Authentication forms for Dozentenmanager.
 """
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, BooleanField, SubmitField
+from wtforms import BooleanField, PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
 
 from app.models.user import User
@@ -11,6 +11,7 @@ from app.models.user import User
 
 class LoginForm(FlaskForm):
     """Form for user login."""
+
     username = StringField("Benutzername", validators=[DataRequired()])
     password = PasswordField("Passwort", validators=[DataRequired()])
     remember_me = BooleanField("Angemeldet bleiben")
@@ -19,6 +20,7 @@ class LoginForm(FlaskForm):
 
 class RegistrationForm(FlaskForm):
     """Form for user registration."""
+
     username = StringField("Benutzername", validators=[DataRequired()])
     email = StringField("E-Mail", validators=[DataRequired(), Email()])
     password = PasswordField("Passwort", validators=[DataRequired()])

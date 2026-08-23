@@ -194,9 +194,7 @@ class Document(db.Model, TimestampMixin):  # type: ignore[name-defined]
             "file_type": self.file_type,
             "file_size": self.file_size,
             "mime_type": self.mime_type,
-            "upload_date": (
-                self.upload_date.isoformat() if self.upload_date else None
-            ),
+            "upload_date": (self.upload_date.isoformat() if self.upload_date else None),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

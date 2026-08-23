@@ -86,7 +86,11 @@ class Enrollment(db.Model):  # type: ignore[name-defined]
             "id": self.id,
             "student_id": self.student_id,
             "course_id": self.course_id,
-            "enrollment_date": self.enrollment_date.isoformat() if self.enrollment_date else None,
-            "unenrollment_date": self.unenrollment_date.isoformat() if self.unenrollment_date else None,
+            "enrollment_date": self.enrollment_date.isoformat()
+            if self.enrollment_date
+            else None,
+            "unenrollment_date": self.unenrollment_date.isoformat()
+            if self.unenrollment_date
+            else None,
             "status": self.status,
         }

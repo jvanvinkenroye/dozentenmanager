@@ -23,15 +23,15 @@ def audit_logs():
     List all audit logs with pagination.
     """
     page, per_page = get_pagination_args()
-    
+
     # Base query
     query = AuditLog.query.order_by(AuditLog.created_at.desc())
-    
+
     # Filtering by action
     action = request.args.get("action")
     if action:
         query = query.filter_by(action=action)
-        
+
     # Filtering by target type
     target_type = request.args.get("target_type")
     if target_type:
@@ -39,11 +39,11 @@ def audit_logs():
 
     # Paginate
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    
+
     return render_template(
         "admin/audit_logs.html",
         pagination=pagination,
         audit_logs=pagination.items,
         current_action=action,
-        current_target_type=target_type
+        current_target_type=target_type,
     )

@@ -18,9 +18,7 @@ class TimestampMixin:
         updated_at: Timestamp when the record was last updated (timezone-aware UTC)
     """
 
-    created_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.now(UTC)
-    )
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     updated_at = Column(
         DateTime,
         nullable=False,

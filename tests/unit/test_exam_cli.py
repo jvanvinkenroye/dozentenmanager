@@ -186,8 +186,9 @@ class TestAddExam:
 
     def test_add_exam_invalid_max_points(self, app, db, sample_course, exam_service):
         """Test that invalid max points raises ValueError."""
-        with app.app_context(), pytest.raises(
-            ValueError, match="Maximum points must be greater than 0"
+        with (
+            app.app_context(),
+            pytest.raises(ValueError, match="Maximum points must be greater than 0"),
         ):
             exam_service.add_exam(
                 name="Klausur",
@@ -257,8 +258,12 @@ class TestListExams:
 
             # Create exams
             exam_service.add_exam("Midterm", course1_id, date(2024, 5, 1), 50.0, 40.0)
-            exam_service.add_exam("Final Exam", course1_id, date(2024, 7, 15), 100.0, 60.0)
-            exam_service.add_exam("Klausur", course2_id, date(2024, 6, 20), 100.0, 100.0)
+            exam_service.add_exam(
+                "Final Exam", course1_id, date(2024, 7, 15), 100.0, 60.0
+            )
+            exam_service.add_exam(
+                "Klausur", course2_id, date(2024, 6, 20), 100.0, 100.0
+            )
 
             return {"course1": course1_id, "course2": course2_id}
 
@@ -374,7 +379,9 @@ class TestUpdateExam:
     def test_update_exam_description(self, app, db, sample_exam, exam_service):
         """Test updating description."""
         with app.app_context():
-            exam = exam_service.update_exam(sample_exam, description="Updated description")
+            exam = exam_service.update_exam(
+                sample_exam, description="Updated description"
+            )
             assert exam.description == "Updated description"
 
     def test_update_exam_multiple_fields(self, app, db, sample_exam, exam_service):
@@ -407,8 +414,9 @@ class TestUpdateExam:
 
     def test_update_exam_invalid_max_points(self, app, db, sample_exam, exam_service):
         """Test that invalid max points raises ValueError."""
-        with app.app_context(), pytest.raises(
-            ValueError, match="Maximum points must be greater than 0"
+        with (
+            app.app_context(),
+            pytest.raises(ValueError, match="Maximum points must be greater than 0"),
         ):
             exam_service.update_exam(sample_exam, max_points=0.0)
 

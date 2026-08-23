@@ -7,8 +7,8 @@ This module provides web routes for managing courses through the Flask interface
 import logging
 from typing import Any, cast
 
-from flask_login import login_required
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db

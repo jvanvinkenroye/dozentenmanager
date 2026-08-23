@@ -4,8 +4,7 @@ Audit Service for logging user actions.
 This module provides a service for creating audit logs.
 """
 
-import json
-from typing import Any, Optional
+from typing import Any
 
 from flask import has_request_context, request
 from flask_login import current_user
@@ -20,10 +19,10 @@ class AuditService:
     @staticmethod
     def log(
         action: str,
-        target_type: Optional[str] = None,
-        target_id: Optional[int] = None,
-        details: Optional[dict[str, Any]] = None,
-        user_id: Optional[int] = None,
+        target_type: str | None = None,
+        target_id: int | None = None,
+        details: dict[str, Any] | None = None,
+        user_id: int | None = None,
     ) -> AuditLog:
         """
         Create a new audit log entry.
@@ -39,9 +38,8 @@ class AuditService:
             The created AuditLog entry
         """
         # Determine user_id if not provided
-        if user_id is None:
-            if current_user and current_user.is_authenticated:
-                user_id = current_user.id
+        if user_id is None and current_user and current_user.is_authenticated:
+            user_id = current_user.id
 
         # Determine IP address if in request context
         ip_address = None

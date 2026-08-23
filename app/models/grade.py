@@ -146,9 +146,7 @@ class GradingScale(db.Model, TimestampMixin):  # type: ignore[name-defined]
     )
 
     # Constraints
-    __table_args__ = (
-        Index("idx_grading_scale_university", "university_id"),
-    )
+    __table_args__ = (Index("idx_grading_scale_university", "university_id"),)
 
     def __repr__(self) -> str:
         """String representation of GradingScale."""
@@ -213,9 +211,7 @@ class GradeThreshold(db.Model, TimestampMixin):  # type: ignore[name-defined]
             "min_percentage >= 0 AND min_percentage <= 100",
             name="ck_threshold_percentage",
         ),
-        UniqueConstraint(
-            "scale_id", "grade_value", name="uq_threshold_scale_grade"
-        ),
+        UniqueConstraint("scale_id", "grade_value", name="uq_threshold_scale_grade"),
         Index("idx_threshold_scale", "scale_id"),
         Index("idx_threshold_percentage", "min_percentage"),
     )
@@ -275,9 +271,7 @@ class Grade(db.Model, TimestampMixin):  # type: ignore[name-defined]
     percentage = Column(Float, nullable=False)
     grade_value = Column(Float, nullable=True)
     grade_label = Column(String(50), nullable=True)
-    graded_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.now(UTC)
-    )
+    graded_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     graded_by = Column(String(100), nullable=True)
     is_final = Column(Boolean, nullable=False, default=False)
     notes = Column(Text, nullable=True)
@@ -366,9 +360,7 @@ class Grade(db.Model, TimestampMixin):  # type: ignore[name-defined]
             ValueError: If points are invalid
         """
         if not validate_points(points, max_points):
-            raise ValueError(
-                f"Points must be between 0 and {max_points}, got {points}"
-            )
+            raise ValueError(f"Points must be between 0 and {max_points}, got {points}")
 
         percentage = calculate_percentage(points, max_points)
 

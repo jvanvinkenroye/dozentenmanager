@@ -10,7 +10,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from flask_login import login_required
 from flask import (
     Blueprint,
     flash,
@@ -20,6 +19,7 @@ from flask import (
     send_file,
     url_for,
 )
+from flask_login import login_required
 from werkzeug.utils import secure_filename
 
 from app.utils.auth import admin_required

@@ -588,6 +588,9 @@ def import_students() -> str | Any:
             )
     else:
         rows = []
+        if request.method == "POST":
+            for field_errors in form.errors.values():
+                import_errors.extend(field_errors)
 
     if "rows" in locals() and not rows and mapping_token:
         flash("Keine Datenzeilen gefunden.", "warning")

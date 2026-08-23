@@ -214,7 +214,6 @@ class TestSubmissionDetailRoute:
         response = auth_client.get("/documents/submissions/999")
         assert response.status_code == 302
 
-    @pytest.mark.skip(reason="Template URL building issue - fix later")
     def test_submission_detail_existing(self, auth_client, sample_data, app):
         """Test showing existing submission."""
         # Create a submission
@@ -300,7 +299,6 @@ class TestDocumentShowRoute:
         # Should redirect to index
         assert response.status_code == 302
 
-    @pytest.mark.skip(reason="Template URL building issue - fix later")
     def test_show_existing_document(self, auth_client, sample_data, app):
         """Test showing existing document."""
         # Create a document first

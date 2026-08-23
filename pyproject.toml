@@ -127,7 +127,7 @@ addopts = [
     "--cov=cli",
     "--cov-report=html",
     "--cov-report=term-missing",
-    "--cov-fail-under=40",
+    "--cov-fail-under=55",
     "-v",
 ]
 

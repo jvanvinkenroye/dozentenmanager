@@ -69,9 +69,10 @@ All code must pass before commit:
 
 ## Known Issues / Housekeeping
 
-- `2026_01_12_00-421768174963_member_export_760461.csv` sits in the repo
-  root and looks like real member data — review whether it should be
-  removed from the repository and gitignored.
+- The member-data export CSV that sat in the repo root has been removed
+  and `*member_export*.csv` is now gitignored. Note: the file is still
+  present in older git history; scrubbing history would require a
+  rewrite (e.g. git-filter-repo) and force-pushes.
 
 ## History
 

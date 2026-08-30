@@ -115,3 +115,6 @@ GEMINI.md
 ssl/
 nginx/logs/
 coverage.json
+
+# Data exports (never commit member/student data)
+*member_export*.csv

@@ -84,7 +84,9 @@ class BulkDocumentUploadForm(FlaskForm):
     course_id = SelectField(
         "Lehrveranstaltung",
         coerce=int,
-        validators=[DataRequired(message="Bitte wählen Sie eine Lehrveranstaltung aus.")],
+        validators=[
+            DataRequired(message="Bitte wählen Sie eine Lehrveranstaltung aus.")
+        ],
     )
 
     submission_type = SelectField(
@@ -162,7 +164,8 @@ class DocumentSearchForm(FlaskForm):
 
     file_type = SelectField(
         "Dateityp",
-        choices=[("", "-- Alle --")] + [(ext, ext.upper()) for ext in ALLOWED_EXTENSIONS],
+        choices=[("", "-- Alle --")]
+        + [(ext, ext.upper()) for ext in ALLOWED_EXTENSIONS],
         validators=[Optional()],
     )
 

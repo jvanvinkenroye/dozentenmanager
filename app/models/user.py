@@ -14,7 +14,7 @@ from app.models.base import TimestampMixin
 class User(db.Model, UserMixin, TimestampMixin):  # type: ignore[name-defined]
     """
     User model for authentication.
-    
+
     Attributes:
         id: Unique identifier
         username: Unique username
@@ -33,10 +33,10 @@ class User(db.Model, UserMixin, TimestampMixin):  # type: ignore[name-defined]
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), default="lecturer", nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    
+
     # Optional: Link user to a university to scope their data
     university_id = Column(Integer, ForeignKey("university.id"), nullable=True)
-    
+
     # Relationships
     university = relationship("University", backref="users")
 

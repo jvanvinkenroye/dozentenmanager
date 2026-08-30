@@ -97,6 +97,14 @@ module = "flask_sqlalchemy.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "flask_login.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "flask_migrate.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "playwright.*"
 ignore_missing_imports = true
 
@@ -119,7 +127,7 @@ addopts = [
     "--cov=cli",
     "--cov-report=html",
     "--cov-report=term-missing",
-    "--cov-fail-under=40",
+    "--cov-fail-under=55",
     "-v",
 ]
 

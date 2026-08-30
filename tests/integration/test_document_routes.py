@@ -6,11 +6,14 @@ document upload, listing, and deletion functionality.
 """
 
 import io
+import shutil
+from email.message import EmailMessage
+from pathlib import Path
 
 import pytest
 
 from app import create_app, db
-from app.models import Course, Enrollment, Student, Submission, University
+from app.models import Course, Document, Enrollment, Student, Submission, University
 
 
 @pytest.fixture
@@ -211,7 +214,6 @@ class TestSubmissionDetailRoute:
         response = auth_client.get("/documents/submissions/999")
         assert response.status_code == 302
 
-    @pytest.mark.skip(reason="Template URL building issue - fix later")
     def test_submission_detail_existing(self, auth_client, sample_data, app):
         """Test showing existing submission."""
         # Create a submission
@@ -297,7 +299,6 @@ class TestDocumentShowRoute:
         # Should redirect to index
         assert response.status_code == 302
 
-    @pytest.mark.skip(reason="Template URL building issue - fix later")
     def test_show_existing_document(self, auth_client, sample_data, app):
         """Test showing existing document."""
         # Create a document first
@@ -438,3 +439,123 @@ class TestDocumentDeleteRoute:
         # Verify document was deleted
         deleted_doc = Document.query.filter_by(id=document_id).first()
         assert deleted_doc is None
+
+
+class TestEmailImportPost:
+    """Tests for the email import POST handler with real email files."""
+
+    @pytest.fixture(autouse=True)
+    def _cleanup_uploads(self):
+        """Remove attachment files created under uploads/ by the import."""
+        yield
+        shutil.rmtree(Path("uploads") / "test-uni", ignore_errors=True)
+
+    def _build_eml(
+        self,
+        sender="Max Mustermann <max@example.com>",
+        subject="Abgabe Hausarbeit",
+        attachment_name="hausarbeit.pdf",
+    ):
+        """Build a raw .eml file with a PDF attachment."""
+        message = EmailMessage()
+        message["From"] = sender
+        message["To"] = "dozent@example.com"
+        message["Subject"] = subject
+        message["Date"] = "Mon, 20 Jan 2025 10:00:00 +0100"
+        message.set_content("Anbei meine Abgabe.")
+        message.add_attachment(
+            b"%PDF-1.4 test content",
+            maintype="application",
+            subtype="pdf",
+            filename=attachment_name,
+        )
+        return message.as_bytes()
+
+    def test_import_eml_matches_student(self, auth_client, sample_data, app):
+        """An .eml from an enrolled student's address creates a document."""
+        response = auth_client.post(
+            "/documents/email-import",
+            data={
+                "file": (io.BytesIO(self._build_eml()), "mail.eml"),
+                "course_id": "",
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        page = response.data.decode("utf-8")
+        assert "Import" in page
+
+        documents = db.session.query(Document).all()
+        assert len(documents) == 1
+        assert documents[0].original_filename == "hausarbeit.pdf"
+
+        submissions = db.session.query(Submission).all()
+        assert len(submissions) == 1
+        assert submissions[0].enrollment_id == sample_data["enrollment_id"]
+        assert submissions[0].submission_type == "email_attachment"
+
+    def test_import_eml_with_course_filter(self, auth_client, sample_data, app):
+        """Passing a course_id still matches students of that course."""
+        response = auth_client.post(
+            "/documents/email-import",
+            data={
+                "file": (io.BytesIO(self._build_eml()), "mail.eml"),
+                "course_id": str(sample_data["course_id"]),
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        assert db.session.query(Document).count() == 1
+
+    def test_import_eml_unmatched_sender(self, auth_client, sample_data, app):
+        """An email from an unknown address creates no document."""
+        eml = self._build_eml(sender="Unknown Person <nobody@example.com>")
+        response = auth_client.post(
+            "/documents/email-import",
+            data={
+                "file": (io.BytesIO(eml), "mail.eml"),
+                "course_id": "",
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        assert db.session.query(Document).count() == 0
+
+    def test_import_mbox_with_multiple_messages(self, auth_client, sample_data, app):
+        """An .mbox file with several messages imports each of them."""
+        eml_bytes = self._build_eml()
+        mbox_content = b""
+        for _ in range(2):
+            mbox_content += b"From max@example.com Mon Jan 20 10:00:00 2025\n"
+            mbox_content += eml_bytes.replace(b"\r\n", b"\n") + b"\n\n"
+
+        response = auth_client.post(
+            "/documents/email-import",
+            data={
+                "file": (io.BytesIO(mbox_content), "mails.mbox"),
+                "course_id": "",
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        assert db.session.query(Document).count() == 2
+
+    def test_import_rejects_wrong_extension(self, auth_client, sample_data, app):
+        """Files that are not .eml/.mbox are rejected by the form."""
+        response = auth_client.post(
+            "/documents/email-import",
+            data={
+                "file": (io.BytesIO(b"plain text"), "mail.txt"),
+                "course_id": "",
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 200
+        assert "Erlaubte Dateitypen" in response.data.decode("utf-8")
+        assert db.session.query(Document).count() == 0
+
+    def test_import_requires_login(self, client, sample_data, app):
+        """Anonymous users are redirected to login."""
+        response = client.get("/documents/email-import")
+        assert response.status_code == 302
+        assert "/auth/login" in response.headers["Location"]

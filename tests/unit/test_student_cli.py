@@ -225,8 +225,12 @@ class TestListStudents:
     def test_list_students_multiple(self, app, db, service):
         """Test listing multiple students."""
         with app.app_context():
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
+            service.add_student(
+                "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
+            )
             service.add_student("Tom", "Müller", "11111111", "tom@example.com", "CS")
 
             students = service.list_students()
@@ -239,9 +243,15 @@ class TestListStudents:
     def test_list_students_search_by_name(self, app, db, service):
         """Test searching students by name."""
         with app.app_context():
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
-            service.add_student("Maria", "Müller", "11111111", "maria@example.com", "CS")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
+            service.add_student(
+                "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
+            )
+            service.add_student(
+                "Maria", "Müller", "11111111", "maria@example.com", "CS"
+            )
 
             students = service.list_students(search="Max")
             assert len(students) == 1
@@ -250,8 +260,12 @@ class TestListStudents:
     def test_list_students_search_by_student_id(self, app, db, service):
         """Test searching students by student ID."""
         with app.app_context():
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
+            service.add_student(
+                "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
+            )
 
             students = service.list_students(search="87654321")
             assert len(students) == 1
@@ -260,8 +274,12 @@ class TestListStudents:
     def test_list_students_search_by_email(self, app, db, service):
         """Test searching students by email."""
         with app.app_context():
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
+            service.add_student(
+                "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
+            )
 
             students = service.list_students(search="anna")
             assert len(students) == 1
@@ -270,8 +288,12 @@ class TestListStudents:
     def test_list_students_filter_by_program(self, app, db, service):
         """Test filtering students by program."""
         with app.app_context():
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
-            service.add_student("Anna", "Schmidt", "87654321", "anna@example.com", "Math")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
+            service.add_student(
+                "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
+            )
             service.add_student("Tom", "Müller", "11111111", "tom@example.com", "CS")
 
             students = service.list_students(program="CS")
@@ -305,7 +327,9 @@ class TestGetStudent:
     def test_get_student_by_student_id_exists(self, app, db, service):
         """Test getting a student by student ID."""
         with app.app_context():
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
             student = service.get_student_by_student_id("12345678")
 
             assert student is not None
@@ -398,7 +422,9 @@ class TestUpdateStudent:
         with app.app_context():
             import pytest
 
-            service.add_student("Max", "Mustermann", "12345678", "max@example.com", "CS")
+            service.add_student(
+                "Max", "Mustermann", "12345678", "max@example.com", "CS"
+            )
             student2 = service.add_student(
                 "Anna", "Schmidt", "87654321", "anna@example.com", "Math"
             )

@@ -339,9 +339,7 @@ class TestBackupRestore:
     def test_full_backup_restore_cycle(self, app, db):
         """Test complete backup and restore cycle with multiple models."""
         # Create comprehensive test data
-        university = University(
-            name="Test University", slug="test-university"
-        )
+        university = University(name="Test University", slug="test-university")
         db.session.add(university)
         db.session.flush()
 

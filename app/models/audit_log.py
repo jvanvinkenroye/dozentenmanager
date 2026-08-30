@@ -4,9 +4,7 @@ Audit Log model definition.
 This module defines the AuditLog model for tracking user actions within the system.
 """
 
-from typing import Optional
-
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, JSON
+from sqlalchemy import JSON, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app import db

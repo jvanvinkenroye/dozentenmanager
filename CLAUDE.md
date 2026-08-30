@@ -6,7 +6,7 @@ Project-specific instructions for Claude Code when working with this repository.
 
 **Dozentenmanager** is a Flask-based student management system for university lecturers to manage students, courses, exams, and grading across multiple institutions.
 
-**Current Status:** Initial planning phase. No code has been written yet.
+**Current Status:** Feature-complete core application. All main features are implemented (universities, courses, students, enrollments, exams, grading, document/email import, backups, authentication, audit log). Current focus is code quality: test coverage, type safety, and maintenance. See `progress.md` for the latest metrics.
 
 **Primary Goal:** Build a comprehensive student management system with document processing, grading workflows, and complete audit trails.
 

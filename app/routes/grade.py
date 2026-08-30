@@ -8,8 +8,8 @@ and viewing grade statistics/analytics.
 import logging
 from typing import cast
 
-from flask_login import login_required
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import login_required
 from sqlalchemy import func
 
 from app import db

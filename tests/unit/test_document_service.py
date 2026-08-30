@@ -2,20 +2,15 @@
 Unit tests for DocumentService.
 """
 
-import os
-import shutil
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from app.models.course import Course
-from app.models.document import Document
 from app.models.enrollment import Enrollment
 from app.models.student import Student
-from app.models.submission import Submission
 from app.models.university import University
 from app.services.document_service import DocumentService
 
@@ -76,8 +71,15 @@ def test_get_upload_path(document_service, setup_data):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         path = document_service.get_upload_path(enrollment, filename, base_path=tmpdir)
-        
-        expected_part = Path(tmpdir) / "test-uni" / "2023_SoSe" / "test-course" / "MustermannMax" / "test.pdf"
+
+        expected_part = (
+            Path(tmpdir)
+            / "test-uni"
+            / "2023_SoSe"
+            / "test-course"
+            / "MustermannMax"
+            / "test.pdf"
+        )
         assert Path(path) == expected_part
 
 
@@ -87,7 +89,14 @@ def test_get_upload_path_collision(document_service, setup_data):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create "existing" file
-        full_path = Path(tmpdir) / "test-uni" / "2023_SoSe" / "test-course" / "MustermannMax" / "test.pdf"
+        full_path = (
+            Path(tmpdir)
+            / "test-uni"
+            / "2023_SoSe"
+            / "test-course"
+            / "MustermannMax"
+            / "test.pdf"
+        )
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
@@ -99,11 +108,9 @@ def test_get_upload_path_collision(document_service, setup_data):
 
 def test_create_submission(document_service, setup_data):
     enrollment = setup_data["enrollment"]
-    
+
     submission = document_service.create_submission(
-        enrollment_id=enrollment.id,
-        submission_type="document",
-        notes="Test submission"
+        enrollment_id=enrollment.id, submission_type="document", notes="Test submission"
     )
 
     assert submission.id is not None
@@ -114,11 +121,11 @@ def test_create_submission(document_service, setup_data):
 
 def test_upload_document(document_service, setup_data, app):
     enrollment = setup_data["enrollment"]
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         # Configure app to use temp dir for uploads
         app.config.update({"UPLOAD_FOLDER": str(Path(tmpdir) / "uploads")})
-        
+
         # Create source file
         source_file = Path(tmpdir) / "source.pdf"
         source_file.write_text("dummy content")
@@ -126,7 +133,7 @@ def test_upload_document(document_service, setup_data, app):
         document = document_service.upload_document(
             file_path=str(source_file),
             enrollment_id=enrollment.id,
-            submission_type="document"
+            submission_type="document",
         )
 
         assert document.id is not None
@@ -134,16 +141,22 @@ def test_upload_document(document_service, setup_data, app):
         assert document.file_size == 13  # "dummy content"
         assert Path(document.file_path).exists()
         assert Path(document.file_path).read_text() == "dummy content"
-        
+
         # Verify it's in the correct structure
-        expected_suffix = Path("test-uni") / "2023_SoSe" / "test-course" / "MustermannMax" / "source.pdf"
+        expected_suffix = (
+            Path("test-uni")
+            / "2023_SoSe"
+            / "test-course"
+            / "MustermannMax"
+            / "source.pdf"
+        )
         assert str(document.file_path).endswith(str(expected_suffix))
 
 
 def test_match_file_to_enrollment(document_service, setup_data):
     course = setup_data["course"]
     enrollment = setup_data["enrollment"]
-    
+
     # Test LastnameFirstname match
     filename = "MustermannMax.pdf"
     matched = document_service.match_file_to_enrollment(filename, course.id)
@@ -155,7 +168,7 @@ def test_match_file_to_enrollment(document_service, setup_data):
     matched = document_service.match_file_to_enrollment(filename, course.id)
     assert matched is not None
     assert matched.id == enrollment.id
-    
+
     # Test with separators
     filename = "Mustermann_Max_Hausarbeit.pdf"
     matched = document_service.match_file_to_enrollment(filename, course.id)
@@ -171,13 +184,11 @@ def test_match_file_to_enrollment(document_service, setup_data):
 def test_update_submission_status(document_service, setup_data):
     enrollment = setup_data["enrollment"]
     submission = document_service.create_submission(enrollment.id)
-    
+
     updated = document_service.update_submission_status(
-        submission.id,
-        status="graded",
-        notes="Well done"
+        submission.id, status="graded", notes="Well done"
     )
-    
+
     assert updated.status == "graded"
     assert updated.notes == "Well done"
 
@@ -188,29 +199,28 @@ def test_update_submission_status(document_service, setup_data):
 
 def test_delete_document(document_service, setup_data, app):
     enrollment = setup_data["enrollment"]
-    
+
     with tempfile.TemporaryDirectory() as tmpdir:
         # Configure app to use temp dir for uploads
         app.config.update({"UPLOAD_FOLDER": str(Path(tmpdir) / "uploads")})
-        
+
         # Create dummy source file
         source_file = Path(tmpdir) / "source.pdf"
         source_file.write_text("content")
 
         doc = document_service.upload_document(
-            file_path=str(source_file),
-            enrollment_id=enrollment.id
+            file_path=str(source_file), enrollment_id=enrollment.id
         )
-        
+
         doc_id = doc.id
         assert Path(doc.file_path).exists()
 
         result = document_service.delete_document(doc_id)
         assert result is True
-        
+
         # Verify DB deletion
         with pytest.raises(ValueError):
             document_service.get_document(doc_id)
-        
+
         # Verify file deletion
         assert not Path(doc.file_path).exists()

@@ -6,6 +6,7 @@ for the application and Alembic migrations.
 """
 
 # Import models here as they are created
+from app.models.audit_log import AuditLog  # noqa: F401
 from app.models.course import Course  # noqa: F401
 from app.models.document import Document  # noqa: F401
 from app.models.enrollment import Enrollment  # noqa: F401
@@ -16,7 +17,6 @@ from app.models.student import Student  # noqa: F401
 from app.models.submission import Submission  # noqa: F401
 from app.models.university import University  # noqa: F401
 from app.models.user import User  # noqa: F401
-from app.models.audit_log import AuditLog  # noqa: F401
 
 __all__ = [
     "AuditLog",

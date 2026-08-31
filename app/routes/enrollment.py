@@ -5,21 +5,192 @@ This module provides web routes for managing student enrollments in courses.
 """
 
 import logging
+import os
+from pathlib import Path
 from typing import Any
 
-from flask import Blueprint, flash, redirect, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.datastructures import FileStorage
 
+from app.forms.import_forms import EnrollmentImportForm
+from app.models.course import Course
 from app.models.enrollment import VALID_STATUSES
 from app.models.student import Student
 from app.services.enrollment_service import EnrollmentService
+from app.services.student_service import StudentService
+from app.utils.import_utils import (
+    load_import_headers,
+    load_import_rows,
+    save_import_file,
+)
+
+ENROLLMENT_IMPORT_HEADERS = ["student_id"]
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Create blueprint
 bp = Blueprint("enrollment", __name__, url_prefix="/enrollments")
+
+
+@bp.route("/courses/<int:course_id>/import-enrollments", methods=["GET", "POST"])
+@login_required
+def import_enrollments(course_id: int) -> str | Any:
+    """Import enrollments (by Matrikelnummer) for a specific course."""
+    from app import db
+
+    course = db.session.get(Course, course_id)
+    if not course:
+        flash("Lehrveranstaltung nicht gefunden.", "error")
+        return redirect(url_for("course.index"))
+
+    form = EnrollmentImportForm()
+    import_errors: list[str] = []
+    import_summary: dict[str, int] | None = None
+    mapping_headers: list[tuple[str, str]] = []
+    mapping_token = ""
+    mapping_format = ""
+    mapping_defaults: dict[str, str] = {}
+
+    if request.method == "POST" and request.form.get("mapping_token"):
+        mapping_token = request.form.get("mapping_token", "").strip()
+        mapping_format = request.form.get("file_format", "").strip()
+        file_extension = request.form.get("file_extension", "data").strip()
+
+        file_path = (
+            Path(current_app.root_path)
+            / "uploads"
+            / "imports"
+            / f"enrollments_{mapping_token}.{file_extension}"
+        )
+        mapping = {
+            key: request.form.get(f"map_{key}", "").strip()
+            for key in ENROLLMENT_IMPORT_HEADERS
+        }
+        mapping_defaults = mapping.copy()
+
+        if not file_path.exists():
+            flash("Importdatei nicht gefunden. Bitte erneut hochladen.", "error")
+            return redirect(
+                url_for("enrollment.import_enrollments", course_id=course_id)
+            )
+
+        try:
+            with file_path.open("rb") as handle:
+                f = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = load_import_headers(f, mapping_format)
+                handle.seek(0)
+                rows = load_import_rows(
+                    f, mapping_format, ENROLLMENT_IMPORT_HEADERS, mapping=mapping
+                )
+        except ValueError as exc:
+            import_errors.append(str(exc))
+            return render_template(
+                "enrollment/import.html",
+                course=course,
+                form=form,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                file_extension=file_extension,
+            )
+
+        enroll_service = EnrollmentService()
+        student_service = StudentService()
+        created = skipped = errors = 0
+
+        for idx, row in enumerate(rows, start=2):
+            matrikelnummer = row.get("student_id", "").strip()
+            # Strip .0 suffix that Excel sometimes adds to numeric fields
+            if matrikelnummer.endswith(".0"):
+                matrikelnummer = matrikelnummer[:-2]
+            if not matrikelnummer:
+                import_errors.append(f"Zeile {idx}: Matrikelnummer fehlt.")
+                errors += 1
+                continue
+            student = student_service.get_student_by_student_id(matrikelnummer)
+            if not student:
+                import_errors.append(
+                    f"Zeile {idx}: Studierender '{matrikelnummer}' nicht gefunden."
+                )
+                errors += 1
+                continue
+            try:
+                enroll_service.add_enrollment(
+                    student_id_str=matrikelnummer, course_id=course_id
+                )
+                created += 1
+            except IntegrityError:
+                db.session.rollback()
+                skipped += 1
+            except ValueError as exc:
+                import_errors.append(f"Zeile {idx}: {exc}")
+                errors += 1
+
+        if file_path.exists():
+            try:
+                os.remove(file_path)
+            except OSError:
+                logger.warning("Failed to remove import file %s", file_path)
+
+        import_summary = {"created": created, "skipped": skipped, "errors": errors}
+        return render_template(
+            "enrollment/import.html",
+            course=course,
+            form=form,
+            import_errors=import_errors,
+            import_summary=import_summary,
+        )
+
+    if form.validate_on_submit():
+        file = form.file.data
+        try:
+            token, file_path, extension = save_import_file(file, "enrollments")
+            with file_path.open("rb") as handle:
+                stored = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = load_import_headers(stored, form.file_format.data)
+            mapping_token = token
+            mapping_format = form.file_format.data
+            normalized = [v for v, _ in mapping_headers]
+            mapping_defaults = {
+                k: k if k in normalized else "" for k in ENROLLMENT_IMPORT_HEADERS
+            }
+            return render_template(
+                "enrollment/import.html",
+                course=course,
+                form=form,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                file_extension=extension,
+            )
+        except ValueError as exc:
+            flash(str(exc), "error")
+
+    for _field, errs in form.errors.items():
+        for err in errs:
+            flash(err, "error")
+
+    return render_template(
+        "enrollment/import.html",
+        course=course,
+        form=form,
+        import_errors=import_errors,
+    )
 
 
 @bp.route("/enroll", methods=["POST"])

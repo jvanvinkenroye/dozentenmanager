@@ -6,11 +6,23 @@ and viewing grade statistics/analytics.
 """
 
 import logging
+import os
+from pathlib import Path
 from typing import cast
 
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import login_required
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from sqlalchemy import func
+from werkzeug.datastructures import FileStorage
 
 from app import db
 from app.forms.grade import (
@@ -19,6 +31,7 @@ from app.forms.grade import (
     GradeFilterForm,
     GradeForm,
 )
+from app.forms.import_forms import GradeImportForm
 from app.models import (
     Course,
     Enrollment,
@@ -32,7 +45,15 @@ from app.models.grade import (
     percentage_to_german_grade,
 )
 from app.services.grade_service import GradeService
+from app.services.student_service import StudentService
 from app.utils.auth import admin_required
+from app.utils.import_utils import (
+    load_import_headers,
+    load_import_rows,
+    save_import_file,
+)
+
+GRADE_IMPORT_HEADERS = ["student_id", "points"]
 
 logger = logging.getLogger(__name__)
 
@@ -591,6 +612,197 @@ def api_exam_components(exam_id: int):
             ],
             "exam_max_points": max_points,
         }
+    )
+
+
+@bp.route("/exam/<int:exam_id>/import-grades", methods=["GET", "POST"])
+@login_required
+def import_grades(exam_id: int):
+    """Import grades (Matrikelnummer + Punkte) for a specific exam."""
+    exam = db.session.get(Exam, exam_id)
+    if not exam:
+        flash("Prüfung nicht gefunden.", "error")
+        return redirect(url_for("grade.index"))
+
+    form = GradeImportForm()
+    import_errors: list[str] = []
+    import_summary: dict[str, int] | None = None
+    mapping_headers: list[tuple[str, str]] = []
+    mapping_token = ""
+    mapping_format = ""
+    mapping_defaults: dict[str, str] = {}
+    mapping_on_duplicate = "skip"
+
+    if request.method == "POST" and request.form.get("mapping_token"):
+        mapping_token = request.form.get("mapping_token", "").strip()
+        mapping_format = request.form.get("file_format", "").strip()
+        mapping_on_duplicate = request.form.get("on_duplicate", "skip").strip()
+        file_extension = request.form.get("file_extension", "data").strip()
+
+        file_path = (
+            Path(current_app.root_path)
+            / "uploads"
+            / "imports"
+            / f"grades_{mapping_token}.{file_extension}"
+        )
+        mapping = {
+            key: request.form.get(f"map_{key}", "").strip()
+            for key in GRADE_IMPORT_HEADERS
+        }
+        mapping_defaults = mapping.copy()
+
+        if not file_path.exists():
+            flash("Importdatei nicht gefunden. Bitte erneut hochladen.", "error")
+            return redirect(url_for("grade.import_grades", exam_id=exam_id))
+
+        try:
+            with file_path.open("rb") as handle:
+                f = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = load_import_headers(f, mapping_format)
+                handle.seek(0)
+                rows = load_import_rows(
+                    f, mapping_format, GRADE_IMPORT_HEADERS, mapping=mapping
+                )
+        except ValueError as exc:
+            import_errors.append(str(exc))
+            return render_template(
+                "grade/import.html",
+                exam=exam,
+                form=form,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                mapping_on_duplicate=mapping_on_duplicate,
+                file_extension=file_extension,
+            )
+
+        grade_service = GradeService()
+        student_service = StudentService()
+        created = skipped = errors = 0
+
+        for idx, row in enumerate(rows, start=2):
+            matrikelnummer = row.get("student_id", "").strip()
+            if matrikelnummer.endswith(".0"):
+                matrikelnummer = matrikelnummer[:-2]
+            points_str = row.get("points", "").strip()
+            if not matrikelnummer or not points_str:
+                import_errors.append(f"Zeile {idx}: Matrikelnummer oder Punkte fehlen.")
+                errors += 1
+                continue
+
+            try:
+                points = float(points_str.replace(",", "."))
+            except ValueError:
+                import_errors.append(
+                    f"Zeile {idx}: Ungültiger Punktwert '{points_str}'."
+                )
+                errors += 1
+                continue
+
+            student = student_service.get_student_by_student_id(matrikelnummer)
+            if not student:
+                import_errors.append(
+                    f"Zeile {idx}: Studierender '{matrikelnummer}' nicht gefunden."
+                )
+                errors += 1
+                continue
+
+            enrollment = (
+                db.session.query(Enrollment)
+                .filter_by(student_id=student.id, course_id=exam.course_id)
+                .first()
+            )
+            if not enrollment:
+                import_errors.append(
+                    f"Zeile {idx}: '{matrikelnummer}' ist nicht im Kurs eingeschrieben."
+                )
+                errors += 1
+                continue
+
+            existing = (
+                db.session.query(Grade)
+                .filter_by(enrollment_id=enrollment.id, exam_id=exam_id)
+                .first()
+            )
+            if existing:
+                if mapping_on_duplicate == "skip":
+                    skipped += 1
+                    continue
+                if mapping_on_duplicate == "update":
+                    existing.points = points
+                    db.session.commit()
+                    created += 1
+                else:
+                    import_errors.append(
+                        f"Zeile {idx}: Note für '{matrikelnummer}' existiert bereits."
+                    )
+                    errors += 1
+                continue
+
+            try:
+                grade_service.add_grade(
+                    enrollment_id=enrollment.id, exam_id=exam_id, points=points
+                )
+                created += 1
+            except ValueError as exc:
+                import_errors.append(f"Zeile {idx}: {exc}")
+                errors += 1
+
+        if file_path.exists():
+            try:
+                os.remove(file_path)
+            except OSError:
+                logger.warning("Failed to remove import file %s", file_path)
+
+        import_summary = {"created": created, "skipped": skipped, "errors": errors}
+        return render_template(
+            "grade/import.html",
+            exam=exam,
+            form=form,
+            import_errors=import_errors,
+            import_summary=import_summary,
+        )
+
+    if form.validate_on_submit():
+        file = form.file.data
+        try:
+            token, file_path, extension = save_import_file(file, "grades")
+            with file_path.open("rb") as handle:
+                stored = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = load_import_headers(stored, form.file_format.data)
+            mapping_token = token
+            mapping_format = form.file_format.data
+            mapping_on_duplicate = form.on_duplicate.data
+            normalized = [v for v, _ in mapping_headers]
+            mapping_defaults = {
+                k: k if k in normalized else "" for k in GRADE_IMPORT_HEADERS
+            }
+            return render_template(
+                "grade/import.html",
+                exam=exam,
+                form=form,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                mapping_on_duplicate=mapping_on_duplicate,
+                file_extension=extension,
+            )
+        except ValueError as exc:
+            flash(str(exc), "error")
+
+    for _field, errs in form.errors.items():
+        for err in errs:
+            flash(err, "error")
+
+    return render_template(
+        "grade/import.html",
+        exam=exam,
+        form=form,
+        import_errors=import_errors,
     )
 
 

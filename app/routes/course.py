@@ -5,20 +5,39 @@ This module provides web routes for managing courses through the Flask interface
 """
 
 import logging
+import os
+from pathlib import Path
 from typing import Any, cast
 
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import login_required
-from flask import Blueprint, flash, redirect, render_template, request, url_for
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.datastructures import FileStorage
 
 from app import db
 from app.forms.course import CourseForm
+from app.forms.import_forms import CourseImportForm
 from app.models.course import Course
 from app.models.student import Student
 from app.models.university import University
 from app.services.course_service import CourseService
 from app.utils.auth import admin_required, lecturer_required
+from app.utils.import_utils import (
+    load_import_headers,
+    load_import_rows,
+    save_import_file,
+)
 from app.utils.pagination import paginate_query
+
+COURSE_IMPORT_HEADERS = ["name", "semester"]
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -302,6 +321,168 @@ def edit(course_id: int) -> str | Any:
         logger.error(f"Database error while loading course: {e}")
         flash("Error loading course. Please try again.", "error")
         return redirect(url_for("course.index"))
+
+
+@bp.route("/import", methods=["GET", "POST"])
+@login_required
+@lecturer_required
+def import_courses() -> str | Any:
+    """Import courses from CSV/XLSX/XLS."""
+    service = CourseService()
+    universities = db.session.query(University).order_by(University.name).all()
+
+    form = CourseImportForm()
+    form.university_id.choices = [(int(u.id), str(u.name)) for u in universities]
+
+    import_errors: list[str] = []
+    import_summary: dict[str, int] | None = None
+    mapping_headers: list[tuple[str, str]] = []
+    mapping_token = ""
+    mapping_format = ""
+    mapping_defaults: dict[str, str] = {}
+    mapping_university_id = ""
+    mapping_on_duplicate = "skip"
+
+    if request.method == "POST" and request.form.get("mapping_token"):
+        mapping_token = request.form.get("mapping_token", "").strip()
+        mapping_format = request.form.get("file_format", "").strip()
+        mapping_on_duplicate = request.form.get("on_duplicate", "skip").strip()
+        file_extension = request.form.get("file_extension", "data").strip()
+        mapping_university_id = request.form.get("university_id", "").strip()
+
+        try:
+            university_id = int(mapping_university_id)
+        except (ValueError, TypeError):
+            flash("Bitte eine Hochschule auswählen.", "error")
+            return render_template(
+                "course/import.html",
+                form=form,
+                universities=universities,
+                import_errors=import_errors,
+            )
+
+        file_path = (
+            Path(current_app.root_path)
+            / "uploads"
+            / "imports"
+            / f"courses_{mapping_token}.{file_extension}"
+        )
+        mapping = {
+            key: request.form.get(f"map_{key}", "").strip()
+            for key in COURSE_IMPORT_HEADERS
+        }
+        mapping_defaults = mapping.copy()
+
+        if not file_path.exists():
+            flash("Importdatei nicht gefunden. Bitte erneut hochladen.", "error")
+            return redirect(url_for("course.import_courses"))
+
+        try:
+            with file_path.open("rb") as handle:
+                f = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = load_import_headers(f, mapping_format)
+                handle.seek(0)
+                rows = load_import_rows(
+                    f, mapping_format, COURSE_IMPORT_HEADERS, mapping=mapping
+                )
+        except ValueError as exc:
+            import_errors.append(str(exc))
+            return render_template(
+                "course/import.html",
+                form=form,
+                universities=universities,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                mapping_university_id=mapping_university_id,
+                mapping_on_duplicate=mapping_on_duplicate,
+                file_extension=file_extension,
+            )
+
+        created = skipped = errors = 0
+        for idx, row in enumerate(rows, start=2):
+            name = row.get("name", "").strip()
+            semester = row.get("semester", "").strip()
+            if not name or not semester:
+                import_errors.append(f"Zeile {idx}: Name oder Semester fehlt.")
+                errors += 1
+                continue
+            try:
+                service.add_course(
+                    name=name, semester=semester, university_id=university_id
+                )
+                created += 1
+            except IntegrityError:
+                db.session.rollback()
+                if mapping_on_duplicate == "skip":
+                    skipped += 1
+                else:
+                    import_errors.append(
+                        f"Zeile {idx}: Kurs '{name}' ({semester}) existiert bereits."
+                    )
+                    errors += 1
+            except ValueError as exc:
+                import_errors.append(f"Zeile {idx}: {exc}")
+                errors += 1
+
+        if file_path.exists():
+            try:
+                os.remove(file_path)
+            except OSError:
+                logger.warning("Failed to remove import file %s", file_path)
+
+        import_summary = {"created": created, "skipped": skipped, "errors": errors}
+        return render_template(
+            "course/import.html",
+            form=form,
+            universities=universities,
+            import_errors=import_errors,
+            import_summary=import_summary,
+        )
+
+    if form.validate_on_submit():
+        file = form.file.data
+        try:
+            token, file_path, extension = save_import_file(file, "courses")
+            with file_path.open("rb") as handle:
+                stored = FileStorage(stream=handle, filename=file_path.name)
+                mapping_headers = load_import_headers(stored, form.file_format.data)
+            mapping_token = token
+            mapping_format = form.file_format.data
+            mapping_on_duplicate = form.on_duplicate.data
+            mapping_university_id = str(form.university_id.data)
+            normalized = [v for v, _ in mapping_headers]
+            mapping_defaults = {
+                k: k if k in normalized else "" for k in COURSE_IMPORT_HEADERS
+            }
+            return render_template(
+                "course/import.html",
+                form=form,
+                universities=universities,
+                import_errors=import_errors,
+                mapping_headers=mapping_headers,
+                mapping_token=mapping_token,
+                mapping_format=mapping_format,
+                mapping_defaults=mapping_defaults,
+                mapping_university_id=mapping_university_id,
+                mapping_on_duplicate=mapping_on_duplicate,
+                file_extension=extension,
+            )
+        except ValueError as exc:
+            flash(str(exc), "error")
+
+    for _field, errs in form.errors.items():
+        for err in errs:
+            flash(err, "error")
+
+    return render_template(
+        "course/import.html",
+        form=form,
+        universities=universities,
+        import_errors=import_errors,
+    )
 
 
 @bp.route("/<int:course_id>/delete", methods=["GET", "POST"])

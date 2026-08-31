@@ -31,6 +31,10 @@
     <div class="level-right">
         <div class="level-item">
             <div class="buttons">
+                <a href="{{ url_for('grade.import_grades', exam_id=exam.id) }}" class="button is-info">
+                    <span class="icon"><i class="fas fa-file-import"></i></span>
+                    <span>Noten importieren</span>
+                </a>
                 <a href="{{ url_for('exam.edit', exam_id=exam.id) }}" class="button is-warning">
                     <span class="icon">
                         <i class="fas fa-edit"></i>

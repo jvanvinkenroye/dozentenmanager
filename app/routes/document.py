@@ -734,7 +734,7 @@ def export_annotated(document_id: int) -> Any:
         new_doc = service.upload_document(
             file_path=str(tmp_path),
             enrollment_id=int(document.submission.enrollment_id),
-            submission_type="feedback",
+            submission_type="document",
             exam_id=document.submission.exam_id,
             notes=f"Annotierte Version von {document.original_filename}",
             original_filename=annotated_name,

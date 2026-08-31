@@ -146,6 +146,22 @@ Services werfen `ValueError` / `IntegrityError` — Routes fangen diese und zeig
 
 ---
 
+## Datenspeicherung
+
+Alle Daten liegen **außerhalb des Projektverzeichnisses** (kein Datenverlust beim Löschen/Update des Repos):
+
+| Datei/Ordner | Pfad | Inhalt |
+|---|---|---|
+| Konfiguration | `~/.config/dozentenmanager/config.env` | SECRET_KEY, PORT, ADMIN_*, DATABASE_URL |
+| Datenbank | `~/.local/share/dozentenmanager/dozentenmanager.db` | Alle App-Daten (SQLite) |
+| Uploads | `./uploads/` (relativ zum Startverzeichnis) | Hochgeladene Dateien |
+| Logs | `./logs/dozentenmanager.log` | Anwendungslog (max. 10 MB × 10 Dateien) |
+
+> **Tipp:** `DATABASE_URL` in `config.env` auf einen anderen Pfad setzen, um die Datenbank zu verschieben.
+> Für Docker/Podman werden `instance/` und `uploads/` als Volumes eingehängt (siehe `docker-compose.yml`).
+
+---
+
 ## Installation
 
 ### Voraussetzungen

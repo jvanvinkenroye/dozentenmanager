@@ -37,6 +37,14 @@
     <div class="level-right">
         <div class="level-item">
             <div class="buttons">
+                {% if document.file_type == 'pdf' %}
+                <a href="{{ url_for('document.annotate', document_id=document.id) }}" class="button is-info">
+                    <span class="icon">
+                        <i class="fas fa-pen"></i>
+                    </span>
+                    <span>Annotieren</span>
+                </a>
+                {% endif %}
                 <a href="{{ url_for('document.download', document_id=document.id) }}" class="button is-success">
                     <span class="icon">
                         <i class="fas fa-download"></i>

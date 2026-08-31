@@ -13,6 +13,7 @@ dependencies = [
     "flask-wtf>=1.2.2",
     "openpyxl>=3.1.5",
     "playwright>=1.57.0",
+    "pymupdf>=1.28.2",
     "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.44",
     "werkzeug>=3.1.5",

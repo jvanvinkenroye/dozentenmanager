@@ -10,6 +10,7 @@ import re
 from datetime import UTC, datetime
 
 from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import relationship
 
 from app import db
 from app.models.base import TimestampMixin
@@ -165,6 +166,14 @@ class Document(db.Model, TimestampMixin):  # type: ignore[name-defined]
         default=lambda: datetime.now(UTC),
     )
 
+    annotations = relationship(
+        "PageAnnotation",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="PageAnnotation.page_number",
+        lazy="dynamic",
+    )
+
     # Indexes for common queries
     __table_args__ = (
         Index("idx_document_submission", "submission_id"),
@@ -194,9 +203,7 @@ class Document(db.Model, TimestampMixin):  # type: ignore[name-defined]
             "file_type": self.file_type,
             "file_size": self.file_size,
             "mime_type": self.mime_type,
-            "upload_date": (
-                self.upload_date.isoformat() if self.upload_date else None
-            ),
+            "upload_date": (self.upload_date.isoformat() if self.upload_date else None),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

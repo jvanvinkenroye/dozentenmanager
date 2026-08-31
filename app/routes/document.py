@@ -11,7 +11,9 @@ from typing import Any
 
 from flask import (
     Blueprint,
+    Response,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -35,7 +37,9 @@ from app.models.document import (
 )
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
+from app.models.page_annotation import PageAnnotation
 from app.models.student import Student
+from app.services import pdf_annotation_service
 from app.services.document_service import DocumentService
 from app.utils.auth import admin_required, lecturer_required
 
@@ -560,6 +564,190 @@ def update_submission_status(submission_id: int) -> Any:
         return redirect(
             url_for("document.submission_detail", submission_id=submission_id)
         )
+
+
+# Annotation routes
+
+
+@bp.route("/<int:document_id>/annotate")
+@login_required
+def annotate(document_id: int) -> str | Any:
+    """Show the side-by-side PDF annotation view."""
+    service = DocumentService()
+    try:
+        document = service.get_document(document_id)
+    except ValueError:
+        flash(f"Dokument mit ID {document_id} nicht gefunden.", "error")
+        return redirect(url_for("document.index"))
+
+    if document.file_type != "pdf":
+        flash("Annotierung ist nur für PDF-Dateien möglich.", "warning")
+        return redirect(url_for("document.show", document_id=document_id))
+
+    file_path = Path(document.file_path)
+    if not file_path.exists():
+        flash("PDF-Datei nicht gefunden.", "error")
+        return redirect(url_for("document.show", document_id=document_id))
+
+    try:
+        page_count = pdf_annotation_service.get_page_count(str(file_path))
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("document.show", document_id=document_id))
+
+    page = max(1, min(request.args.get("page", 1, type=int), page_count))
+
+    annotation = (
+        db.session.query(PageAnnotation)
+        .filter_by(document_id=document_id, page_number=page)
+        .first()
+    )
+
+    return render_template(
+        "document/annotate.html",
+        document=document,
+        page=page,
+        page_count=page_count,
+        annotation=annotation,
+    )
+
+
+@bp.route("/<int:document_id>/page/<int:page_num>.png")
+@login_required
+def page_image(document_id: int, page_num: int) -> Response | Any:
+    """Serve a rendered PDF page as PNG."""
+    service = DocumentService()
+    try:
+        document = service.get_document(document_id)
+    except ValueError:
+        return Response("Not found", status=404)
+
+    file_path = Path(document.file_path)
+    if not file_path.exists():
+        return Response("File not found", status=404)
+
+    png = pdf_annotation_service.render_page(str(file_path), page_num, dpi=150)
+    if png is None:
+        return Response("Render error", status=500)
+
+    return Response(png, mimetype="image/png")
+
+
+@bp.route("/<int:document_id>/annotations/<int:page_num>", methods=["GET"])
+@login_required
+def get_annotation(document_id: int, page_num: int) -> Response:
+    """Return annotation content for a page as JSON."""
+    ann = (
+        db.session.query(PageAnnotation)
+        .filter_by(document_id=document_id, page_number=page_num)
+        .first()
+    )
+    return jsonify({"content": ann.content if ann else ""})
+
+
+@bp.route("/<int:document_id>/annotations/<int:page_num>", methods=["POST"])
+@login_required
+def save_annotation(document_id: int, page_num: int) -> Response | Any:
+    """Save (upsert) annotation for a page."""
+    service = DocumentService()
+    try:
+        service.get_document(document_id)
+    except ValueError:
+        return jsonify({"error": "Dokument nicht gefunden"}), 404
+
+    content = (
+        (request.json or {}).get("content", "")
+        if request.is_json
+        else request.form.get("content", "")
+    )
+
+    ann = (
+        db.session.query(PageAnnotation)
+        .filter_by(document_id=document_id, page_number=page_num)
+        .first()
+    )
+    if ann is None:
+        ann = PageAnnotation(
+            document_id=document_id, page_number=page_num, content=content
+        )
+        db.session.add(ann)
+    else:
+        ann.content = content
+
+    try:
+        db.session.commit()
+        return jsonify({"ok": True})
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        logger.error("Fehler beim Speichern der Annotation: %s", e)
+        return jsonify({"error": "Datenbankfehler"}), 500
+
+
+@bp.route("/<int:document_id>/export-annotated", methods=["POST"])
+@login_required
+def export_annotated(document_id: int) -> Any:
+    """Create an annotated PDF and save it as a new Document in the same Submission."""
+    import tempfile
+
+    service = DocumentService()
+    try:
+        document = service.get_document(document_id)
+    except ValueError:
+        flash("Dokument nicht gefunden.", "error")
+        return redirect(url_for("document.index"))
+
+    if document.file_type != "pdf":
+        flash("Export nur für PDF-Dokumente möglich.", "warning")
+        return redirect(url_for("document.show", document_id=document_id))
+
+    annotations = [
+        {"page_number": a.page_number, "content": a.content, "updated_at": a.updated_at}
+        for a in db.session.query(PageAnnotation)
+        .filter_by(document_id=document_id)
+        .order_by(PageAnnotation.page_number)
+        .all()
+        if a.content.strip()
+    ]
+
+    if not annotations:
+        flash(
+            "Keine Annotationen vorhanden. Bitte zuerst Notizen hinzufügen.", "warning"
+        )
+        return redirect(url_for("document.annotate", document_id=document_id))
+
+    stem = Path(document.original_filename).stem
+    annotated_name = f"{stem}_annotiert.pdf"
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+
+    try:
+        ok = pdf_annotation_service.create_annotated_pdf(
+            original_path=str(document.file_path),
+            annotations=annotations,
+            output_path=tmp_path,
+        )
+        if not ok:
+            flash("Fehler beim Erstellen des annotierten PDFs.", "error")
+            return redirect(url_for("document.annotate", document_id=document_id))
+
+        new_doc = service.upload_document(
+            file_path=str(tmp_path),
+            enrollment_id=int(document.submission.enrollment_id),
+            submission_type="feedback",
+            exam_id=document.submission.exam_id,
+            notes=f"Annotierte Version von {document.original_filename}",
+            original_filename=annotated_name,
+        )
+        flash(f"Annotiertes PDF '{annotated_name}' erfolgreich gespeichert.", "success")
+        return redirect(url_for("document.show", document_id=new_doc.id))
+    except Exception as e:
+        logger.error("Fehler beim Exportieren des annotierten PDFs: %s", e)
+        flash("Fehler beim Exportieren.", "error")
+        return redirect(url_for("document.annotate", document_id=document_id))
+    finally:
+        with contextlib.suppress(OSError):
+            tmp_path.unlink(missing_ok=True)
 
 
 # Email import routes

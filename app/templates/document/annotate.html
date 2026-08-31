@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Annotieren — {{ document.original_filename }} — Dozentenmanager{% endblock %}
+
+{% block breadcrumb %}
+<section class="section pt-4 pb-0">
+    <div class="container">
+        <nav class="breadcrumb" aria-label="breadcrumbs">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('document.index') }}">Dokumente</a></li>
+                <li><a href="{{ url_for('document.show', document_id=document.id) }}">{{ document.original_filename }}</a></li>
+                <li class="is-active"><a href="#" aria-current="page">Annotieren</a></li>
+            </ul>
+        </nav>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="level mb-4">
+    <div class="level-left">
+        <div class="level-item">
+            <h1 class="title is-5">
+                <span class="icon"><i class="fas fa-file-pdf has-text-danger"></i></span>
+                {{ document.original_filename }}
+            </h1>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="level-item">
+            <form method="post" action="{{ url_for('document.export_annotated', document_id=document.id) }}" id="export-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="button is-success" id="export-btn">
+                    <span class="icon"><i class="fas fa-file-export"></i></span>
+                    <span>Annotiertes PDF exportieren</span>
+                </button>
+            </form>
+        </div>
+        <div class="level-item">
+            <a href="{{ url_for('document.show', document_id=document.id) }}" class="button is-light">
+                <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                <span>Zurück</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Page Navigation -->
+<div class="columns is-variable is-1 mb-3">
+    <div class="column">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    {% if page > 1 %}
+                    <a href="{{ url_for('document.annotate', document_id=document.id, page=page-1) }}" class="button" id="prev-btn">
+                        <span class="icon"><i class="fas fa-chevron-left"></i></span>
+                        <span>Zurück</span>
+                    </a>
+                    {% else %}
+                    <button class="button" disabled>
+                        <span class="icon"><i class="fas fa-chevron-left"></i></span>
+                        <span>Zurück</span>
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="level-item">
+                    <span class="tag is-medium is-info is-light">Seite {{ page }} von {{ page_count }}</span>
+                </div>
+                <div class="level-item">
+                    {% if page < page_count %}
+                    <a href="{{ url_for('document.annotate', document_id=document.id, page=page+1) }}" class="button" id="next-btn">
+                        <span>Weiter</span>
+                        <span class="icon"><i class="fas fa-chevron-right"></i></span>
+                    </a>
+                    {% else %}
+                    <button class="button" disabled>
+                        <span>Weiter</span>
+                        <span class="icon"><i class="fas fa-chevron-right"></i></span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <form method="get" action="{{ url_for('document.annotate', document_id=document.id) }}" class="is-flex is-align-items-center" style="gap:0.5rem">
+                        <span class="is-size-7">Zur Seite:</span>
+                        <input class="input is-small" style="width:4rem" type="number" name="page" min="1" max="{{ page_count }}" value="{{ page }}">
+                        <button type="submit" class="button is-small">OK</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Split View -->
+<div class="columns" style="min-height:70vh">
+    <!-- PDF Page -->
+    <div class="column is-half" style="overflow:auto">
+        <div class="box p-2" style="text-align:center;background:#555">
+            <img id="pdf-page"
+                 src="{{ url_for('document.page_image', document_id=document.id, page_num=page) }}"
+                 alt="Seite {{ page }}"
+                 style="max-width:100%;border:1px solid #333;box-shadow:0 2px 8px rgba(0,0,0,.4)">
+        </div>
+    </div>
+
+    <!-- Annotation Editor -->
+    <div class="column is-half">
+        <div class="box" style="height:100%;display:flex;flex-direction:column">
+            <h2 class="subtitle mb-2">
+                <span class="icon"><i class="fas fa-pen"></i></span>
+                Notiz zu Seite {{ page }}
+            </h2>
+            <p class="is-size-7 has-text-grey mb-3">
+                Notizen werden automatisch gespeichert. Beim Export werden sie als Fußzeile in das PDF eingebettet.
+            </p>
+            <textarea id="annotation-content"
+                      class="textarea"
+                      style="flex:1;resize:vertical;font-family:monospace;min-height:300px"
+                      placeholder="Notiz für Seite {{ page }} eingeben…">{{ annotation.content if annotation else '' }}</textarea>
+            <div class="level mt-3">
+                <div class="level-left">
+                    <div class="level-item">
+                        <span id="save-status" class="is-size-7 has-text-grey">
+                            {% if annotation and annotation.updated_at %}
+                            Zuletzt gespeichert: {{ annotation.updated_at.strftime('%d.%m.%Y %H:%M') }}
+                            {% else %}
+                            Noch nicht gespeichert
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="level-right">
+                    <div class="level-item">
+                        <button id="save-btn" class="button is-primary">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Speichern</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const saveBtn = document.getElementById('save-btn');
+    const saveStatus = document.getElementById('save-status');
+    const textarea = document.getElementById('annotation-content');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const saveUrl = "{{ url_for('document.save_annotation', document_id=document.id, page_num=page) }}";
+    const csrfToken = "{{ csrf_token() }}";
+
+    let saveTimeout = null;
+    let isDirty = false;
+
+    async function saveAnnotation() {
+        const content = textarea.value;
+        saveStatus.textContent = 'Wird gespeichert…';
+        saveBtn.classList.add('is-loading');
+        try {
+            const resp = await fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: JSON.stringify({ content }),
+            });
+            if (resp.ok) {
+                const now = new Date();
+                saveStatus.textContent = 'Gespeichert: ' + now.toLocaleTimeString('de-DE');
+                isDirty = false;
+            } else {
+                saveStatus.textContent = 'Fehler beim Speichern';
+            }
+        } catch {
+            saveStatus.textContent = 'Netzwerkfehler';
+        } finally {
+            saveBtn.classList.remove('is-loading');
+        }
+    }
+
+    textarea.addEventListener('input', function () {
+        isDirty = true;
+        saveStatus.textContent = 'Ungespeicherte Änderungen…';
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(saveAnnotation, 1500);
+    });
+
+    saveBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        clearTimeout(saveTimeout);
+        saveAnnotation();
+    });
+
+    // Save before navigating away if dirty
+    function guardedNavigate(e) {
+        if (!isDirty) return;
+        e.preventDefault();
+        clearTimeout(saveTimeout);
+        saveAnnotation().then(() => {
+            window.location.href = e.currentTarget.href;
+        });
+    }
+    if (prevBtn) prevBtn.addEventListener('click', guardedNavigate);
+    if (nextBtn) nextBtn.addEventListener('click', guardedNavigate);
+})();
+</script>
+{% endblock %}

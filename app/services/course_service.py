@@ -10,6 +10,10 @@ import logging
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models.course import Course, generate_slug, validate_semester
+from app.models.enrollment import Enrollment
+from app.models.exam import Exam
+from app.models.grade import Grade
+from app.models.submission import Submission
 from app.models.university import University
 from app.services.audit_service import AuditService
 from app.services.base_service import BaseService
@@ -323,6 +327,42 @@ class CourseService(BaseService):
 
             course_name = course.name
             course_id_val = course.id
+
+            # Delete dependent records explicitly (no DB-level CASCADE set)
+            enrollment_ids = [
+                e.id
+                for e in self.query(Enrollment).filter_by(course_id=course_id).all()
+            ]
+            if enrollment_ids:
+                submission_ids = [
+                    s.id
+                    for s in self.query(Submission)
+                    .filter(Submission.enrollment_id.in_(enrollment_ids))
+                    .all()
+                ]
+                if submission_ids:
+                    from app.models.document import Document
+
+                    self.query(Document).filter(
+                        Document.submission_id.in_(submission_ids)
+                    ).delete(synchronize_session=False)
+                self.query(Submission).filter(
+                    Submission.enrollment_id.in_(enrollment_ids)
+                ).delete(synchronize_session=False)
+                self.query(Enrollment).filter(Enrollment.course_id == course_id).delete(
+                    synchronize_session=False
+                )
+
+            exam_ids = [
+                e.id for e in self.query(Exam).filter_by(course_id=course_id).all()
+            ]
+            if exam_ids:
+                self.query(Grade).filter(Grade.exam_id.in_(exam_ids)).delete(
+                    synchronize_session=False
+                )
+                self.query(Exam).filter(Exam.course_id == course_id).delete(
+                    synchronize_session=False
+                )
 
             self.delete(course)
             self.commit()

@@ -715,8 +715,10 @@ def export_annotated(document_id: int) -> Any:
         )
         return redirect(url_for("document.annotate", document_id=document_id))
 
+    from datetime import date
+
     stem = Path(document.original_filename).stem
-    annotated_name = f"{stem}_annotiert.pdf"
+    annotated_name = f"{stem}_annotiert_{date.today().isoformat()}.pdf"
 
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp_path = Path(tmp.name)

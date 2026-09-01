@@ -19,6 +19,7 @@ services:
       - LOG_LEVEL=DEBUG
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=admin
+      - DOZENTENMANAGER_API_KEY=${DOZENTENMANAGER_API_KEY:-}
     volumes:
       - ./app:/app/app
       - ./cli:/app/cli

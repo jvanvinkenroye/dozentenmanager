@@ -6,11 +6,14 @@ requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.17.1",
     "email-validator>=2.3.0",
+    "fastmcp>=4.0.0",
     "flask>=3.1.2",
     "flask-login>=0.6.3",
     "flask-migrate>=4.1.0",
     "flask-sqlalchemy>=3.1.1",
     "flask-wtf>=1.2.2",
+    "httpx>=0.28.0",
+    "mcp[cli]>=1.0.0",
     "openpyxl>=3.1.5",
     "playwright>=1.57.0",
     "pymupdf>=1.28.2",
@@ -27,7 +30,7 @@ dozentenmanager = "run:main"
 py-modules = ["run", "config"]
 
 [tool.setuptools.packages.find]
-include = ["app*", "cli*"]
+include = ["app*", "cli*", "mcp_server*"]
 
 [tool.setuptools.package-data]
 "app" = ["templates/**/*", "static/**/*"]

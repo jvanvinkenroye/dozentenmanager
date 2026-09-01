@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dozentenmanager": {
+      "command": "uv",
+      "args": ["run", "python", "mcp_server/server.py"],
+      "env": {
+        "DOZENTENMANAGER_URL": "https://dmprod.jv0.me",
+        "DOZENTENMANAGER_API_KEY": "${DOZENTENMANAGER_API_KEY}"
+      }
+    }
+  }
+}

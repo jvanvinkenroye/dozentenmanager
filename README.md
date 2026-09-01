@@ -294,9 +294,13 @@ Der MCP-Server läuft **lokal** als Subprocess von Claude Code. Er kommuniziert 
 | `list_courses` | Kurse auflisten (optional nach Semester / Universität filtern) |
 | `list_universities` | Alle Universitäten anzeigen |
 | `list_students` | Studierende suchen |
+| `create_university` | Neue Universität anlegen |
 | `create_course` | Neuen Kurs anlegen |
 | `add_enrollment` | Studierenden in einen Kurs einschreiben |
 | `import_teilnehmerliste` | ILIAS-Excel-Datei direkt importieren (Kurs anlegen + Studierende einschreiben) |
+| `delete_course` | Kurs löschen (inkl. Einschreibungen, Prüfungen, Noten) |
+| `delete_student` | Studierenden löschen (per Datenbank-ID) |
+| `delete_enrollment` | Einschreibung aufheben (Matrikelnummer + Kurs-ID) |
 
 ### Installation
 
@@ -369,11 +373,37 @@ Die Write-Endpoints sind auch direkt per `curl` nutzbar:
 # Kurse auflisten
 curl -H "X-API-Key: $DOZENTENMANAGER_API_KEY" https://dmprod.jv0.me/api/courses
 
+# Universität anlegen
+curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"TH Köln"}' \
+     https://dmprod.jv0.me/api/universities
+
+# Universität umbenennen
+curl -X PATCH -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"TH Köln (neu)","slug":"th-koeln-neu"}' \
+     https://dmprod.jv0.me/api/universities/1
+
 # Kurs anlegen
 curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"name":"Statistik II","semester":"2026_SoSe","university_id":1}' \
      https://dmprod.jv0.me/api/courses
+
+# Kurs löschen
+curl -X DELETE -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     https://dmprod.jv0.me/api/courses/1
+
+# Studierenden löschen
+curl -X DELETE -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     https://dmprod.jv0.me/api/students/1
+
+# Einschreibung aufheben
+curl -X DELETE -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"student_id":"12345678","course_id":1}' \
+     https://dmprod.jv0.me/api/enrollments
 
 # ILIAS-Teilnehmerliste importieren
 curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \

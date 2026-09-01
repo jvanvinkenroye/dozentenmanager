@@ -95,6 +95,21 @@ def list_students(search: str = "") -> dict:
 
 
 @mcp.tool()
+def create_university(name: str, slug: str = "") -> dict:
+    """
+    Create a new university.
+
+    Args:
+        name: Full name of the university (e.g. 'TH Köln')
+        slug: Optional URL slug (auto-generated if omitted)
+    """
+    payload: dict[str, str] = {"name": name}
+    if slug:
+        payload["slug"] = slug
+    return _api("POST", "/universities", json=payload)
+
+
+@mcp.tool()
 def create_course(name: str, semester: str, university_id: int, slug: str = "") -> dict:
     """
     Create a new course.

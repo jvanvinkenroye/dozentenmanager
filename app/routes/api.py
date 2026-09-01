@@ -148,6 +148,31 @@ def list_universities() -> Any:
     return jsonify([u.to_dict() for u in universities])
 
 
+@bp.route("/universities", methods=["POST"])
+@require_api_key
+def create_university() -> Any:
+    """
+    Create a university.
+
+    JSON body: name, slug (optional)
+    """
+    data = request.get_json(force=True) or {}
+    if not data.get("name"):
+        return jsonify({"error": "Missing field: name"}), 400
+    try:
+        service = UniversityService()
+        university = service.add_university(
+            name=data["name"],
+            slug=data.get("slug"),
+        )
+        return jsonify(university.to_dict()), 201
+    except (ValueError, IntegrityError) as e:
+        return jsonify({"error": str(e)}), 409
+    except SQLAlchemyError as e:
+        logger.error("DB error creating university: %s", e)
+        return jsonify({"error": "Database error"}), 500
+
+
 # ---------------------------------------------------------------------------
 # Write endpoints (API-key auth)
 # ---------------------------------------------------------------------------

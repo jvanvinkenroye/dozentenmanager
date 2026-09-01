@@ -210,5 +210,43 @@ def import_teilnehmerliste(
             return {"error": str(e)}
 
 
+@mcp.tool()
+def delete_course(course_id: int) -> dict:
+    """
+    Delete a course and all its enrollments, exams and grades.
+
+    Args:
+        course_id: Database id of the course to delete
+    """
+    return _api("DELETE", f"/courses/{course_id}")
+
+
+@mcp.tool()
+def delete_student(student_id: int) -> dict:
+    """
+    Delete a student by database id.
+
+    Args:
+        student_id: Database id of the student (NOT Matrikelnummer)
+    """
+    return _api("DELETE", f"/students/{student_id}")
+
+
+@mcp.tool()
+def delete_enrollment(student_id: str, course_id: int) -> dict:
+    """
+    Remove a student's enrollment from a course.
+
+    Args:
+        student_id: Matrikelnummer (8-digit string) of the student
+        course_id: Database id of the course
+    """
+    return _api(
+        "DELETE",
+        "/enrollments",
+        json={"student_id": student_id, "course_id": course_id},
+    )
+
+
 if __name__ == "__main__":
     mcp.run()

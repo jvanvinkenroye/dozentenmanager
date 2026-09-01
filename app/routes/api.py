@@ -204,6 +204,60 @@ def create_university() -> Any:
         return jsonify({"error": "Database error"}), 500
 
 
+@bp.route("/universities/<int:university_id>", methods=["DELETE"])
+@require_api_key
+def delete_university(university_id: int) -> Any:
+    """Delete a university and all its courses/enrollments."""
+    service = UniversityService()
+    deleted = service.delete_university(university_id)
+    if not deleted:
+        return jsonify({"error": "University not found"}), 404
+    return jsonify({"deleted": True, "id": university_id})
+
+
+@bp.route("/courses/<int:course_id>", methods=["DELETE"])
+@require_api_key
+def delete_course(course_id: int) -> Any:
+    """Delete a course and all its enrollments, exams and grades."""
+    service = CourseService()
+    deleted = service.delete_course(course_id)
+    if not deleted:
+        return jsonify({"error": "Course not found"}), 404
+    return jsonify({"deleted": True, "id": course_id})
+
+
+@bp.route("/students/<int:student_id>", methods=["DELETE"])
+@require_api_key
+def delete_student(student_id: int) -> Any:
+    """Delete a student by DB id."""
+    service = StudentService()
+    deleted = service.delete_student(student_id)
+    if not deleted:
+        return jsonify({"error": "Student not found"}), 404
+    return jsonify({"deleted": True, "id": student_id})
+
+
+@bp.route("/enrollments", methods=["DELETE"])
+@require_api_key
+def delete_enrollment() -> Any:
+    """
+    Remove an enrollment.
+
+    JSON body: student_id (Matrikelnummer), course_id
+    """
+    data = request.get_json(force=True) or {}
+    if not data.get("student_id") or not data.get("course_id"):
+        return jsonify({"error": "Missing fields: student_id, course_id"}), 400
+    service = EnrollmentService()
+    deleted = service.remove_enrollment(
+        student_id_str=str(data["student_id"]),
+        course_id=int(data["course_id"]),
+    )
+    if not deleted:
+        return jsonify({"error": "Enrollment not found"}), 404
+    return jsonify({"deleted": True})
+
+
 # ---------------------------------------------------------------------------
 # Write endpoints (API-key auth)
 # ---------------------------------------------------------------------------

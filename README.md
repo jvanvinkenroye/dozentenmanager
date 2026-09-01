@@ -13,6 +13,7 @@ Verwaltungssystem für Hochschuldozenten zur Organisation von Studierenden, Lehr
 - [Architekturübersicht](#architekturübersicht)
 - [Installation](#installation)
 - [CLI-Tool](#cli-tool)
+- [MCP-Server (Claude Code Integration)](#mcp-server-claude-code-integration)
 - [Docker / Podman](#docker--podman)
 - [Entwicklung](#entwicklung)
 
@@ -271,6 +272,117 @@ uv run python cli/grade_cli.py add --enrollment-id 1 --exam-id 1 --points 78
 ```
 
 Jedes Tool unterstützt `--help`.
+
+---
+
+## MCP-Server (Claude Code Integration)
+
+Der Dozentenmanager enthält einen [MCP-Server](https://modelcontextprotocol.io) (`mcp_server/server.py`), über den Claude Code direkt mit einer laufenden Instanz (lokal oder remote) interagieren kann — ohne SSH, ohne Web-Upload.
+
+### Wie es funktioniert
+
+```
+Claude Code  ──(stdio/MCP)──▶  mcp_server/server.py  ──(HTTP + API-Key)──▶  dmprod.jv0.me/api/...
+```
+
+Der MCP-Server läuft **lokal** als Subprocess von Claude Code. Er kommuniziert per HTTP mit der Flask-App und authentifiziert sich mit einem API-Key im `X-API-Key` Header. Die Ziel-URL ist konfigurierbar — so kann derselbe Server gegen `dmdev.jv0.me` oder `localhost:5001` zeigen.
+
+### Verfügbare Tools
+
+| Tool | Beschreibung |
+|---|---|
+| `list_courses` | Kurse auflisten (optional nach Semester / Universität filtern) |
+| `list_universities` | Alle Universitäten anzeigen |
+| `list_students` | Studierende suchen |
+| `create_course` | Neuen Kurs anlegen |
+| `add_enrollment` | Studierenden in einen Kurs einschreiben |
+| `import_teilnehmerliste` | ILIAS-Excel-Datei direkt importieren (Kurs anlegen + Studierende einschreiben) |
+
+### Installation
+
+**Voraussetzungen:** Das Dozentenmanager-Repo muss geklont und die Dependencies installiert sein.
+
+```bash
+# Dependencies installieren (fastmcp und httpx werden automatisch mitinstalliert)
+uv sync
+```
+
+**API-Key auf dem Server setzen** (einmalig, z.B. in `~/.config/dozentenmanager/config.env` oder Server-Env):
+
+```env
+DOZENTENMANAGER_API_KEY=dein-geheimer-zufallsstring
+```
+
+Für Docker den Key in der `.env`-Datei neben `docker-compose.yml` setzen:
+
+```env
+DOZENTENMANAGER_API_KEY=dein-geheimer-zufallsstring
+```
+
+**Lokal denselben Key setzen** (in `~/.zshrc` oder `.env`):
+
+```bash
+export DOZENTENMANAGER_API_KEY=dein-geheimer-zufallsstring
+```
+
+### Konfiguration für Claude Code
+
+Die `.mcp.json` im Projektverzeichnis wird von Claude Code automatisch erkannt:
+
+```json
+{
+  "mcpServers": {
+    "dozentenmanager": {
+      "command": "uv",
+      "args": ["run", "python", "mcp_server/server.py"],
+      "env": {
+        "DOZENTENMANAGER_URL": "https://dmprod.jv0.me",
+        "DOZENTENMANAGER_API_KEY": "${DOZENTENMANAGER_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+Die Ziel-URL und den API-Key anpassen. Nach einem Neustart von Claude Code (oder `/mcp reset`) steht der Server als Tool zur Verfügung.
+
+Für eine andere Instanz (z.B. Dev-Server) die URL in `.mcp.json` ändern oder die Env-Variable überschreiben:
+
+```bash
+DOZENTENMANAGER_URL=https://dmdev.jv0.me uv run python mcp_server/server.py
+```
+
+### Beispiel-Nutzung in Claude Code
+
+```
+Importiere /Users/jan/Downloads/Teilnehmerliste_SoSe26.xlsx
+als Kurs "Statistik II" (SoSe 2026) an der EH Ludwigsburg (university_id=1).
+```
+
+Claude ruft dann automatisch `import_teilnehmerliste` auf — die Datei wird lokal gelesen und per HTTP an die Flask-App übertragen.
+
+### REST-API (direkt)
+
+Die Write-Endpoints sind auch direkt per `curl` nutzbar:
+
+```bash
+# Kurse auflisten
+curl -H "X-API-Key: $DOZENTENMANAGER_API_KEY" https://dmprod.jv0.me/api/courses
+
+# Kurs anlegen
+curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Statistik II","semester":"2026_SoSe","university_id":1}' \
+     https://dmprod.jv0.me/api/courses
+
+# ILIAS-Teilnehmerliste importieren
+curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     -F "file=@Teilnehmerliste.xlsx" \
+     -F "course_name=Statistik II" \
+     -F "semester=2026_SoSe" \
+     -F "university_id=1" \
+     https://dmprod.jv0.me/api/import/teilnehmerliste
+```
 
 ---
 

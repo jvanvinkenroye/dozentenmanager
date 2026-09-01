@@ -172,6 +172,7 @@ def register_blueprints(app: Flask) -> None:
 
     # Register blueprints
     app.register_blueprint(admin_bp)
+    csrf.exempt(api_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(backup_bp)

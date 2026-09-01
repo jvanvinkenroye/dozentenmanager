@@ -85,11 +85,7 @@ class StudentService(BaseService):
         if len(email) > 255:
             raise ValueError("Email cannot exceed 255 characters")
 
-        # Validate program
-        if not program or not program.strip():
-            raise ValueError("Program cannot be empty")
-
-        program = program.strip()
+        program = program.strip() if program else ""
         if len(program) > 200:
             raise ValueError("Program cannot exceed 200 characters")
 

@@ -34,7 +34,11 @@ def _api(method: str, path: str, **kwargs) -> dict:  # type: ignore[no-untyped-d
     try:
         resp = httpx.request(method, url, headers=_headers(), timeout=30, **kwargs)
         resp.raise_for_status()
-        return resp.json()
+        data = resp.json()
+        # fastmcp requires tools to return a dict, never a bare list
+        if isinstance(data, list):
+            return {"items": data, "count": len(data)}
+        return data
     except httpx.HTTPStatusError as e:
         try:
             detail = e.response.json().get("error", e.response.text)

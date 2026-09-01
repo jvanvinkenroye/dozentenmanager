@@ -284,5 +284,7 @@ class TestUniversityDeleteRoute:
     def test_delete_post_nonexistent(self, app, auth_client, service):
         """Test POST request to delete non-existent university."""
         with app.app_context():
-            response = auth_client.post("/universities/999/delete", follow_redirects=False)
+            response = auth_client.post(
+                "/universities/999/delete", follow_redirects=False
+            )
             assert response.status_code == 302

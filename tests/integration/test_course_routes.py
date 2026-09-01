@@ -38,7 +38,9 @@ class TestCourseIndexRoute:
         # Just check page loads correctly
         assert b"Lehrveranstaltung" in response.data
 
-    def test_index_with_courses(self, app, auth_client, course_service, sample_university):
+    def test_index_with_courses(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test listing courses with data."""
         course_service.add_course(
             name="Einführung Informatik",
@@ -56,7 +58,9 @@ class TestCourseIndexRoute:
         assert b"Informatik" in response.data
         assert b"Programmierung" in response.data
 
-    def test_index_with_search(self, app, auth_client, course_service, sample_university):
+    def test_index_with_search(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test searching courses."""
         course_service.add_course(
             name="Einführung Informatik",
@@ -99,7 +103,9 @@ class TestCourseIndexRoute:
 class TestCourseShowRoute:
     """Test course detail route."""
 
-    def test_show_existing_course(self, app, auth_client, course_service, sample_university):
+    def test_show_existing_course(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test showing details of existing course."""
         course = course_service.add_course(
             name="Einführung Informatik",
@@ -129,7 +135,9 @@ class TestCourseNewRoute:
         assert b"Lehrveranstaltung" in response.data
         assert b"Name" in response.data or b"name" in response.data
 
-    def test_new_post_success(self, app, auth_client, course_service, sample_university):
+    def test_new_post_success(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request to create new course."""
         response = auth_client.post(
             "/courses/new",
@@ -156,7 +164,9 @@ class TestCourseNewRoute:
         assert course.semester == "2024_WiSe"
         assert course.slug == "einfuehrung-informatik"
 
-    def test_new_post_auto_slug(self, app, auth_client, course_service, sample_university):
+    def test_new_post_auto_slug(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request with auto-generated slug."""
         response = auth_client.post(
             "/courses/new",
@@ -181,7 +191,9 @@ class TestCourseNewRoute:
         assert course is not None
         assert course.slug == "einfuehrung-informatik"
 
-    def test_new_post_empty_name(self, app, auth_client, course_service, sample_university):
+    def test_new_post_empty_name(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request with empty name."""
         response = auth_client.post(
             "/courses/new",
@@ -213,7 +225,9 @@ class TestCourseNewRoute:
         assert response.status_code == 200
         assert b"Invalid slug format" in response.data or b"Slug" in response.data
 
-    def test_new_post_duplicate(self, app, auth_client, course_service, sample_university):
+    def test_new_post_duplicate(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request with duplicate course."""
         # Create course with specific slug
         course_service.add_course(
@@ -236,8 +250,7 @@ class TestCourseNewRoute:
 
         assert response.status_code == 200  # Stays on form
         assert (
-            b"already exists" in response.data
-            or b"existiert bereits" in response.data
+            b"already exists" in response.data or b"existiert bereits" in response.data
         )
 
 
@@ -262,7 +275,9 @@ class TestCourseEditRoute:
         response = auth_client.get("/courses/999/edit")
         assert response.status_code == 302  # Redirect
 
-    def test_edit_post_success(self, app, auth_client, course_service, sample_university):
+    def test_edit_post_success(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request to update course."""
         course = course_service.add_course(
             name="Einführung Informatik",
@@ -292,7 +307,9 @@ class TestCourseEditRoute:
         assert updated.name == "Grundlagen Informatik"
         assert updated.slug == "grundlagen-informatik"
 
-    def test_edit_post_empty_name(self, app, auth_client, course_service, sample_university):
+    def test_edit_post_empty_name(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request with empty name."""
         course = course_service.add_course(
             name="Einführung Informatik",
@@ -358,7 +375,9 @@ class TestCourseDeleteRoute:
         response = auth_client.get("/courses/999/delete")
         assert response.status_code == 302
 
-    def test_delete_post_success(self, app, auth_client, course_service, sample_university):
+    def test_delete_post_success(
+        self, app, auth_client, course_service, sample_university
+    ):
         """Test POST request to delete course."""
         course = course_service.add_course(
             name="Einführung Informatik",

@@ -2,8 +2,9 @@
 Authentication and authorization utilities.
 """
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Any
+from typing import Any
 
 from flask import abort
 from flask_login import current_user
@@ -19,6 +20,7 @@ def role_required(*roles: str) -> Callable:
     Returns:
         Decorated function
     """
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def decorated_function(*args: Any, **kwargs: Any) -> Any:
@@ -27,7 +29,9 @@ def role_required(*roles: str) -> Callable:
             if current_user.role not in roles:
                 abort(403)
             return f(*args, **kwargs)
+
         return decorated_function
+
     return decorator
 
 

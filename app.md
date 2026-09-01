@@ -3,13 +3,13 @@ Ich möchte ein Tool zur Verwaltung von Studierenden.
 - Studierende gehören zu Hochschulen.
 - Dort besuchen sie Lehrveranstaltungen.
 - Sie erbringen Prüfungsleistungen, die entweder aus einem oder mehreren Teilen bestehen.
-- Diese Prüfungsleistungen müssen erfasst werden (eingereicht/nicht eingereicht), mit Punkten versehen und in Noten umgewandelt werden. 
+- Diese Prüfungsleistungen müssen erfasst werden (eingereicht/nicht eingereicht), mit Punkten versehen und in Noten umgewandelt werden.
 - Ich möchte überwachen können, ob noten eingetragen wurden
 -Ich möchte Änderungen in den Noten notieren können.
 - Studierende sollen importiert und exportiert werden können.
 - Studierende haben Vor- und Nachnamen, Studiengänge, E-Mail-Adressen und Matrikelnummern.
-- Studierenden können an einer oder mehreren Lehrveranstaltungen teilnhemen. 
-- Man muss sie an- und abmelden können. 
+- Studierenden können an einer oder mehreren Lehrveranstaltungen teilnhemen.
+- Man muss sie an- und abmelden können.
 - Ich möchte einen Parser für E-Mails, der überprüft, ob Anhänge enthalten sind.
 Die Anhänge sollen automatisch zugeordnet werden können. Wenn das nicht geht, möchte ich das manuell tun können.
 - Ich möchte einen Parser für PDF- und Word-Dokumente. Die Anhänge sollen automatisch zugeordnet werden können. Wenn das nicht geht, möchte ich das manuell tun können.
@@ -29,4 +29,3 @@ Die Anhänge sollen automatisch zugeordnet werden können. Wenn das nicht geht, 
 - ich möchte erst die einzlenen features
 - Dann linter
 - Dann commit
-

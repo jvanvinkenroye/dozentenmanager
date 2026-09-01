@@ -2,12 +2,9 @@
 Unit tests for Email Import CLI.
 """
 
-import email
 import tempfile
 from datetime import UTC, datetime
 from email.message import EmailMessage
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -135,7 +132,7 @@ def test_match_student_by_name(setup_email_data):
     enrollment = match_student_by_name("Mustermann, Max")
     assert enrollment is not None
     assert enrollment.student.id == setup_email_data["student1"].id
-    
+
     # No match
     enrollment = match_student_by_name("Hans Schmidt")
     assert enrollment is None
@@ -148,7 +145,7 @@ def test_process_email_message(setup_email_data):
     msg.set_content("Here is my submission")
 
     result = process_email_message(msg)
-    
+
     assert result["subject"] == "Test Submission"
     assert result["matched_student"] is not None
     assert result["matched_student"]["email"] == "max@example.com"
@@ -161,7 +158,7 @@ def test_process_email_message_match_by_id_in_subject(setup_email_data):
     msg.set_content("Here is my submission")
 
     result = process_email_message(msg)
-    
+
     assert result["matched_student"] is not None
     assert result["matched_student"]["id"] == setup_email_data["student1"].id
 
@@ -171,13 +168,13 @@ def test_parse_eml_file(setup_email_data):
     msg["Subject"] = "Test EML"
     msg["From"] = "max@example.com"
     msg.set_content("Content")
-    
+
     with tempfile.NamedTemporaryFile(suffix=".eml", mode="wb") as tmp:
         tmp.write(msg.as_bytes())
         tmp.flush()
-        
+
         results = parse_eml_file(tmp.name)
-        
+
         assert len(results) == 1
         assert results[0]["subject"] == "Test EML"
         assert results[0]["matched_student"]["email"] == "max@example.com"
@@ -188,13 +185,13 @@ def test_import_emails(setup_email_data):
     msg["Subject"] = "Test Import"
     msg["From"] = "max@example.com"
     msg.set_content("Content")
-    
+
     with tempfile.NamedTemporaryFile(suffix=".eml", mode="wb") as tmp:
         tmp.write(msg.as_bytes())
         tmp.flush()
-        
+
         summary = import_emails(tmp.name)
-        
+
         assert summary["files_processed"] == 1
         assert summary["emails_processed"] == 1
         assert summary["students_matched"] == 1

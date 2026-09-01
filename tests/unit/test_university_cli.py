@@ -67,7 +67,8 @@ class TestSlugGeneration:
     def test_generate_slug_long_name(self):
         """Test slug generation from long name."""
         assert (
-            UniversityService.generate_slug("Technische Hochschule Köln") == "technische-hochschule-koeln"
+            UniversityService.generate_slug("Technische Hochschule Köln")
+            == "technische-hochschule-koeln"
         )
 
     def test_generate_slug_with_umlauts(self):
@@ -242,7 +243,9 @@ class TestUpdateUniversity:
         """Test updating university name."""
         with app.app_context():
             created = service.add_university("TH Köln")
-            updated = service.update_university(created.id, name="Technische Hochschule Köln")
+            updated = service.update_university(
+                created.id, name="Technische Hochschule Köln"
+            )
 
             assert updated is not None
             assert updated.name == "Technische Hochschule Köln"

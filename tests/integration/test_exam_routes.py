@@ -34,7 +34,9 @@ def exam_service():
 class TestExamListRoute:
     """Test exam list route."""
 
-    def test_list_exams_empty(self, app, auth_client, university_service, course_service):
+    def test_list_exams_empty(
+        self, app, auth_client, university_service, course_service
+    ):
         """Test listing exams when none exist."""
         response = auth_client.get("/exams/")
         assert response.status_code == 200
@@ -92,7 +94,9 @@ class TestExamListRoute:
 class TestExamShowRoute:
     """Test exam detail route."""
 
-    def test_show_exam_success(self, app, auth_client, university_service, course_service, exam_service):
+    def test_show_exam_success(
+        self, app, auth_client, university_service, course_service, exam_service
+    ):
         """Test showing exam details."""
         # Create test data
         university = university_service.add_university("TH Köln")
@@ -119,7 +123,9 @@ class TestExamShowRoute:
         assert "60.0" in response_text
         assert "Written final exam" in response_text
 
-    def test_show_exam_not_found(self, app, auth_client, university_service, course_service):
+    def test_show_exam_not_found(
+        self, app, auth_client, university_service, course_service
+    ):
         """Test showing non-existent exam."""
         response = auth_client.get("/exams/99999")
         assert response.status_code == 302  # Redirect to list
@@ -309,7 +315,9 @@ class TestExamNewRoute:
 class TestExamEditRoute:
     """Test exam edit route."""
 
-    def test_edit_exam_get(self, app, auth_client, university_service, course_service, exam_service):
+    def test_edit_exam_get(
+        self, app, auth_client, university_service, course_service, exam_service
+    ):
         """Test GET request to edit exam form."""
         university = university_service.add_university("TH Köln")
         course = course_service.add_course(
@@ -335,7 +343,9 @@ class TestExamEditRoute:
             semester="2024_WiSe",
             university_id=university.id,
         )
-        exam = exam_service.add_exam("Original Name", course.id, date(2024, 6, 15), 100.0)
+        exam = exam_service.add_exam(
+            "Original Name", course.id, date(2024, 6, 15), 100.0
+        )
         exam_id = exam.id
         course_id = course.id
 
@@ -357,7 +367,9 @@ class TestExamEditRoute:
         assert "Updated Name" in response_text
         assert "Prüfungsdetails" in response_text
 
-    def test_edit_exam_not_found(self, app, auth_client, university_service, course_service):
+    def test_edit_exam_not_found(
+        self, app, auth_client, university_service, course_service
+    ):
         """Test editing non-existent exam."""
         response = auth_client.get("/exams/99999/edit")
         assert response.status_code == 302  # Redirect
@@ -366,7 +378,9 @@ class TestExamEditRoute:
 class TestExamDeleteRoute:
     """Test exam delete route."""
 
-    def test_delete_exam_get(self, app, auth_client, university_service, course_service, exam_service):
+    def test_delete_exam_get(
+        self, app, auth_client, university_service, course_service, exam_service
+    ):
         """Test GET request to delete confirmation page."""
         university = university_service.add_university("TH Köln")
         course = course_service.add_course(

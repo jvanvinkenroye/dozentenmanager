@@ -237,8 +237,7 @@ class TestStudentNewRoute:
 
         assert response.status_code == 200
         assert (
-            b"already exists" in response.data
-            or b"existiert bereits" in response.data
+            b"already exists" in response.data or b"existiert bereits" in response.data
         )
 
     def test_new_post_duplicate_email(self, app, auth_client, service):
@@ -264,8 +263,7 @@ class TestStudentNewRoute:
 
         assert response.status_code == 200
         assert (
-            b"already exists" in response.data
-            or b"existiert bereits" in response.data
+            b"already exists" in response.data or b"existiert bereits" in response.data
         )
 
 

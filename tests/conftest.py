@@ -5,7 +5,6 @@ This module provides common test fixtures for unit and integration tests.
 """
 
 import pytest
-from flask_login import login_user
 
 from app import (
     create_app,

@@ -201,7 +201,9 @@ async def test_submissions_page(page):
 
     # Check if submissions exist or "no submissions" message is shown
     submission_table = await page.locator("table tbody tr").count()
-    no_submissions_message = await page.locator("text=Keine Einreichungen gefunden").count()
+    no_submissions_message = await page.locator(
+        "text=Keine Einreichungen gefunden"
+    ).count()
 
     if submission_table > 0:
         logger.info(f"Found {submission_table} submissions in the list")
@@ -271,7 +273,9 @@ async def test_navigation_from_navbar(page):
     # Verify we're on the documents page
     current_url = page.url
     logger.info(f"Current URL: {current_url}")
-    assert "/documents" in current_url, f"Expected '/documents' in URL, got '{current_url}'"
+    assert "/documents" in current_url, (
+        f"Expected '/documents' in URL, got '{current_url}'"
+    )
 
     # Verify page heading
     heading = await page.locator("h1.title").text_content()
@@ -354,7 +358,9 @@ async def test_breadcrumb_navigation(page):
 
             current_url = page.url
             logger.info(f"After clicking Home: {current_url}")
-            assert current_url == f"{BASE_URL}/" or current_url == BASE_URL, "Should navigate to home"
+            assert current_url == f"{BASE_URL}/" or current_url == BASE_URL, (
+                "Should navigate to home"
+            )
 
     logger.info("✓ Breadcrumb navigation test passed!")
     return True
@@ -421,7 +427,9 @@ async def run_all_tests():
                     failed += 1
 
             logger.info("-" * 60)
-            logger.info(f"Total: {passed + failed} | Passed: {passed} | Failed: {failed}")
+            logger.info(
+                f"Total: {passed + failed} | Passed: {passed} | Failed: {failed}"
+            )
             logger.info("=" * 60)
 
             # Wait to see final state

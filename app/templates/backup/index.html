@@ -29,7 +29,7 @@
 
                     <form method="POST" action="{{ url_for('backup.create') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        
+
                         <div class="field">
                             <label class="checkbox">
                                 <input type="checkbox" name="include_uploads" checked>
@@ -68,7 +68,7 @@
 
                     <form method="POST" action="{{ url_for('backup.restore') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        
+
                         <div class="field">
                             <label class="label">Backup File</label>
                             <div class="control">
@@ -163,7 +163,7 @@
             if (fileNameElement) {
                 fileNameElement.textContent = fileName;
             }
-            
+
             // Enable restore button when file is selected
             const restoreButton = document.getElementById('restoreButton');
             if (restoreButton) {
@@ -177,7 +177,7 @@
     if (restoreForm) {
         restoreForm.addEventListener('submit', function(e) {
             const clearExisting = document.getElementById('clearExisting');
-            
+
             if (clearExisting && clearExisting.checked) {
                 if (!confirm('⚠️ WARNING: This will delete ALL existing data!\n\nAre you absolutely sure you want to proceed?')) {
                     e.preventDefault();

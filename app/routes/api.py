@@ -148,6 +148,37 @@ def list_universities() -> Any:
     return jsonify([u.to_dict() for u in universities])
 
 
+@bp.route("/universities/<int:university_id>", methods=["PATCH"])
+@require_api_key
+def update_university(university_id: int) -> Any:
+    """
+    Update a university.
+
+    JSON body: name (optional), slug (optional)
+    """
+    from app.models.university import University
+
+    university = University.query.get(university_id)
+    if not university:
+        return jsonify({"error": "University not found"}), 404
+    data = request.get_json(force=True) or {}
+    try:
+        service = UniversityService()
+        updated = service.update_university(
+            university_id=university_id,
+            name=data.get("name"),
+            slug=data.get("slug"),
+        )
+        if not updated:
+            return jsonify({"error": "University not found"}), 404
+        return jsonify(updated.to_dict())
+    except (ValueError, IntegrityError) as e:
+        return jsonify({"error": str(e)}), 409
+    except SQLAlchemyError as e:
+        logger.error("DB error updating university: %s", e)
+        return jsonify({"error": "Database error"}), 500
+
+
 @bp.route("/universities", methods=["POST"])
 @require_api_key
 def create_university() -> Any:

@@ -14,7 +14,7 @@ from typing import Any
 
 import openpyxl
 from flask import Blueprint, jsonify, request
-from flask_login import login_required
+from flask_login import current_user
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.services.course_service import CourseService
@@ -48,6 +48,21 @@ def require_api_key(f):  # type: ignore[no-untyped-def]
     return decorated
 
 
+def require_auth(f):  # type: ignore[no-untyped-def]
+    """Decorator: accept either session auth (browser) or API key auth (MCP/scripts)."""
+
+    @wraps(f)
+    def decorated(*args: Any, **kwargs: Any) -> Any:
+        key = _get_api_key()
+        if key and request.headers.get("X-API-Key") == key:
+            return f(*args, **kwargs)
+        if current_user and current_user.is_authenticated:
+            return f(*args, **kwargs)
+        return jsonify({"error": "Unauthorized"}), 401
+
+    return decorated
+
+
 def _email_to_student_id(email: str) -> str:
     """Derive a deterministic 8-digit student ID from an email address."""
     h = int(hashlib.md5(email.lower().encode(), usedforsecurity=False).hexdigest(), 16)  # noqa: S324
@@ -60,7 +75,7 @@ def _email_to_student_id(email: str) -> str:
 
 
 @bp.route("/students")
-@login_required
+@require_auth
 def list_students() -> Any:
     """List all students. Query params: search, program."""
     search = request.args.get("search")
@@ -71,7 +86,7 @@ def list_students() -> Any:
 
 
 @bp.route("/students/<int:student_id>")
-@login_required
+@require_auth
 def get_student(student_id: int) -> Any:
     """Get a single student by DB id."""
     service = StudentService()
@@ -82,7 +97,7 @@ def get_student(student_id: int) -> Any:
 
 
 @bp.route("/courses")
-@login_required
+@require_auth
 def list_courses() -> Any:
     """List all courses. Query params: university_id, semester."""
     university_id = request.args.get("university_id", type=int)
@@ -93,7 +108,7 @@ def list_courses() -> Any:
 
 
 @bp.route("/courses/<int:course_id>")
-@login_required
+@require_auth
 def get_course(course_id: int) -> Any:
     """Get a single course by DB id."""
     service = CourseService()
@@ -104,7 +119,7 @@ def get_course(course_id: int) -> Any:
 
 
 @bp.route("/grades")
-@login_required
+@require_auth
 def list_grades() -> Any:
     """List grades. Query params: enrollment_id, exam_id, course_id, is_final."""
     enrollment_id = request.args.get("enrollment_id", type=int)
@@ -125,7 +140,7 @@ def list_grades() -> Any:
 
 
 @bp.route("/universities")
-@login_required
+@require_auth
 def list_universities() -> Any:
     """List all universities."""
     service = UniversityService()

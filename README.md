@@ -298,6 +298,7 @@ Der MCP-Server läuft **lokal** als Subprocess von Claude Code. Er kommuniziert 
 | `create_course` | Neuen Kurs anlegen |
 | `add_enrollment` | Studierenden in einen Kurs einschreiben |
 | `import_teilnehmerliste` | ILIAS-Excel-Datei direkt importieren (Kurs anlegen + Studierende einschreiben) |
+| `upload_submission` | Dokument für eine Einschreibung hochladen (PDF, DOCX, …) |
 | `delete_course` | Kurs löschen (inkl. Einschreibungen, Prüfungen, Noten) |
 | `delete_student` | Studierenden löschen (per Datenbank-ID) |
 | `delete_enrollment` | Einschreibung aufheben (Matrikelnummer + Kurs-ID) |
@@ -404,6 +405,14 @@ curl -X DELETE -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"student_id":"12345678","course_id":1}' \
      https://dmprod.jv0.me/api/enrollments
+
+# Dokument für eine Einschreibung hochladen
+curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \
+     -F "file=@abgabe.pdf" \
+     -F "enrollment_id=5" \
+     -F "exam_id=2" \
+     -F "notes=Abgabe SoSe 2026" \
+     https://dmprod.jv0.me/api/submissions
 
 # ILIAS-Teilnehmerliste importieren
 curl -X POST -H "X-API-Key: $DOZENTENMANAGER_API_KEY" \

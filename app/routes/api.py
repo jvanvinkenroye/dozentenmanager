@@ -6,9 +6,11 @@ GET endpoints use session-based auth (Flask-Login).
 Write endpoints use API-key auth (X-API-Key header).
 """
 
+import contextlib
 import hashlib
 import logging
 import os
+import tempfile
 from functools import wraps
 from typing import Any
 
@@ -18,6 +20,7 @@ from flask_login import current_user
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.services.course_service import CourseService
+from app.services.document_service import DocumentService
 from app.services.enrollment_service import EnrollmentService
 from app.services.grade_service import GradeService
 from app.services.student_service import StudentService
@@ -202,6 +205,66 @@ def create_university() -> Any:
     except SQLAlchemyError as e:
         logger.error("DB error creating university: %s", e)
         return jsonify({"error": "Database error"}), 500
+
+
+@bp.route("/submissions", methods=["POST"])
+@require_api_key
+def upload_submission() -> Any:
+    """
+    Upload a document for a student enrollment.
+
+    Multipart form fields:
+      - file: the document file (PDF, DOCX, etc.)
+      - enrollment_id: integer
+      - submission_type: optional (default: 'document')
+      - exam_id: optional integer
+      - notes: optional string
+    """
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["file"]
+    enrollment_id_str = request.form.get("enrollment_id", "").strip()
+    if not enrollment_id_str:
+        return jsonify({"error": "Missing field: enrollment_id"}), 400
+
+    try:
+        enrollment_id = int(enrollment_id_str)
+    except ValueError:
+        return jsonify({"error": "enrollment_id must be an integer"}), 400
+
+    submission_type = request.form.get("submission_type", "document").strip()
+    exam_id_str = request.form.get("exam_id", "").strip()
+    exam_id = int(exam_id_str) if exam_id_str else None
+    notes = request.form.get("notes") or None
+
+    original_filename = file.filename or "upload"
+
+    # Save to temp file, let DocumentService handle the final location
+    suffix = os.path.splitext(original_filename)[1]
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            file.save(tmp.name)
+            tmp_path = tmp.name
+
+        service = DocumentService()
+        document = service.upload_document(
+            file_path=tmp_path,
+            enrollment_id=enrollment_id,
+            submission_type=submission_type,
+            exam_id=exam_id,
+            notes=notes,
+            original_filename=original_filename,
+        )
+        return jsonify(document.to_dict()), 201
+    except (ValueError, FileNotFoundError) as e:
+        return jsonify({"error": str(e)}), 400
+    except SQLAlchemyError as e:
+        logger.error("DB error uploading document: %s", e)
+        return jsonify({"error": "Database error"}), 500
+    finally:
+        with contextlib.suppress(Exception):
+            os.unlink(tmp_path)
 
 
 @bp.route("/universities/<int:university_id>", methods=["DELETE"])

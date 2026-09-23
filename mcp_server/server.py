@@ -211,6 +211,65 @@ def import_teilnehmerliste(
 
 
 @mcp.tool()
+def upload_submission(
+    file_path: str,
+    enrollment_id: int,
+    submission_type: str = "document",
+    exam_id: int = 0,
+    notes: str = "",
+) -> dict:
+    """
+    Upload a document for a student enrollment.
+
+    Args:
+        file_path: Absolute local path to the file (PDF, DOCX, etc.)
+        enrollment_id: Database id of the enrollment
+        submission_type: Type of submission (default: 'document')
+        exam_id: Optional exam database id (0 = none)
+        notes: Optional notes about the submission
+    """
+    path = Path(file_path)
+    if not path.exists():
+        return {"error": f"File not found: {file_path}"}
+
+    form_data: dict[str, str] = {
+        "enrollment_id": str(enrollment_id),
+        "submission_type": submission_type,
+    }
+    if exam_id:
+        form_data["exam_id"] = str(exam_id)
+    if notes:
+        form_data["notes"] = notes
+
+    url = f"{BASE_URL}/api/submissions"
+    with path.open("rb") as f:
+        mime = "application/octet-stream"
+        if path.suffix.lower() == ".pdf":
+            mime = "application/pdf"
+        elif path.suffix.lower() in (".docx", ".doc"):
+            mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        files = {"file": (path.name, f, mime)}
+        try:
+            resp = httpx.post(
+                url,
+                headers={"X-API-Key": API_KEY},
+                data=form_data,
+                files=files,
+                timeout=60,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            try:
+                detail = e.response.json().get("error", e.response.text)
+            except Exception:
+                detail = e.response.text
+            return {"error": f"HTTP {e.response.status_code}: {detail}"}
+        except Exception as e:
+            return {"error": str(e)}
+
+
+@mcp.tool()
 def delete_course(course_id: int) -> dict:
     """
     Delete a course and all its enrollments, exams and grades.

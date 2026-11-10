@@ -39,9 +39,7 @@ def api_data(app):
     db.session.add(student)
     db.session.flush()
 
-    enrollment = Enrollment(
-        student_id=student.id, course_id=course.id, status="active"
-    )
+    enrollment = Enrollment(student_id=student.id, course_id=course.id, status="active")
     db.session.add(enrollment)
 
     exam = Exam(
@@ -97,7 +95,8 @@ class TestStudentApi:
 
     def test_requires_login(self, client, api_data):
         response = client.get("/api/students")
-        assert response.status_code == 302
+        assert response.status_code == 401
+        assert response.get_json()["error"] == "Unauthorized"
 
 
 class TestCourseApi:

@@ -350,10 +350,19 @@ from datetime import datetime, timezone
 
 Base = declarative_base()
 
+
 class TimestampMixin:
     """Mixin for adding timezone-aware timestamp columns"""
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    created_at = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 ```
 
 ### Example Model Implementation
@@ -362,8 +371,9 @@ class TimestampMixin:
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Decimal, Date, Text
 from sqlalchemy.orm import relationship
 
+
 class Student(Base, TimestampMixin):
-    __tablename__ = 'student'
+    __tablename__ = "student"
 
     id = Column(Integer, primary_key=True)
     first_name = Column(String(100), nullable=False)
@@ -373,8 +383,12 @@ class Student(Base, TimestampMixin):
     program = Column(String(255))
 
     # Relationships
-    enrollments = relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
-    submissions = relationship('Submission', back_populates='student', cascade='all, delete-orphan')
+    enrollments = relationship(
+        "Enrollment", back_populates="student", cascade="all, delete-orphan"
+    )
+    submissions = relationship(
+        "Submission", back_populates="student", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Student(id={self.id}, name='{self.first_name} {self.last_name}', student_id='{self.student_id}')>"

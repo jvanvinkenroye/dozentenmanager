@@ -10,6 +10,7 @@ import re
 from datetime import UTC, datetime
 
 from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import relationship
 
 from app import db
 from app.models.base import TimestampMixin
@@ -163,6 +164,14 @@ class Document(db.Model, TimestampMixin):  # type: ignore[name-defined]
         DateTime,
         nullable=False,
         default=lambda: datetime.now(UTC),
+    )
+
+    annotations = relationship(
+        "PageAnnotation",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="PageAnnotation.page_number",
+        lazy="dynamic",
     )
 
     # Indexes for common queries

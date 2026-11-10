@@ -166,11 +166,13 @@ def register_blueprints(app: Flask) -> None:
     from app.routes.enrollment import bp as enrollment_bp
     from app.routes.exam import bp as exam_bp
     from app.routes.grade import bp as grade_bp
+    from app.routes.statistics import bp as statistics_bp
     from app.routes.student import bp as student_bp
     from app.routes.university import bp as university_bp
 
     # Register blueprints
     app.register_blueprint(admin_bp)
+    csrf.exempt(api_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(backup_bp)
@@ -179,6 +181,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(enrollment_bp)
     app.register_blueprint(exam_bp)
     app.register_blueprint(grade_bp)
+    app.register_blueprint(statistics_bp)
     app.register_blueprint(student_bp)
     app.register_blueprint(university_bp)
 

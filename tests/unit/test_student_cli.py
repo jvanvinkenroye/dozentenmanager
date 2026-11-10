@@ -155,18 +155,17 @@ class TestAddStudent:
                 )
 
     def test_add_student_empty_program(self, app, db, service):
-        """Test that empty program raises ValueError."""
+        """Test that an empty program is allowed (ILIAS imports omit it)."""
         with app.app_context():
-            import pytest
-
-            with pytest.raises(ValueError, match="Program cannot be empty"):
-                service.add_student(
-                    first_name="Max",
-                    last_name="Mustermann",
-                    student_id="12345678",
-                    email="max@example.com",
-                    program="",
-                )
+            student = service.add_student(
+                first_name="Max",
+                last_name="Mustermann",
+                student_id="12345678",
+                email="max@example.com",
+                program="",
+            )
+            assert student.id is not None
+            assert student.program == ""
 
     def test_add_student_duplicate_student_id(self, app, db, service):
         """Test that duplicate student ID raises ValueError."""

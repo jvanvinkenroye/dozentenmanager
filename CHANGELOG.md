@@ -10,6 +10,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Next features in development will be listed here
 
+## [0.5.0] - 2026-09-23
+
+### Added
+- **Excel/CSV-Import** für Kurse, Einschreibungen und Noten (Web-UI)
+  - Import-Routes und -Templates für alle drei Typen
+  - Spalten-Mapping-Modal bei abweichenden Headern
+  - Import-Button in Kursliste, Kursdetail und Prüfungsdetail
+- **ILIAS-Teilnehmerlisten-Import** (direkt in lokale DB)
+  - Unterstützung für ILIAS-Exportformat (Zeile 1 Titel, Zeile 3 Header, ab Zeile 4 Daten)
+  - Namensformat „Nachname, Vorname" wird automatisch geparst
+  - Deterministische Matrikelnummer aus E-Mail-Hash (MD5, 8-stellig)
+  - Leeres `program`-Feld erlaubt (kein Pflichtfeld mehr bei Importen)
+- **MCP-Server** (`mcp_server/server.py`) für Claude Code Integration
+  - Basiert auf `fastmcp` (stdio, kein separates Deployment nötig)
+  - Konfiguration über `DOZENTENMANAGER_URL` und `DOZENTENMANAGER_API_KEY`
+  - `.mcp.json` für automatische Einbindung in Claude Code
+  - 11 Tools: `list_universities`, `list_courses`, `list_students`, `create_university`, `create_course`, `add_enrollment`, `import_teilnehmerliste`, `upload_submission`, `delete_course`, `delete_student`, `delete_enrollment`
+- **REST-API Write-Endpoints** (API-Key-Auth via `X-API-Key` Header)
+  - `POST /api/students` — Studierenden anlegen
+  - `POST /api/courses` — Kurs anlegen
+  - `POST /api/enrollments` — Einschreiben
+  - `POST /api/universities` — Universität anlegen
+  - `PATCH /api/universities/<id>` — Universität umbenennen
+  - `POST /api/import/teilnehmerliste` — ILIAS-Excel importieren (Multipart)
+  - `POST /api/submissions` — Dokument für Einschreibung hochladen
+  - `DELETE /api/courses/<id>` — Kurs löschen (mit Cascade)
+  - `DELETE /api/students/<id>` — Studierenden löschen
+  - `DELETE /api/enrollments` — Einschreibung aufheben
+  - `DELETE /api/universities/<id>` — Universität löschen
+- **API-Key-Authentifizierung** (`require_api_key` Decorator)
+  - Read-Endpoints akzeptieren Session-Auth **oder** API-Key (`require_auth`)
+  - API-Blueprint von CSRF-Schutz ausgenommen
+  - `DOZENTENMANAGER_API_KEY` Env-Var in `docker-compose.yml` integriert
+- **Cascade-Delete** für Kurse (Documents → Submissions → Enrollments, Grades → Exams → Course)
+
+### Fixed
+- Kurs-Löschen schlug fehl wegen FK-Constraint bei vorhandenen Einschreibungen
+- `fastmcp` statt `mcp[cli]` (API-Inkompatibilität in mcp 2.x)
+- MCP-Tool-Rückgaben als `dict` gewrappt (fastmcp erwartet kein bare list)
+
+### Changed
+- Read-Endpoints (`/api/students`, `/api/courses`, etc.) akzeptieren jetzt auch API-Key-Auth
+- `program`-Feld bei Studierenden ist kein Pflichtfeld mehr (leerer String erlaubt)
+- README um vollständigen MCP-Server-Abschnitt erweitert (Architektur, Tools, Installation, curl-Beispiele)
+
 ## [0.4.0] - 2025-11-02
 
 ### Added

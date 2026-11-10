@@ -91,9 +91,14 @@ def show(exam_id: int) -> str | Any:
             flash(f"Exam with ID {exam_id} not found.", "error")
             return redirect(url_for("exam.index"))
 
+        from app.services.statistics_service import get_exam_stats
+
+        exam_stats = get_exam_stats(exam_id)
+
         return render_template(
             "exam/detail.html",
             exam=exam,
+            exam_stats=exam_stats,
         )
 
     except SQLAlchemyError as e:

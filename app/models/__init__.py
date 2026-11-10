@@ -13,6 +13,7 @@ from app.models.enrollment import Enrollment  # noqa: F401
 from app.models.exam import Exam  # noqa: F401
 from app.models.exam_component import ExamComponent  # noqa: F401
 from app.models.grade import Grade, GradeThreshold, GradingScale  # noqa: F401
+from app.models.page_annotation import PageAnnotation  # noqa: F401
 from app.models.student import Student  # noqa: F401
 from app.models.submission import Submission  # noqa: F401
 from app.models.university import University  # noqa: F401
@@ -20,6 +21,7 @@ from app.models.user import User  # noqa: F401
 
 __all__ = [
     "AuditLog",
+    "PageAnnotation",
     "Course",
     "Document",
     "Enrollment",

@@ -115,6 +115,7 @@ login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Bitte melden Sie sich an."
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -166,6 +167,7 @@ from functools import wraps
 from flask import abort
 from flask_login import current_user
 
+
 def role_required(*roles):
     def decorator(f):
         @wraps(f)
@@ -175,11 +177,15 @@ def role_required(*roles):
             if current_user.role not in roles:
                 abort(403)
             return f(*args, **kwargs)
+
         return decorated_function
+
     return decorator
+
 
 def admin_required(f):
     return role_required("admin")(f)
+
 
 def lecturer_required(f):
     return role_required("admin", "lecturer")(f)
@@ -192,15 +198,15 @@ def lecturer_required(f):
 from flask_login import login_required
 from app.utils.auth import lecturer_required
 
+
 @bp.route("/")
 @login_required
-def list():
-    ...
+def list(): ...
+
 
 @bp.route("/delete/<int:id>", methods=["POST"])
 @lecturer_required
-def delete(id):
-    ...
+def delete(id): ...
 ```
 
 #### 5.2.3 Data Scoping für Multi-User
@@ -241,14 +247,13 @@ class AuditLog(db.Model):
 
 ```python
 class AuditService(BaseService):
-    def log_action(self, table_name, record_id, action, user_id, old_values, new_values, ip):
-        ...
+    def log_action(
+        self, table_name, record_id, action, user_id, old_values, new_values, ip
+    ): ...
 
-    def get_record_history(self, table_name, record_id):
-        ...
+    def get_record_history(self, table_name, record_id): ...
 
-    def get_user_activity(self, user_id, limit=100):
-        ...
+    def get_user_activity(self, user_id, limit=100): ...
 ```
 
 #### 5.3.3 SQLAlchemy Event Listeners
@@ -256,6 +261,7 @@ class AuditService(BaseService):
 
 ```python
 from sqlalchemy import event
+
 
 @event.listens_for(db.session, "before_flush")
 def audit_changes(session, flush_context, instances):
@@ -310,6 +316,7 @@ app/routes/api/
 # app/schemas/student.py
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
+
 class StudentSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Student
@@ -322,18 +329,11 @@ class StudentSchema(SQLAlchemyAutoSchema):
 
 ```python
 def api_response(data=None, message=None, status=200):
-    return jsonify({
-        "success": status < 400,
-        "data": data,
-        "message": message
-    }), status
+    return jsonify({"success": status < 400, "data": data, "message": message}), status
+
 
 def api_error(message, status=400, errors=None):
-    return jsonify({
-        "success": False,
-        "message": message,
-        "errors": errors
-    }), status
+    return jsonify({"success": False, "message": message, "errors": errors}), status
 ```
 
 #### 5.4.5 API Endpoints implementieren
@@ -434,6 +434,7 @@ MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@example.com
 from flask_mail import Mail
 
 mail = Mail()
+
 
 def create_app(config_name):
     ...

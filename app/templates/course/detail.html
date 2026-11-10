@@ -115,6 +115,10 @@
                 </div>
                 <div class="level-right">
                     <div class="level-item">
+                        <a href="{{ url_for('enrollment.import_enrollments', course_id=course.id) }}" class="button is-info is-small">
+                            <span class="icon"><i class="fas fa-file-import"></i></span>
+                            <span>Importieren</span>
+                        </a>
                         {% if available_students %}
                         <button class="button is-success is-small" onclick="document.getElementById('enroll-modal').classList.add('is-active')">
                             <span class="icon"><i class="fas fa-user-plus"></i></span>

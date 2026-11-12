@@ -10,6 +10,7 @@ import contextlib
 import hashlib
 import logging
 import os
+import secrets
 import tempfile
 from functools import wraps
 from typing import Any
@@ -44,7 +45,8 @@ def require_api_key(f):  # type: ignore[no-untyped-def]
         key = _get_api_key()
         if not key:
             return jsonify({"error": "API key not configured on server"}), 500
-        if request.headers.get("X-API-Key") != key:
+        provided_key = request.headers.get("X-API-Key") or ""
+        if not secrets.compare_digest(provided_key, key):
             return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
 

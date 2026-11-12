@@ -65,7 +65,10 @@ def create_app(config_name: str | None = None) -> Flask:
     def load_user(user_id: str):
         from app.models.user import User
 
-        return db.session.get(User, int(user_id))
+        try:
+            return db.session.get(User, int(user_id))
+        except (ValueError, TypeError):
+            return None
 
     # Initialize database
     init_db(app)
@@ -223,6 +226,11 @@ def register_error_handlers(app: Flask) -> None:
     def not_found_error(error):
         """Handle 404 Not Found errors."""
         return render_template("errors/404.html"), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed_error(error):
+        """Handle 405 Method Not Allowed errors."""
+        return render_template("errors/405.html"), 405
 
     @app.errorhandler(500)
     def internal_error(error):

@@ -106,9 +106,9 @@ def index():
 
     is_final = request.args.get("is_final")
     if is_final == "1":
-        query = query.filter(Grade.is_final == True)  # noqa: E712
+        query = query.filter(Grade.is_final.is_(True))
     elif is_final == "0":
-        query = query.filter(Grade.is_final == False)  # noqa: E712
+        query = query.filter(Grade.is_final.is_(False))
 
     # Execute query with pagination
     page = request.args.get("page", 1, type=int)
@@ -387,15 +387,15 @@ def dashboard():
     """Grade monitoring dashboard with statistics."""
     # Get overall statistics
     total_grades = Grade.query.count()
-    final_grades = Grade.query.filter(Grade.is_final == True).count()  # noqa: E712
+    final_grades = Grade.query.filter(Grade.is_final.is_(True)).count()
 
     # Get pass/fail rates
     passing = Grade.query.filter(
-        Grade.is_final == True,  # noqa: E712
+        Grade.is_final.is_(True),
         Grade.grade_value <= 4.0,
     ).count()
     failing = Grade.query.filter(
-        Grade.is_final == True,  # noqa: E712
+        Grade.is_final.is_(True),
         Grade.grade_value > 4.0,
     ).count()
 
@@ -404,9 +404,7 @@ def dashboard():
     # Get average grade
     avg_grade = (
         db.session.query(func.avg(Grade.grade_value))
-        .filter(
-            Grade.is_final == True  # noqa: E712
-        )
+        .filter(Grade.is_final.is_(True))
         .scalar()
         or 0
     )
@@ -414,9 +412,7 @@ def dashboard():
     # Get grade distribution
     distribution = (
         db.session.query(Grade.grade_label, func.count(Grade.id))
-        .filter(
-            Grade.is_final == True  # noqa: E712
-        )
+        .filter(Grade.is_final.is_(True))
         .group_by(Grade.grade_label)
         .all()
     )
@@ -446,7 +442,7 @@ def dashboard():
         )
         .join(Exam, Exam.course_id == Course.id)
         .join(Grade, Grade.exam_id == Exam.id)
-        .filter(Grade.is_final == True)  # noqa: E712
+        .filter(Grade.is_final.is_(True))
         .group_by(Course.id)
         .all()
     )

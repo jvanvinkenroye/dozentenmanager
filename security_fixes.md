@@ -121,3 +121,18 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 **Fix:** Auf 60% erhöht.
 
 **Commit:** TODO
+
+## 📋 Commit-Historie
+
+| Commit | Issue | Beschreibung |
+|--------|-------|-------------|
+| `2a75f77` | #1 | Open Redirect → safe_redirect utility |
+| `7076f51` | #2 | Unbound tmp_path → init before with block |
+| `75999f3` | #3 | IDOR Bulk Grade → enrollment ownership validation |
+| `6201c88` | #4 | Timing-Attack API Key → secrets.compare_digest |
+| `NEW` | #5 | Audit Auto-Commit → remove commit() from log() |
+| `NEW` | #6 | Missing 405 Handler → added error handler + template |
+| `NEW` | #7 | Naive DateTime → datetime.now(UTC) |
+| `NEW` | #8 | == True/False → .is_(True)/is_(False) |
+| `NEW` | #9 | load_user Try/Catch → graceful fallback |
+| `NEW` | #10 | Coverage Threshold → 40% to 50% |

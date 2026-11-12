@@ -286,13 +286,47 @@ def bulk():
         graded_by = form.graded_by.data
         is_final = form.is_final.data
 
-        # Process submitted grades
+        # Validate exam exists
+        exam = db.session.get(Exam, exam_id) if exam_id else None
+        if not exam:
+            flash("Prüfung nicht gefunden.", "error")
+            return redirect(url_for("grade.index"))
+
+        # Process submitted grades — only for enrollments belonging to the exam's course
+        # This prevents IDOR: users cannot tamper form keys to grade other courses
         success_count = 0
         error_count = 0
 
+        # Build a set of valid enrollment IDs for this exam's course
+        valid_enrollment_ids = {
+            e.id
+            for e in Enrollment.query.join(Student)
+            .filter(
+                Enrollment.course_id == exam.course_id,
+                Enrollment.status == "active",
+            )
+            .all()
+        }
+
         for key, value in request.form.items():
             if key.startswith("points_") and value:
-                enrollment_id = int(key.replace("points_", ""))
+                try:
+                    enrollment_id = int(key.replace("points_", ""))
+                except ValueError:
+                    error_count += 1
+                    continue
+
+                # SECURITY: Only accept grades for enrollments in this exam's course
+                if enrollment_id not in valid_enrollment_ids:
+                    logger.warning(
+                        "Rejected grade for enrollment %d (not in exam %d's course %d)",
+                        enrollment_id,
+                        exam_id,
+                        exam.course_id,
+                    )
+                    error_count += 1
+                    continue
+
                 try:
                     points = float(value)
                     grade = service.add_grade(

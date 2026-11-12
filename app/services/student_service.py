@@ -67,6 +67,14 @@ class StudentService(BaseService):
         if len(last_name) > 100:
             raise ValueError("Last name cannot exceed 100 characters")
 
+        # Validate program
+        if not program or not program.strip():
+            raise ValueError("Program cannot be empty")
+
+        program = program.strip()
+        if len(program) > 100:
+            raise ValueError("Program cannot exceed 100 characters")
+
         # Validate student ID
         student_id = student_id.strip()
         if not student_id:

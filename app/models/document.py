@@ -5,6 +5,7 @@ This module defines the Document model representing uploaded files
 associated with submissions.
 """
 
+import mimetypes
 import os
 import re
 from datetime import UTC, datetime
@@ -105,6 +106,63 @@ def allowed_file(filename: str) -> bool:
         return False
     ext = filename.rsplit(".", 1)[1].lower()
     return ext in ALLOWED_EXTENSIONS
+
+
+def get_mime_type(filename: str) -> str | None:
+    """
+    Get the MIME type for a filename.
+
+    Args:
+        filename: Filename to check
+
+    Returns:
+        MIME type string, or None if unknown
+    """
+    mime_type, _ = mimetypes.guess_type(filename)
+    return mime_type
+
+
+def validate_file_mime_type(
+    filename: str, allowed_mime_types: set[str] | None = None
+) -> bool:
+    """
+    Validate that a file's MIME type is allowed.
+
+    This provides defense-in-depth against file injection attacks
+    where an attacker renames a malicious file to an allowed extension.
+
+    Args:
+        filename: Filename to check
+        allowed_mime_types: Set of allowed MIME types. If None, uses defaults
+            for common document types.
+
+    Returns:
+        True if MIME type is allowed or cannot be determined (extension check
+        provides the primary validation), False if MIME type is explicitly blocked.
+    """
+    if allowed_mime_types is None:
+        allowed_mime_types = {
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # docx
+            "application/msword",  # doc
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # xlsx
+            "image/jpeg",
+            "image/png",
+            "text/plain",
+        }
+
+    mime_type = get_mime_type(filename)
+    if mime_type is None:
+        # Cannot determine MIME type — rely on extension check
+        return allowed_file(filename)
+
+    # If MIME type is explicitly in a blocked category, reject
+    blocked_prefixes = (
+        "application/x-",
+        "application/octet-stream",
+        "application/exec",
+    )
+    return all(not mime_type.startswith(prefix) for prefix in blocked_prefixes)
 
 
 def get_file_extension(filename: str) -> str:

@@ -5,9 +5,10 @@ Authentication routes for Dozentenmanager.
 from urllib.parse import urlsplit
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_limiter.util import get_remote_address
 from flask_login import current_user, login_user, logout_user
 
-from app import db
+from app import db, limiter
 from app.forms.auth import LoginForm, RegistrationForm
 from app.models.user import User
 from app.services.audit_service import AuditService
@@ -16,6 +17,7 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
 @bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def login():
     """Handle user login."""
     if current_user.is_authenticated:
@@ -72,6 +74,7 @@ def logout():
 
 
 @bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("3/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def register():
     """Handle user registration."""
     if current_user.is_authenticated:

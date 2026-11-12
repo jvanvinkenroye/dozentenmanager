@@ -75,8 +75,9 @@ class TestEnrollmentRoute:
         )
 
         assert response.status_code == 200
-        assert "erfolgreich" in response.data.decode("utf-8")
-        assert "eingeschrieben" in response.data.decode("utf-8")
+        text = response.data.decode("utf-8").lower()
+        assert "eingeschrieben" in text
+        assert "fehler: 0" in text
 
     def test_enroll_duplicate_prevented(
         self,

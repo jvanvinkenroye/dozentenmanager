@@ -11,6 +11,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from flask import Flask
+from flask_limiter import Limiter
 from flask_login import LoginManager, login_required
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -35,6 +36,9 @@ login_manager.login_message = (
 )
 login_manager.login_message_category = "warning"
 
+# Rate Limiter (initialized in create_app)
+limiter: Limiter | None = None
+
 
 def create_app(config_name: str | None = None) -> Flask:
     """
@@ -57,6 +61,18 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # Initialize CSRF protection
     csrf.init_app(app)
+
+    # Initialize rate limiter
+    global limiter
+    from flask_limiter.util import get_remote_address
+
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=[],  # No default limits; apply per-route
+        storage_uri="memory://",
+        enabled=not app.config.get("TESTING"),
+    )
+    limiter.init_app(app)
 
     # Initialize Login Manager
     login_manager.init_app(app)

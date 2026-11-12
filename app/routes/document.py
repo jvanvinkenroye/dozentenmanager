@@ -720,6 +720,7 @@ def export_annotated(document_id: int) -> Any:
     stem = Path(document.original_filename).stem
     annotated_name = f"{stem}_annotiert_{date.today().isoformat()}.pdf"
 
+    tmp_path: Path | None = None
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp_path = Path(tmp.name)
 
@@ -748,8 +749,9 @@ def export_annotated(document_id: int) -> Any:
         flash("Fehler beim Exportieren.", "error")
         return redirect(url_for("document.annotate", document_id=document_id))
     finally:
-        with contextlib.suppress(OSError):
-            tmp_path.unlink(missing_ok=True)
+        if tmp_path is not None:
+            with contextlib.suppress(OSError):
+                tmp_path.unlink(missing_ok=True)
 
 
 # Email import routes
@@ -786,6 +788,7 @@ def email_import() -> str | Any:
             course_id = form.course_id.data if form.course_id.data else None
 
             # Save uploaded file temporarily
+            tmp_path: str | None = None
             with tempfile.NamedTemporaryFile(
                 suffix=Path(file.filename).suffix,
                 delete=False,
@@ -795,7 +798,7 @@ def email_import() -> str | Any:
 
             try:
                 # Process the email file
-                summary = import_emails(tmp_path, course_id)
+                summary = import_emails(tmp_path, course_id)  # type: ignore[arg-type]
                 db.session.commit()
 
                 return render_template(
@@ -804,8 +807,9 @@ def email_import() -> str | Any:
                 )
             finally:
                 # Clean up temp file
-                with contextlib.suppress(OSError):
-                    Path(tmp_path).unlink(missing_ok=True)
+                if tmp_path is not None:
+                    with contextlib.suppress(OSError):
+                        Path(tmp_path).unlink(missing_ok=True)
 
         # Show form validation errors
         for _field, errors in form.errors.items():

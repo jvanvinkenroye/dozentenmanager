@@ -71,10 +71,19 @@ def moodle_site_info() -> dict:
 
 
 @mcp.tool()
+def moodle_list_courses() -> dict:
+    """
+    List all courses on the Moodle site (requires admin or manager role).
+    Includes course id, shortname, fullname, and category.
+    """
+    return _wrap(_ws("core_course_get_courses"))
+
+
+@mcp.tool()
 def moodle_list_my_courses() -> dict:
     """
-    List all courses the authenticated user (token owner) is enrolled in.
-    Includes course id, shortname, fullname, and category.
+    List all courses the authenticated user (token owner) is enrolled in as participant.
+    Use moodle_list_courses for admin/manager access to all courses.
     """
     info = _ws("core_webservice_get_site_info")
     if isinstance(info, dict) and "error" in info:

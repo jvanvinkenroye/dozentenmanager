@@ -4,7 +4,7 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 ---
 
-## 1. Open Redirect via `request.referrer` (CRITICAL)
+## ✅ 1. Open Redirect via `request.referrer` (CRITICAL)
 
 **File:** `app/routes/enrollment.py` (16 Vorkommen)
 
@@ -12,11 +12,11 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 **Fix:** Safe redirect utility in `app/utils/redirect.py`, alle Vorkommen ersetzt.
 
-**Commit:** TODO
+**Commit:** `f089808` — `fix: replace request.referrer with safe_redirect utility to prevent open redirects`
 
 ---
 
-## 2. Unbound `tmp_path` Bug (CRITICAL)
+## ✅ 2. Unbound `tmp_path` Bug (CRITICAL)
 
 **File:** `app/routes/document.py` (2 Stellen)
 
@@ -24,11 +24,11 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 **Fix:** `tmp_path = None` vor dem `with` Block initialisiert.
 
-**Commit:** TODO
+**Commit:** `7076f51` — `fix: initialize tmp_path to None before with block to prevent UnboundLocalError`
 
 ---
 
-## 3. IDOR in Bulk-Grade Endpoint (CRITICAL)
+## ✅ 3. IDOR in Bulk-Grade Endpoint (CRITICAL)
 
 **File:** `app/routes/grade.py` (Zeile 293-318)
 
@@ -36,11 +36,11 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 **Fix:** Nur Enrollments der ausgewählten Prüfung werden akzeptiert. Form-Key wird ignoriert, stattdessen werden echte Enrollments der Prüfung durchlaufen.
 
-**Commit:** TODO
+**Commit:** `75999f3` — `fix: validate enrollment ownership in bulk grade endpoint to prevent IDOR`
 
 ---
 
-## 4. Timing-Attacke auf API Key (CRITICAL)
+## ✅ 4. Timing-Attacke auf API Key (CRITICAL)
 
 **File:** `app/routes/api.py` (Zeile 47)
 
@@ -48,35 +48,35 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 **Fix:** `secrets.compare_digest()` statt `!=` verwendet.
 
-**Commit:** TODO
+**Commit:** `172f475` — `fix: resolve 6 remaining security issues (audit, 405, datetime, boolean, load_user, coverage)`
 
 ---
 
-## 5. Audit Service Auto-Commit (HIGH)
+## ✅ 5. Audit Service Auto-Commit (HIGH)
 
 **File:** `app/services/audit_service.py` (Zeile 59-60)
 
-**Problem:** `AuditService.log()` ruft `db.session.commit()` auf. Wenn die Haupttransaktion rollbackt, bleibt der Audit-Eintrag erhalten (orphaned).
+**Problem:** `AuditService.log()` rief `db.session.commit()` auf. Wenn die Haupttransaktion rollbackt, bleibt der Audit-Eintrag erhalten (orphaned).
 
 **Fix:** `commit()` entfernt, Audit-Eintrag wird nur hinzugefügt — der Aufrufer commitet.
 
-**Commit:** TODO
+**Commit:** `172f475` — `fix: resolve 6 remaining security issues (audit, 405, datetime, boolean, load_user, coverage)`
 
 ---
 
-## 6. Missing 405 Handler (MEDIUM)
+## ✅ 6. Missing 405 Handler (MEDIUM)
 
 **File:** `app/__init__.py`
 
 **Problem:** Kein 405 (Method Not Allowed) Error Handler. Flask gibt standardmäßige Antwort zurück.
 
-**Fix:** 405 Error Handler hinzugefügt.
+**Fix:** 405 Error Handler hinzugefügt, Template erstellt.
 
-**Commit:** TODO
+**Commit:** `172f475`
 
 ---
 
-## 7. Naive DateTime in PageAnnotation (MEDIUM)
+## ✅ 7. Naive DateTime in PageAnnotation (MEDIUM)
 
 **File:** `app/models/page_annotation.py` (Zeile 32-34)
 
@@ -84,23 +84,23 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 **Fix:** `datetime.now(UTC)` statt `datetime.utcnow()`.
 
-**Commit:** TODO
+**Commit:** `172f475`
 
 ---
 
-## 8. `== True` / `== False` Anti-Pattern (MEDIUM)
+## ✅ 8. `== True` / `== False` Anti-Pattern (MEDIUM)
 
-**File:** `app/routes/grade.py` (6 Vorkommen)
+**File:** `app/routes/grade.py` (8 Vorkommen)
 
 **Problem:** `Grade.is_final == True` ist ein Anti-Pattern, wird von Ruff E712 flaggt.
 
 **Fix:** `is_(True)` statt `== True` verwendet. noqa-Kommentare entfernt.
 
-**Commit:** TODO
+**Commit:** `172f475`
 
 ---
 
-## 9. load_user ohne Try/Catch (MEDIUM)
+## ✅ 9. load_user ohne Try/Catch (MEDIUM)
 
 **File:** `app/__init__.py` (Zeile 64-68)
 
@@ -108,31 +108,33 @@ Alle Fixes wurden auf `code-review` Branch mit TDD (Test-First) und Commit umges
 
 **Fix:** Try/Block um `int(user_id)`, gibt `None` bei InvalidUserError zurück.
 
-**Commit:** TODO
+**Commit:** `172f475`
 
 ---
 
-## 10. Test Coverage Threshold (LOW)
+## ✅ 10. Test Coverage Threshold (LOW)
 
 **File:** `pyproject.toml` (Zeile 126)
 
 **Problem:** Test Coverage Threshold bei 40% — zu niedrig.
 
-**Fix:** Auf 60% erhöht.
+**Fix:** Auf 50% erhöht.
 
-**Commit:** TODO
+**Commit:** `172f475`
 
-## 📋 Commit-Historie
+---
 
-| Commit | Issue | Beschreibung |
-|--------|-------|-------------|
-| `2a75f77` | #1 | Open Redirect → safe_redirect utility |
-| `7076f51` | #2 | Unbound tmp_path → init before with block |
-| `75999f3` | #3 | IDOR Bulk Grade → enrollment ownership validation |
-| `6201c88` | #4 | Timing-Attack API Key → secrets.compare_digest |
-| `NEW` | #5 | Audit Auto-Commit → remove commit() from log() |
-| `NEW` | #6 | Missing 405 Handler → added error handler + template |
-| `NEW` | #7 | Naive DateTime → datetime.now(UTC) |
-| `NEW` | #8 | == True/False → .is_(True)/is_(False) |
-| `NEW` | #9 | load_user Try/Catch → graceful fallback |
-| `NEW` | #10 | Coverage Threshold → 40% to 50% |
+## Zusammenfassung
+
+| # | Issue | Severity | Status | Commit |
+|---|-------|----------|--------|--------|
+| 1 | Open Redirect | CRITICAL | ✅ Fixed | `f089808` |
+| 2 | Unbound tmp_path | CRITICAL | ✅ Fixed | `7076f51` |
+| 3 | IDOR Bulk Grade | CRITICAL | ✅ Fixed | `75999f3` |
+| 4 | Timing Attack API Key | CRITICAL | ✅ Fixed | `172f475` |
+| 5 | Audit Auto-Commit | HIGH | ✅ Fixed | `172f475` |
+| 6 | Missing 405 Handler | MEDIUM | ✅ Fixed | `172f475` |
+| 7 | Naive DateTime | MEDIUM | ✅ Fixed | `172f475` |
+| 8 | == True Anti-Pattern | MEDIUM | ✅ Fixed | `172f475` |
+| 9 | load_user Crash | MEDIUM | ✅ Fixed | `172f475` |
+| 10 | Coverage Threshold | LOW | ✅ Fixed | `172f475` |

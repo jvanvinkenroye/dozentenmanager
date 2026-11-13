@@ -9,6 +9,7 @@ import logging
 from datetime import date
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app.models.course import Course
 from app.models.enrollment import VALID_STATUSES, Enrollment, validate_status
@@ -125,7 +126,10 @@ class EnrollmentService(BaseService):
             ValueError: If student_id_str provided but student not found
         """
         try:
-            query = self.query(Enrollment)
+            query = self.query(Enrollment).options(
+                joinedload(Enrollment.student),
+                joinedload(Enrollment.course),
+            )
 
             if course_id:
                 query = query.filter_by(course_id=course_id)

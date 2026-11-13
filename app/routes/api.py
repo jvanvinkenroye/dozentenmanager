@@ -4,6 +4,36 @@ REST API routes blueprint.
 This module provides JSON API endpoints for accessing and modifying system data.
 GET endpoints use session-based auth (Flask-Login).
 Write endpoints use API-key auth (X-API-Key header).
+
+## CSRF Protection
+
+CSRF protection (via Flask-WTF's CSRFProtect) is **intentionally disabled** for
+this blueprint. API endpoints are protected by two independent mechanisms:
+
+1. **API-Key Authentication** (write endpoints, ``/api/*`` POST/PUT/PATCH/DELETE)
+   - Requires ``X-API-Key`` header with a valid secret key
+   - Uses ``secrets.compare_digest`` for timing-attack-safe comparison
+   - Returns HTTP 401 if key is missing or invalid
+
+2. **Session-Based Authentication** (read endpoints, ``/api/*`` GET)
+   - Accepts either a valid session cookie (browser clients)
+   - Or a valid ``X-API-Key`` header (MCP tools, scripts, integrations)
+   - Returns HTTP 401 if neither is present
+
+This dual approach means CSRF is not a threat vector:
+- Cross-site request forgery requires the attacker's browser to send a valid
+  session cookie or API key — both of which are protected by browser security
+  policies (SameSite cookies, CORS, etc.)
+- Automated API consumers (MCP tools, scripts) use the API key, which cannot
+  be forged via CSRF since it requires the attacker to know the secret
+- Browser clients use session cookies with ``HttpOnly`` and ``SameSite=Lax``
+  flags, providing CSRF protection at the browser level
+
+For production deployments, ensure:
+- ``SESSION_COOKIE_SECURE = True`` (cookies only sent over HTTPS)
+- ``SESSION_COOKIE_HTTPONLY = True`` (cookies not accessible to JavaScript)
+- ``SESSION_COOKIE_SAMESITE = "Lax"`` (browser CSRF protection)
+- ``SECRET_KEY`` is set via environment variable (not the default dev key)
 """
 
 import contextlib
@@ -241,6 +271,16 @@ def upload_submission() -> Any:
     notes = request.form.get("notes") or None
 
     original_filename = file.filename or "upload"
+
+    # Validate file extension
+    from app.models.document import allowed_file, validate_file_mime_type
+
+    if not allowed_file(original_filename):
+        return jsonify({"error": "File type not allowed"}), 400
+
+    # Defense-in-depth: validate MIME type against extension
+    if not validate_file_mime_type(original_filename):
+        return jsonify({"error": "File type not allowed"}), 400
 
     # Save to temp file, let DocumentService handle the final location
     suffix = os.path.splitext(original_filename)[1]

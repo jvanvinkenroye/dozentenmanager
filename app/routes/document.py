@@ -34,6 +34,7 @@ from app.forms.document import (
 from app.models.course import Course
 from app.models.document import (
     allowed_file,
+    validate_file_mime_type,
 )
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
@@ -233,6 +234,18 @@ def upload() -> str | Any:
             file = form.file.data
             original_filename = secure_filename(file.filename)
 
+            # Validate file extension and MIME type
+            if not allowed_file(original_filename):
+                flash(
+                    "Dateityp nicht erlaubt. Erlaubt: PDF, DOC, DOCX, TXT, ODT, RTF.",
+                    "error",
+                )
+                return render_template("document/upload.html", form=form)
+
+            if not validate_file_mime_type(original_filename):
+                flash("Dateityp nicht erlaubt.", "error")
+                return render_template("document/upload.html", form=form)
+
             # Save uploaded file temporarily
             import tempfile
 
@@ -318,6 +331,16 @@ def bulk_upload() -> str | Any:
                 original_filename = secure_filename(file.filename)
 
                 if not allowed_file(original_filename):
+                    results["failed"].append(
+                        {
+                            "filename": original_filename,
+                            "reason": "Dateityp nicht erlaubt",
+                        }
+                    )
+                    continue
+
+                # Defense-in-depth: also validate MIME type
+                if not validate_file_mime_type(original_filename):
                     results["failed"].append(
                         {
                             "filename": original_filename,

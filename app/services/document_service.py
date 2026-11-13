@@ -15,6 +15,7 @@ from pathlib import Path
 
 from flask import current_app
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from app.models.course import Course
 from app.models.document import (
@@ -289,6 +290,14 @@ class DocumentService(BaseService):
                 .join(Enrollment)
                 .join(Student)
                 .join(Course)
+                .options(
+                    selectinload(Document.submission)
+                    .joinedload(Submission.enrollment)
+                    .joinedload(Enrollment.student),
+                    selectinload(Document.submission).selectinload(
+                        Submission.documents
+                    ),
+                )
                 .filter(Student.deleted_at.is_(None))
             )
 
@@ -406,7 +415,15 @@ class DocumentService(BaseService):
             List of Submission objects matching the filters
         """
         try:
-            query = self.query(Submission).join(Enrollment).join(Course)
+            query = (
+                self.query(Submission)
+                .join(Enrollment)
+                .join(Course)
+                .options(
+                    selectinload(Submission.documents),
+                    selectinload(Submission.enrollment).joinedload(Enrollment.student),
+                )
+            )
 
             if enrollment_id:
                 query = query.filter(Submission.enrollment_id == enrollment_id)

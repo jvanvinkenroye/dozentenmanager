@@ -8,6 +8,7 @@ separating concerns from CLI and web interfaces.
 import logging
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from app.models.student import Student, validate_email, validate_student_id
 from app.services.audit_service import AuditService
@@ -158,7 +159,11 @@ class StudentService(BaseService):
             List of Student objects
         """
         try:
-            query = self.query(Student).filter(Student.deleted_at.is_(None))
+            query = (
+                self.query(Student)
+                .options(selectinload(Student.enrollments))
+                .filter(Student.deleted_at.is_(None))
+            )
 
             if search:
                 search_term = f"%{search}%"
@@ -194,6 +199,7 @@ class StudentService(BaseService):
         try:
             student = (
                 self.query(Student)
+                .options(selectinload(Student.enrollments))
                 .filter_by(id=student_id)
                 .filter(Student.deleted_at.is_(None))
                 .first()

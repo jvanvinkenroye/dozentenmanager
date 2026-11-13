@@ -20,11 +20,12 @@ from flask import (
     send_file,
     url_for,
 )
+from flask_limiter.util import get_remote_address
 from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.utils import secure_filename
 
-from app import db
+from app import db, limiter
 from app.forms.document import (
     BulkDocumentUploadForm,
     DocumentSearchForm,
@@ -292,6 +293,7 @@ def upload() -> str | Any:
 @bp.route("/bulk-upload", methods=["GET", "POST"])
 @login_required
 @admin_required
+@limiter.limit("1/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def bulk_upload() -> str | Any:
     """
     Upload multiple documents at once.

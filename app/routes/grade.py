@@ -20,11 +20,12 @@ from flask import (
     request,
     url_for,
 )
+from flask_limiter.util import get_remote_address
 from flask_login import login_required
 from sqlalchemy import func
 from werkzeug.datastructures import FileStorage
 
-from app import db
+from app import db, limiter
 from app.forms.grade import (
     BulkGradeForm,
     ExamComponentForm,
@@ -259,6 +260,7 @@ def delete(grade_id: int):
 
 @bp.route("/bulk", methods=["GET", "POST"])
 @login_required
+@limiter.limit("3/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def bulk():
     """Bulk grading interface for an exam."""
     form = BulkGradeForm()

@@ -17,9 +17,11 @@ from typing import Any
 
 import openpyxl
 from flask import Blueprint, jsonify, request
+from flask_limiter.util import get_remote_address
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from app import limiter
 from app.services.course_service import CourseService
 from app.services.document_service import DocumentService
 from app.services.enrollment_service import EnrollmentService
@@ -211,6 +213,7 @@ def create_university() -> Any:
 
 @bp.route("/submissions", methods=["POST"])
 @require_api_key
+@limiter.limit("5/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def upload_submission() -> Any:
     """
     Upload a document for a student enrollment.

@@ -9,6 +9,7 @@ import logging
 from datetime import date
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app.models.course import Course
 from app.models.exam import (
@@ -142,7 +143,13 @@ class ExamService(BaseService):
             List of Exam objects matching the filter
         """
         try:
-            query = self.query(Exam)
+            query = (
+                self.query(Exam)
+                .options(
+                    joinedload(Exam.course),
+                    joinedload(Exam.components),
+                )
+            )
 
             if course_id:
                 query = query.filter_by(course_id=course_id)
@@ -164,7 +171,15 @@ class ExamService(BaseService):
             Exam object or None if not found
         """
         try:
-            return self.query(Exam).filter_by(id=exam_id).first()
+            return (
+                self.query(Exam)
+                .options(
+                    joinedload(Exam.course),
+                    joinedload(Exam.components),
+                )
+                .filter_by(id=exam_id)
+                .first()
+            )
 
         except SQLAlchemyError as e:
             logger.error(f"Database error while fetching exam: {e}")

@@ -8,6 +8,7 @@ separating concerns from CLI and web interfaces.
 import logging
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from app.models.course import Course, generate_slug, validate_semester
 from app.models.enrollment import Enrollment
@@ -152,7 +153,10 @@ class CourseService(BaseService):
             List of Course objects matching the filters
         """
         try:
-            query = self.query(Course)
+            query = self.query(Course).options(
+                selectinload(Course.enrollments).joinedload(Enrollment.student),
+                selectinload(Course.enrollments).joinedload(Enrollment.course),
+            )
 
             if university_id:
                 query = query.filter_by(university_id=university_id)

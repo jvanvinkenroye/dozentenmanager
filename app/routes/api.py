@@ -242,6 +242,16 @@ def upload_submission() -> Any:
 
     original_filename = file.filename or "upload"
 
+    # Validate file extension
+    from app.models.document import allowed_file, validate_file_mime_type
+
+    if not allowed_file(original_filename):
+        return jsonify({"error": "File type not allowed"}), 400
+
+    # Defense-in-depth: validate MIME type against extension
+    if not validate_file_mime_type(original_filename):
+        return jsonify({"error": "File type not allowed"}), 400
+
     # Save to temp file, let DocumentService handle the final location
     suffix = os.path.splitext(original_filename)[1]
     try:

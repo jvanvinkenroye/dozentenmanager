@@ -236,7 +236,7 @@ def register_error_handlers(app: Flask) -> None:
     Args:
         app: Flask application instance
     """
-    from flask import render_template
+    from flask import flash, redirect, render_template, request, url_for
 
     @app.errorhandler(404)
     def not_found_error(error):
@@ -247,6 +247,12 @@ def register_error_handlers(app: Flask) -> None:
     def method_not_allowed_error(error):
         """Handle 405 Method Not Allowed errors."""
         return render_template("errors/405.html"), 405
+
+    @app.errorhandler(413)
+    def request_entity_too_large(error):
+        """Handle 413 Request Entity Too Large errors."""
+        flash("Datei zu groß. Maximum ist 50 MB.", "error")
+        return redirect(request.referrer or url_for("index"))
 
     @app.errorhandler(500)
     def internal_error(error):

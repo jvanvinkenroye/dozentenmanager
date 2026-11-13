@@ -35,7 +35,7 @@ class User(db.Model, UserMixin, TimestampMixin):  # type: ignore[name-defined]
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Optional: Link user to a university to scope their data
-    university_id = Column(Integer, ForeignKey("university.id"), nullable=True)
+    university_id = Column(Integer, ForeignKey("university.id"), nullable=True, index=True)
 
     # Relationships
     university = relationship("University", backref="users")

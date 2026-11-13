@@ -5,8 +5,6 @@ Verifies that exam_service, document_service, and statistics_service
 use eager loading (joinedload/selectinload) to prevent N+1 queries.
 """
 
-from sqlalchemy.orm import joinedload, selectinload
-
 
 class TestN1QueryExtendedImports:
     """Test that extended service files import eager loading tools."""

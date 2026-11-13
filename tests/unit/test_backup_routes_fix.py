@@ -10,6 +10,8 @@ import tempfile
 from pathlib import Path
 from zipfile import ZipFile
 
+import pytest
+
 from app.models import Student, University
 from cli.backup_cli import create_backup
 

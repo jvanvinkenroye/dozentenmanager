@@ -4,8 +4,8 @@ Unit tests for database indexes.
 Verifies that frequently-queried columns have index=True or Index defined.
 """
 
-import inspect
 import importlib
+import inspect
 
 
 class TestDatabaseIndexes:
@@ -22,17 +22,13 @@ class TestDatabaseIndexes:
 
     def test_grade_exam_id_index(self):
         """Grade.exam_id should have an index."""
-        source = inspect.getsource(
-            importlib.import_module("app.models.grade").Grade
-        )
+        source = inspect.getsource(importlib.import_module("app.models.grade").Grade)
         assert "exam_id" in source
         assert "index=True" in source or "idx_grade_exam" in source
 
     def test_grade_enrollment_id_index(self):
         """Grade.enrollment_id should have an index."""
-        source = inspect.getsource(
-            importlib.import_module("app.models.grade").Grade
-        )
+        source = inspect.getsource(importlib.import_module("app.models.grade").Grade)
         assert "enrollment_id" in source
         assert "index=True" in source or "idx_grade_enrollment" in source
 
@@ -54,9 +50,7 @@ class TestDatabaseIndexes:
 
     def test_user_university_id_index(self):
         """User.university_id should have an index for user scoping."""
-        source = inspect.getsource(
-            importlib.import_module("app.models.user").User
-        )
+        source = inspect.getsource(importlib.import_module("app.models.user").User)
         assert "university_id" in source
         assert "index=True" in source
 

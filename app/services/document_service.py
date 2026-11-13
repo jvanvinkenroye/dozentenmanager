@@ -15,7 +15,7 @@ from pathlib import Path
 
 from flask import current_app
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from app.models.course import Course
 from app.models.document import (
@@ -291,10 +291,12 @@ class DocumentService(BaseService):
                 .join(Student)
                 .join(Course)
                 .options(
-                    selectinload(Document.submission).joinedload(
-                        Submission.enrollment
-                    ).joinedload(Enrollment.student),
-                    selectinload(Document.submission).selectinload(Submission.documents),
+                    selectinload(Document.submission)
+                    .joinedload(Submission.enrollment)
+                    .joinedload(Enrollment.student),
+                    selectinload(Document.submission).selectinload(
+                        Submission.documents
+                    ),
                 )
                 .filter(Student.deleted_at.is_(None))
             )

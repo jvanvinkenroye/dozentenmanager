@@ -155,14 +155,14 @@ def load_import_headers(file: FileStorage, fmt: str | None) -> list[tuple[str, s
         except ImportError as exc:
             raise ValueError("xlrd is required for XLS import.") from exc
         file.stream.seek(0)
-        wb = xlrd.open_workbook(file_contents=file.stream.read())
-        if wb.nsheets == 0:
+        xls_wb = xlrd.open_workbook(file_contents=file.stream.read())
+        if xls_wb.nsheets == 0:
             raise ValueError("XLS file has no sheets.")
-        sheet = wb.sheet_by_index(0)
-        if sheet.nrows == 0:
+        xls_sheet = xls_wb.sheet_by_index(0)
+        if xls_sheet.nrows == 0:
             raise ValueError("XLS file has no rows.")
         raw_headers = [
-            str(h).strip() if h is not None else "" for h in sheet.row_values(0)
+            str(h).strip() if h is not None else "" for h in xls_sheet.row_values(0)
         ]
         normalized = [normalize_header(h) for h in raw_headers]
         return [
@@ -222,5 +222,5 @@ def save_import_file(file: FileStorage, prefix: str) -> tuple[str, Path, str]:
     import_dir = Path(current_app.root_path) / "uploads" / "imports"
     import_dir.mkdir(parents=True, exist_ok=True)
     file_path = import_dir / f"{prefix}_{token}.{extension}"
-    file.save(file_path)
+    file.save(str(file_path))
     return token, file_path, extension

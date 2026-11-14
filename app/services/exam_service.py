@@ -143,12 +143,9 @@ class ExamService(BaseService):
             List of Exam objects matching the filter
         """
         try:
-            query = (
-                self.query(Exam)
-                .options(
-                    joinedload(Exam.course),
-                    joinedload(Exam.components),
-                )
+            query = self.query(Exam).options(
+                joinedload(Exam.course),
+                joinedload(Exam.components),
             )
 
             if course_id:

@@ -149,7 +149,7 @@ def _load_xls_rows(file: FileStorage) -> tuple[list[str], list[dict[str, str]]]:
 
 
 def _load_import_headers(file: FileStorage, fmt: str | None) -> list[tuple[str, str]]:
-    format_hint = fmt or file.filename.rsplit(".", 1)[-1].lower()
+    format_hint = fmt or (file.filename or "").rsplit(".", 1)[-1].lower()
     if format_hint == "csv":
         file.stream.seek(0)
         content = file.stream.read()
@@ -180,6 +180,8 @@ def _load_import_headers(file: FileStorage, fmt: str | None) -> list[tuple[str, 
             data_only=True,
         )
         sheet = workbook.active
+        if sheet is None:
+            raise ValueError("XLSX file has no active sheet.")
         rows_iter = sheet.iter_rows(values_only=True)
         try:
             headers = next(rows_iter)
@@ -200,14 +202,14 @@ def _load_import_headers(file: FileStorage, fmt: str | None) -> list[tuple[str, 
             raise ValueError(
                 "xlrd is required for XLS import. Install it and try again."
             ) from exc
-        workbook = xlrd.open_workbook(file_contents=file.stream.read())
-        if workbook.nsheets == 0:
+        xls_workbook = xlrd.open_workbook(file_contents=file.stream.read())
+        if xls_workbook.nsheets == 0:
             raise ValueError("XLS file has no sheets.")
-        sheet = workbook.sheet_by_index(0)
-        if sheet.nrows == 0:
+        xls_sheet = xls_workbook.sheet_by_index(0)
+        if xls_sheet.nrows == 0:
             raise ValueError("XLS file has no rows.")
         raw_headers = [
-            str(h).strip() if h is not None else "" for h in sheet.row_values(0)
+            str(h).strip() if h is not None else "" for h in xls_sheet.row_values(0)
         ]
         normalized_headers = [_normalize_header(h) for h in raw_headers]
         return [
@@ -221,7 +223,7 @@ def _load_import_headers(file: FileStorage, fmt: str | None) -> list[tuple[str, 
 def _load_import_rows(
     file: FileStorage, fmt: str | None, mapping: dict[str, str] | None = None
 ) -> list[dict[str, str]]:
-    format_hint = fmt or file.filename.rsplit(".", 1)[-1].lower()
+    format_hint = fmt or (file.filename or "").rsplit(".", 1)[-1].lower()
     if format_hint == "csv":
         headers, rows = _load_csv_rows(file)
     elif format_hint == "xlsx":
@@ -266,7 +268,7 @@ def _save_import_file(file: FileStorage) -> tuple[str, Path, str]:
     import_dir = Path(current_app.root_path) / "uploads" / "imports"
     import_dir.mkdir(parents=True, exist_ok=True)
     file_path = import_dir / f"students_{token}.{extension}"
-    file.save(file_path)
+    file.save(str(file_path))
     return token, file_path, extension
 
 
@@ -588,6 +590,9 @@ def import_students() -> str | Any:
             )
     else:
         rows = []
+        if request.method == "POST":
+            for field_errors in form.errors.values():
+                import_errors.extend(field_errors)
 
     if "rows" in locals() and not rows and mapping_token:
         flash("Keine Datenzeilen gefunden.", "warning")

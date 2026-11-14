@@ -25,7 +25,12 @@ def _ensure_server():
 
     proc = subprocess.Popen(
         [
-            "uv", "run", "flask", "--app", "app", "run",
+            "uv",
+            "run",
+            "flask",
+            "--app",
+            "app",
+            "run",
             "--host=127.0.0.1",
             "--port=5000",
             "--no-reload",
@@ -36,6 +41,7 @@ def _ensure_server():
     )
 
     import urllib.request
+
     for _ in range(30):
         try:
             urllib.request.urlopen("http://127.0.0.1:5000/auth/login")
@@ -59,7 +65,9 @@ async def test_login_page_loads():
         page = await browser.new_page()
         response = await page.goto(f"{url}/auth/login")
         # Allow 429 (rate limited) or 200 (ok) or 403 (CSRF if server was pre-existing)
-        assert response.status in (200, 429, 403), f"Unexpected status {response.status}"
+        assert response.status in (200, 429, 403), (
+            f"Unexpected status {response.status}"
+        )
         if response.status == 200:
             h1_text = await page.text_content("h1")
             assert "Anmelden" in h1_text
@@ -189,6 +197,7 @@ async def test_login_link_on_register_page():
 # Cleanup on teardown
 import atexit
 
+
 def _cleanup():
     global _SERVER_PROC
     if _SERVER_PROC is not None:
@@ -201,5 +210,6 @@ def _cleanup():
             except Exception:
                 pass
         _SERVER_PROC = None
+
 
 atexit.register(_cleanup)

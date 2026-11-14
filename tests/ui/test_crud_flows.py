@@ -26,7 +26,12 @@ def _ensure_server():
 
     proc = subprocess.Popen(
         [
-            "uv", "run", "flask", "--app", "app", "run",
+            "uv",
+            "run",
+            "flask",
+            "--app",
+            "app",
+            "run",
             "--host=127.0.0.1",
             "--port=5000",
             "--no-reload",
@@ -37,6 +42,7 @@ def _ensure_server():
     )
 
     import urllib.request
+
     for _ in range(30):
         try:
             urllib.request.urlopen("http://127.0.0.1:5000/")
@@ -74,6 +80,7 @@ def _skip_if_rate_limited(status):
     """Helper: skip test if rate limited."""
     if status == 429:
         import pytest
+
         pytest.skip("Rate limited (429)")
 
 
@@ -91,6 +98,7 @@ async def test_students_list_page_loads():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/students/")
@@ -114,6 +122,7 @@ async def test_students_list_has_search():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/students/")
@@ -141,6 +150,7 @@ async def test_courses_list_page_loads():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/courses/")
@@ -168,6 +178,7 @@ async def test_courses_list_has_nav():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/courses/")
@@ -194,6 +205,7 @@ async def test_upload_page_available():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/documents/upload")
@@ -217,6 +229,7 @@ async def test_upload_page_has_file_input():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/documents/upload")
@@ -244,6 +257,7 @@ async def test_bulk_grade_page_loads():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/grades/bulk")
@@ -267,6 +281,7 @@ async def test_bulk_grade_has_form_fields():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/grades/bulk")
@@ -293,6 +308,7 @@ async def test_navbar_navigation():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/")
@@ -319,6 +335,7 @@ async def test_student_detail_page_loads():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/students/")
@@ -342,6 +359,7 @@ async def test_exams_page_loads():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/exams/")
@@ -365,6 +383,7 @@ async def test_statistics_page_loads():
         if not logged_in:
             await browser.close()
             import pytest
+
             pytest.skip("Rate limited (429) — skipped")
 
         response = await page.goto(f"{url}/statistics/")
@@ -376,6 +395,7 @@ async def test_statistics_page_loads():
 
 # Cleanup on teardown
 import atexit
+
 
 def _cleanup():
     global _SERVER_PROC
@@ -389,5 +409,6 @@ def _cleanup():
             except Exception:
                 pass
         _SERVER_PROC = None
+
 
 atexit.register(_cleanup)

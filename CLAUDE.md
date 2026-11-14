@@ -6,7 +6,7 @@ Project-specific instructions for Claude Code when working with this repository.
 
 **Dozentenmanager** is a Flask-based student management system for university lecturers to manage students, courses, exams, and grading across multiple institutions.
 
-**Current Status:** Initial planning phase. No code has been written yet.
+**Current Status:** Feature-complete core application. All main features are implemented (universities, courses, students, enrollments, exams, grading, document/email import, backups, authentication, audit log). Current focus is code quality: test coverage, type safety, and maintenance. See `progress.md` for the latest metrics.
 
 **Primary Goal:** Build a comprehensive student management system with document processing, grading workflows, and complete audit trails.
 
@@ -162,8 +162,9 @@ source .venv/bin/activate  # macOS/Linux
 
 2. **Docstrings Required** (Google style)
    ```python
-   def add_student(first_name: str, last_name: str, student_id: str,
-                   email: str, program: str) -> Student:
+   def add_student(
+       first_name: str, last_name: str, student_id: str, email: str, program: str
+   ) -> Student:
        """
        Add a new student to the database.
 
@@ -198,7 +199,7 @@ source .venv/bin/activate  # macOS/Linux
    except ValueError as e:
        logger.error(f"Invalid student data: {e}")
        flash(f"Error: {e}", "error")
-       return redirect(url_for('students.list'))
+       return redirect(url_for("students.list"))
    ```
 
 5. **Logging**
@@ -224,7 +225,7 @@ student = Student(
     first_name="Max",
     last_name="Mustermann",
     student_id="12345678",
-    email="max@example.com"
+    email="max@example.com",
 )
 db.session.add(student)
 db.session.commit()
@@ -270,11 +271,13 @@ alembic downgrade -1
 import pytest
 from cli.student_cli import add_student, validate_email
 
+
 def test_validate_email():
     """Test email validation function."""
     assert validate_email("max@example.com") == True
     assert validate_email("invalid") == False
     assert validate_email("") == False
+
 
 def test_add_student(test_db):
     """Test adding a new student."""
@@ -283,7 +286,7 @@ def test_add_student(test_db):
         last_name="Mustermann",
         student_id="12345678",
         email="max@example.com",
-        program="Computer Science"
+        program="Computer Science",
     )
     assert student.id is not None
     assert student.email == "max@example.com"
@@ -295,7 +298,7 @@ def test_add_student(test_db):
             last_name="Student",
             student_id="12345678",  # Duplicate
             email="other@example.com",
-            program="Math"
+            program="Math",
         )
 ```
 
@@ -308,34 +311,38 @@ Always validate user input before processing:
 ```python
 import re
 
+
 def validate_student_id(student_id: str) -> bool:
     """Validate student ID format (8 digits)."""
-    return bool(re.match(r'^\d{8}$', student_id))
+    return bool(re.match(r"^\d{8}$", student_id))
+
 
 def validate_email(email: str) -> bool:
     """Validate email format."""
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
+
 
 def sanitize_filename(filename: str) -> str:
     """Sanitize filename to prevent path traversal."""
     # Remove path components
     filename = os.path.basename(filename)
     # Remove dangerous characters
-    filename = re.sub(r'[^\w\s.-]', '', filename)
+    filename = re.sub(r"[^\w\s.-]", "", filename)
     return filename
 ```
 
 ### File Upload Security
 
 ```python
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt'}
+ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "txt"}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+
 
 def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed."""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def validate_file_size(file) -> bool:
     """Check if file size is within limit."""

@@ -497,6 +497,8 @@ def import_teilnehmerliste() -> Any:
     try:
         wb = openpyxl.load_workbook(file, read_only=True)
         ws = wb.active
+        if ws is None:
+            raise ValueError("workbook has no active sheet")
         rows = list(ws.iter_rows(values_only=True))
     except Exception as e:
         return jsonify({"error": f"Cannot read Excel file: {e}"}), 400

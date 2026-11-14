@@ -240,11 +240,13 @@ tests/
 import pytest
 from cli.student_cli import add_student, validate_student_id
 
+
 def test_validate_student_id():
     """Test student ID validation."""
     assert validate_student_id("12345678") == True
     assert validate_student_id("abc") == False
     assert validate_student_id("") == False
+
 
 def test_add_student(test_db):
     """Test adding a new student."""
@@ -253,7 +255,7 @@ def test_add_student(test_db):
         last_name="Mustermann",
         student_id="12345678",
         email="max@example.com",
-        program="Computer Science"
+        program="Computer Science",
     )
     assert student.id is not None
     assert student.email == "max@example.com"
@@ -264,21 +266,26 @@ def test_add_student(test_db):
 import pytest
 from flask import Flask
 
+
 def test_student_list_route(client):
     """Test student list endpoint."""
-    response = client.get('/students')
+    response = client.get("/students")
     assert response.status_code == 200
-    assert b'Students' in response.data
+    assert b"Students" in response.data
+
 
 def test_add_student_route(client):
     """Test adding student via web interface."""
-    response = client.post('/students/add', data={
-        'first_name': 'Max',
-        'last_name': 'Mustermann',
-        'student_id': '12345678',
-        'email': 'max@example.com',
-        'program': 'Computer Science'
-    })
+    response = client.post(
+        "/students/add",
+        data={
+            "first_name": "Max",
+            "last_name": "Mustermann",
+            "student_id": "12345678",
+            "email": "max@example.com",
+            "program": "Computer Science",
+        },
+    )
     assert response.status_code == 302  # Redirect after success
 ```
 
@@ -290,20 +297,23 @@ import pytest
 from app import create_app
 from app.models import db
 
+
 @pytest.fixture
 def app():
     """Create application for testing."""
-    app = create_app('testing')
+    app = create_app("testing")
     with app.app_context():
         db.create_all()
         yield app
         db.session.remove()
         db.drop_all()
 
+
 @pytest.fixture
 def client(app):
     """Create test client."""
     return app.test_client()
+
 
 @pytest.fixture
 def test_db(app):
@@ -371,10 +381,11 @@ uv run student-mgmt add --first-name Max ...
    ```python
    # migrations/versions/xxx_create_initial_tables.py
    def upgrade():
-       op.create_table('student', ...)
+       op.create_table("student", ...)
+
 
    def downgrade():
-       op.drop_table('student')
+       op.drop_table("student")
    ```
 
 5. **Apply migrations:**
@@ -405,27 +416,29 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
+
 def setup_logging(app):
     """Configure application logging."""
     if not app.debug:
         # File handler
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
+        if not os.path.exists("logs"):
+            os.mkdir("logs")
 
         file_handler = RotatingFileHandler(
-            'logs/dozentenmanager.log',
+            "logs/dozentenmanager.log",
             maxBytes=10240000,  # 10MB
-            backupCount=10
+            backupCount=10,
         )
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s '
-            '[in %(pathname)s:%(lineno)d]'
-        ))
+        file_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+            )
+        )
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
 
     app.logger.setLevel(logging.INFO)
-    app.logger.info('Dozentenmanager startup')
+    app.logger.info("Dozentenmanager startup")
 ```
 
 ### Using Logging
@@ -449,36 +462,47 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Config:
     """Base configuration."""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    UPLOAD_FOLDER = 'uploads'
+    UPLOAD_FOLDER = "uploads"
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-    ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt'}
+    ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "txt"}
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""
+
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///dev_dozentenmanager.db'
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("DEV_DATABASE_URL") or "sqlite:///dev_dozentenmanager.db"
+    )
+
 
 class TestingConfig(Config):
     """Testing configuration."""
+
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+
 
 class ProductionConfig(Config):
     """Production configuration."""
+
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///dozentenmanager.db'
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("DATABASE_URL") or "sqlite:///dozentenmanager.db"
+    )
+
 
 config = {
-    'development': DevelopmentConfig,
-    'testing': TestingConfig,
-    'production': ProductionConfig,
-    'default': DevelopmentConfig
+    "development": DevelopmentConfig,
+    "testing": TestingConfig,
+    "production": ProductionConfig,
+    "default": DevelopmentConfig,
 }
 ```
 
@@ -532,9 +556,11 @@ DATABASE_URL=sqlite:///dozentenmanager.db
    ```python
    from typing import List, Optional, Dict
 
+
    def get_students(course_id: int) -> List[Student]:
        """Get all students enrolled in a course."""
        pass
+
 
    def find_student(student_id: str) -> Optional[Student]:
        """Find student by ID, returns None if not found."""
@@ -556,9 +582,11 @@ All services should inherit from `BaseService` which provides:
 from app.services.base_service import BaseService
 from app.models import Student
 
+
 class StudentService(BaseService):
-    def add_student(self, first_name: str, last_name: str,
-                   student_id: str, email: str, program: str) -> Student:
+    def add_student(
+        self, first_name: str, last_name: str, student_id: str, email: str, program: str
+    ) -> Student:
         """Add a new student.
 
         Raises:
@@ -575,7 +603,7 @@ class StudentService(BaseService):
             last_name=last_name.strip(),
             student_id=student_id,
             email=email.lower().strip(),
-            program=program.strip()
+            program=program.strip(),
         )
         self.add(student)
         self.commit()
@@ -607,14 +635,17 @@ except IntegrityError:
 ```python
 try:
     student = service.add_student(...)
-    flash(f"Student {student.first_name} {student.last_name} created successfully", "success")
-    return redirect(url_for('students.list'))
+    flash(
+        f"Student {student.first_name} {student.last_name} created successfully",
+        "success",
+    )
+    return redirect(url_for("students.list"))
 except ValueError as e:
     flash(str(e), "error")
-    return redirect(url_for('students.new'))
+    return redirect(url_for("students.new"))
 except IntegrityError:
     flash("Student ID or email already exists", "error")
-    return redirect(url_for('students.new'))
+    return redirect(url_for("students.new"))
 ```
 
 ### Testing Pattern
@@ -627,10 +658,11 @@ def test_add_student_success(student_service):
         last_name="Mustermann",
         student_id="12345678",
         email="max@example.com",
-        program="Informatik"
+        program="Informatik",
     )
     assert student.id is not None
     assert isinstance(student, Student)
+
 
 def test_add_student_validation_error(student_service):
     with pytest.raises(ValueError, match="First name.*required"):
@@ -639,7 +671,7 @@ def test_add_student_validation_error(student_service):
             last_name="Mustermann",
             student_id="12345678",
             email="max@example.com",
-            program="Informatik"
+            program="Informatik",
         )
 ```
 
@@ -747,18 +779,18 @@ sqlite3 dozentenmanager.db ".backup 'backup.db'" && \
 from flask import request
 import time
 
+
 @app.before_request
 def before_request():
     request.start_time = time.time()
 
+
 @app.after_request
 def after_request(response):
-    if hasattr(request, 'start_time'):
+    if hasattr(request, "start_time"):
         elapsed = time.time() - request.start_time
         if elapsed > 1.0:  # Log slow requests
-            app.logger.warning(
-                f"Slow request: {request.path} took {elapsed:.2f}s"
-            )
+            app.logger.warning(f"Slow request: {request.path} took {elapsed:.2f}s")
     return response
 ```
 
@@ -766,20 +798,22 @@ def after_request(response):
 
 ```python
 # Enable SQLAlchemy query logging
-app.config['SQLALCHEMY_ECHO'] = True
+app.config["SQLALCHEMY_ECHO"] = True
 
 # Profile specific queries
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import time
 
+
 @event.listens_for(Engine, "before_cursor_execute")
 def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    conn.info.setdefault('query_start_time', []).append(time.time())
+    conn.info.setdefault("query_start_time", []).append(time.time())
+
 
 @event.listens_for(Engine, "after_cursor_execute")
 def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    total = time.time() - conn.info['query_start_time'].pop(-1)
+    total = time.time() - conn.info["query_start_time"].pop(-1)
     if total > 0.1:  # Log slow queries
         app.logger.warning(f"Slow query ({total:.2f}s): {statement}")
 ```

@@ -8,7 +8,7 @@ and viewing grade statistics/analytics.
 import logging
 import os
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 from flask import (
     Blueprint,
@@ -212,9 +212,10 @@ def edit(grade_id: int):
         )
     ]
     form.exam_id.choices = [(grade.exam_id, grade.exam.name)]
-    form.component_id.choices = [(0, "--- Keine Komponente ---")]
+    component_choices = [(0, "--- Keine Komponente ---")]
     if grade.component_id:
-        form.component_id.choices.append((grade.component_id, grade.component.name))
+        component_choices.append((grade.component_id, grade.component.name))
+    form.component_id.choices = component_choices
 
     if form.validate_on_submit():
         service = GradeService()
@@ -412,7 +413,7 @@ def dashboard():
     )
 
     # Get grade distribution
-    distribution = (
+    distribution: list[Any] = (
         db.session.query(Grade.grade_label, func.count(Grade.id))
         .filter(Grade.is_final.is_(True))
         .group_by(Grade.grade_label)
@@ -763,7 +764,7 @@ def import_grades(exam_id: int):
                     skipped += 1
                     continue
                 if mapping_on_duplicate == "update":
-                    existing.points = points
+                    existing.points = points  # type: ignore[assignment]
                     db.session.commit()
                     created += 1
                 else:
@@ -775,7 +776,7 @@ def import_grades(exam_id: int):
 
             try:
                 grade_service.add_grade(
-                    enrollment_id=enrollment.id, exam_id=exam_id, points=points
+                    enrollment_id=int(enrollment.id), exam_id=exam_id, points=points
                 )
                 created += 1
             except ValueError as exc:

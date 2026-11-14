@@ -5,7 +5,6 @@ Auto-starts/stops a Flask dev server for the test session.
 """
 
 import os
-import signal
 import subprocess
 import time
 
@@ -25,7 +24,12 @@ def flask_server():
 
     proc = subprocess.Popen(
         [
-            "uv", "run", "flask", "--app", "app", "run",
+            "uv",
+            "run",
+            "flask",
+            "--app",
+            "app",
+            "run",
             f"--host={host}",
             f"--port={port}",
             "--no-reload",
@@ -37,6 +41,7 @@ def flask_server():
 
     # Wait for server to be ready
     import urllib.request
+
     for _ in range(30):
         try:
             urllib.request.urlopen(f"{url}/auth/login")

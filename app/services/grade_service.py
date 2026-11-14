@@ -9,6 +9,7 @@ import logging
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models.enrollment import Enrollment
@@ -330,7 +331,11 @@ class GradeService(BaseService):
             List of matching Grade objects
         """
         try:
-            query = self.query(Grade)
+            query = self.query(Grade).options(
+                joinedload(Grade.enrollment),
+                joinedload(Grade.exam),
+                joinedload(Grade.component),
+            )
 
             if enrollment_id:
                 query = query.filter(Grade.enrollment_id == enrollment_id)
@@ -366,14 +371,26 @@ class GradeService(BaseService):
         Returns:
             Dictionary with weighted average info or None if no grades
         """
-        enrollment = self.query(Enrollment).filter_by(id=enrollment_id).first()
+        enrollment = (
+            self.query(Enrollment)
+            .options(joinedload(Enrollment.student))
+            .filter_by(id=enrollment_id)
+            .first()
+        )
         if not enrollment:
             return None
 
-        # Get all final grades for the enrollment
-        query = self.query(Grade).filter(
-            Grade.enrollment_id == enrollment_id,
-            Grade.is_final == True,  # noqa: E712
+        # Get all final grades for the enrollment with eager loading
+        query = (
+            self.query(Grade)
+            .options(
+                joinedload(Grade.exam),
+                joinedload(Grade.component),
+            )
+            .filter(
+                Grade.enrollment_id == enrollment_id,
+                Grade.is_final == True,  # noqa: E712
+            )
         )
 
         if course_id:

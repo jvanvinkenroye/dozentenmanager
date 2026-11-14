@@ -20,11 +20,12 @@ from flask import (
     send_file,
     url_for,
 )
+from flask_limiter.util import get_remote_address
 from flask_login import login_required
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.utils import secure_filename
 
-from app import db
+from app import db, limiter
 from app.forms.document import (
     BulkDocumentUploadForm,
     DocumentSearchForm,
@@ -34,6 +35,7 @@ from app.forms.document import (
 from app.models.course import Course
 from app.models.document import (
     allowed_file,
+    validate_file_mime_type,
 )
 from app.models.enrollment import Enrollment
 from app.models.exam import Exam
@@ -233,6 +235,18 @@ def upload() -> str | Any:
             file = form.file.data
             original_filename = secure_filename(file.filename)
 
+            # Validate file extension and MIME type
+            if not allowed_file(original_filename):
+                flash(
+                    "Dateityp nicht erlaubt. Erlaubt: PDF, DOC, DOCX, TXT, ODT, RTF.",
+                    "error",
+                )
+                return render_template("document/upload.html", form=form)
+
+            if not validate_file_mime_type(original_filename):
+                flash("Dateityp nicht erlaubt.", "error")
+                return render_template("document/upload.html", form=form)
+
             # Save uploaded file temporarily
             import tempfile
 
@@ -279,6 +293,7 @@ def upload() -> str | Any:
 @bp.route("/bulk-upload", methods=["GET", "POST"])
 @login_required
 @admin_required
+@limiter.limit("1/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def bulk_upload() -> str | Any:
     """
     Upload multiple documents at once.
@@ -318,6 +333,16 @@ def bulk_upload() -> str | Any:
                 original_filename = secure_filename(file.filename)
 
                 if not allowed_file(original_filename):
+                    results["failed"].append(
+                        {
+                            "filename": original_filename,
+                            "reason": "Dateityp nicht erlaubt",
+                        }
+                    )
+                    continue
+
+                # Defense-in-depth: also validate MIME type
+                if not validate_file_mime_type(original_filename):
                     results["failed"].append(
                         {
                             "filename": original_filename,
@@ -720,6 +745,7 @@ def export_annotated(document_id: int) -> Any:
     stem = Path(document.original_filename).stem
     annotated_name = f"{stem}_annotiert_{date.today().isoformat()}.pdf"
 
+    tmp_path: Path | None = None
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
         tmp_path = Path(tmp.name)
 
@@ -748,8 +774,9 @@ def export_annotated(document_id: int) -> Any:
         flash("Fehler beim Exportieren.", "error")
         return redirect(url_for("document.annotate", document_id=document_id))
     finally:
-        with contextlib.suppress(OSError):
-            tmp_path.unlink(missing_ok=True)
+        if tmp_path is not None:
+            with contextlib.suppress(OSError):
+                tmp_path.unlink(missing_ok=True)
 
 
 # Email import routes
@@ -786,6 +813,7 @@ def email_import() -> str | Any:
             course_id = form.course_id.data if form.course_id.data else None
 
             # Save uploaded file temporarily
+            tmp_path: str | None = None
             with tempfile.NamedTemporaryFile(
                 suffix=Path(file.filename).suffix,
                 delete=False,
@@ -795,7 +823,7 @@ def email_import() -> str | Any:
 
             try:
                 # Process the email file
-                summary = import_emails(tmp_path, course_id)
+                summary = import_emails(tmp_path, course_id)  # type: ignore[arg-type]
                 db.session.commit()
 
                 return render_template(
@@ -804,8 +832,9 @@ def email_import() -> str | Any:
                 )
             finally:
                 # Clean up temp file
-                with contextlib.suppress(OSError):
-                    Path(tmp_path).unlink(missing_ok=True)
+                if tmp_path is not None:
+                    with contextlib.suppress(OSError):
+                        Path(tmp_path).unlink(missing_ok=True)
 
         # Show form validation errors
         for _field, errors in form.errors.items():

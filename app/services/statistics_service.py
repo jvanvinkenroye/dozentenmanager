@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models.enrollment import Enrollment
@@ -153,6 +154,17 @@ def get_course_stats(course_id: int, include_exams: bool = True) -> CourseStats 
     if course is None:
         return None
 
+    course = (
+        db.session.query(Course)
+        .options(
+            joinedload(Course.enrollments).joinedload(Enrollment.student),
+            joinedload(Course.enrollments).joinedload(Enrollment.course),
+            joinedload(Course.exams),
+        )
+        .filter_by(id=course_id)
+        .first()
+    )
+
     enrollment_count = (
         db.session.query(func.count(Enrollment.id))
         .filter(Enrollment.course_id == course_id)
@@ -201,6 +213,11 @@ def get_student_stats(student_id: int) -> StudentStats | None:
         db.session.query(Grade, Exam)
         .join(Exam, Grade.exam_id == Exam.id)
         .join(Enrollment, Grade.enrollment_id == Enrollment.id)
+        .options(
+            joinedload(Enrollment.student),
+            joinedload(Enrollment.course),
+            joinedload(Exam.course),
+        )
         .filter(Enrollment.student_id == student_id)
         .order_by(Exam.exam_date.desc())
         .all()

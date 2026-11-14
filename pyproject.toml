@@ -8,6 +8,7 @@ dependencies = [
     "email-validator>=2.3.0",
     "fastmcp>=4.0.0",
     "flask>=3.1.2",
+    "flask-limiter>=4.1.1",
     "flask-login>=0.6.3",
     "flask-migrate>=4.1.0",
     "flask-sqlalchemy>=3.1.1",
@@ -40,6 +41,7 @@ dev = [
     "mypy>=1.18.2",
     "pre-commit>=4.3.0",
     "pytest>=8.4.2",
+    "pytest-asyncio>=1.5.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.14.3",
     "types-flask>=1.1.6",
@@ -138,6 +140,7 @@ addopts = [
     "--cov-fail-under=50",
     "-v",
 ]
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 # Coverage.py configuration

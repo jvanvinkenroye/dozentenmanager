@@ -57,7 +57,6 @@ class AuditService:
         )
 
         db.session.add(audit_log)
-        db.session.commit()
 
         return audit_log
 

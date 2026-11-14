@@ -33,6 +33,7 @@ from app.utils.import_utils import (
     load_import_rows,
     save_import_file,
 )
+from app.utils.redirect import safe_redirect
 
 ENROLLMENT_IMPORT_HEADERS = ["student_id"]
 
@@ -218,13 +219,13 @@ def enroll() -> Any:
     # Validate inputs
     if not student_ids or not course_id:
         flash("Student and course are required.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     try:
         course_id_int = int(course_id)
     except ValueError:
         flash("Invalid course ID.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     service = EnrollmentService()
     enrolled = 0
@@ -265,7 +266,7 @@ def enroll() -> Any:
 
     if enrolled == 0 and errors == 0 and already_enrolled == 0:
         flash("Keine Studierenden ausgewählt.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     message = (
         f"Eingeschrieben: {enrolled}, "
@@ -279,7 +280,7 @@ def enroll() -> Any:
     return redirect(
         url_for("course.show", course_id=course_id_int)
         if course_id_int
-        else (request.referrer or url_for("index"))
+        else safe_redirect(request.referrer, url_for("index"))
     )
 
 
@@ -304,14 +305,14 @@ def unenroll() -> Any:
     # Validate inputs
     if not student_db_id or not course_id:
         flash("Student and course are required.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     try:
         student_id_int = int(student_db_id)
         course_id_int = int(course_id)
     except ValueError:
         flash("Invalid student or course ID.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     try:
         # Get student to find their student_id (matriculation number)
@@ -324,13 +325,13 @@ def unenroll() -> Any:
         )
         if not student:
             flash("Student not found.", "error")
-            return redirect(request.referrer or url_for("index"))
+            return redirect(safe_redirect(request.referrer, url_for("index")))
 
         # Get enrollment for names before deleting
         enrollment = service.get_enrollment(student.student_id, course_id_int)
         if not enrollment:
             flash("Einschreibung nicht gefunden.", "error")
-            return redirect(request.referrer or url_for("index"))
+            return redirect(safe_redirect(request.referrer, url_for("index")))
 
         student_name = f"{enrollment.student.first_name} {enrollment.student.last_name}"
         course_name = enrollment.course.name
@@ -350,12 +351,12 @@ def unenroll() -> Any:
 
     except ValueError as e:
         flash(str(e), "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while unenrolling student: {e}")
         flash("Fehler beim Austragen. Bitte versuchen Sie es erneut.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
 
 @bp.route("/status", methods=["POST"])
@@ -381,18 +382,18 @@ def update_status() -> Any:
     # Validate inputs
     if not student_db_id or not course_id or not status:
         flash("Student, course, and status are required.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     if status not in VALID_STATUSES:
         flash(f"Invalid status. Must be one of: {', '.join(VALID_STATUSES)}", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     try:
         student_id_int = int(student_db_id)
         course_id_int = int(course_id)
     except ValueError:
         flash("Invalid student or course ID.", "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     try:
         # Get student to find their student_id (matriculation number)
@@ -405,7 +406,7 @@ def update_status() -> Any:
         )
         if not student:
             flash("Student not found.", "error")
-            return redirect(request.referrer or url_for("index"))
+            return redirect(safe_redirect(request.referrer, url_for("index")))
 
         # Update enrollment status using service
         service.update_enrollment_status(student.student_id, course_id_int, status)
@@ -422,7 +423,7 @@ def update_status() -> Any:
 
     except ValueError as e:
         flash(str(e), "error")
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))
 
     except SQLAlchemyError as e:
         logger.error(f"Database error while updating enrollment status: {e}")
@@ -430,4 +431,4 @@ def update_status() -> Any:
             "Fehler beim Aktualisieren des Status. Bitte versuchen Sie es erneut.",
             "error",
         )
-        return redirect(request.referrer or url_for("index"))
+        return redirect(safe_redirect(request.referrer, url_for("index")))

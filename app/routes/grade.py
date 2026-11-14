@@ -20,11 +20,12 @@ from flask import (
     request,
     url_for,
 )
+from flask_limiter.util import get_remote_address
 from flask_login import login_required
 from sqlalchemy import func
 from werkzeug.datastructures import FileStorage
 
-from app import db
+from app import db, limiter
 from app.forms.grade import (
     BulkGradeForm,
     ExamComponentForm,
@@ -106,9 +107,9 @@ def index():
 
     is_final = request.args.get("is_final")
     if is_final == "1":
-        query = query.filter(Grade.is_final == True)  # noqa: E712
+        query = query.filter(Grade.is_final.is_(True))
     elif is_final == "0":
-        query = query.filter(Grade.is_final == False)  # noqa: E712
+        query = query.filter(Grade.is_final.is_(False))
 
     # Execute query with pagination
     page = request.args.get("page", 1, type=int)
@@ -260,6 +261,7 @@ def delete(grade_id: int):
 
 @bp.route("/bulk", methods=["GET", "POST"])
 @login_required
+@limiter.limit("3/minute", key_func=get_remote_address)  # type: ignore[union-attr]
 def bulk():
     """Bulk grading interface for an exam."""
     form = BulkGradeForm()
@@ -287,13 +289,47 @@ def bulk():
         graded_by = form.graded_by.data
         is_final = form.is_final.data
 
-        # Process submitted grades
+        # Validate exam exists
+        exam = db.session.get(Exam, exam_id) if exam_id else None
+        if not exam:
+            flash("Prüfung nicht gefunden.", "error")
+            return redirect(url_for("grade.index"))
+
+        # Process submitted grades — only for enrollments belonging to the exam's course
+        # This prevents IDOR: users cannot tamper form keys to grade other courses
         success_count = 0
         error_count = 0
 
+        # Build a set of valid enrollment IDs for this exam's course
+        valid_enrollment_ids = {
+            e.id
+            for e in Enrollment.query.join(Student)
+            .filter(
+                Enrollment.course_id == exam.course_id,
+                Enrollment.status == "active",
+            )
+            .all()
+        }
+
         for key, value in request.form.items():
             if key.startswith("points_") and value:
-                enrollment_id = int(key.replace("points_", ""))
+                try:
+                    enrollment_id = int(key.replace("points_", ""))
+                except ValueError:
+                    error_count += 1
+                    continue
+
+                # SECURITY: Only accept grades for enrollments in this exam's course
+                if enrollment_id not in valid_enrollment_ids:
+                    logger.warning(
+                        "Rejected grade for enrollment %d (not in exam %d's course %d)",
+                        enrollment_id,
+                        exam_id,
+                        exam.course_id,
+                    )
+                    error_count += 1
+                    continue
+
                 try:
                     points = float(value)
                     grade = service.add_grade(
@@ -354,15 +390,15 @@ def dashboard():
     """Grade monitoring dashboard with statistics."""
     # Get overall statistics
     total_grades = Grade.query.count()
-    final_grades = Grade.query.filter(Grade.is_final == True).count()  # noqa: E712
+    final_grades = Grade.query.filter(Grade.is_final.is_(True)).count()
 
     # Get pass/fail rates
     passing = Grade.query.filter(
-        Grade.is_final == True,  # noqa: E712
+        Grade.is_final.is_(True),
         Grade.grade_value <= 4.0,
     ).count()
     failing = Grade.query.filter(
-        Grade.is_final == True,  # noqa: E712
+        Grade.is_final.is_(True),
         Grade.grade_value > 4.0,
     ).count()
 
@@ -371,9 +407,7 @@ def dashboard():
     # Get average grade
     avg_grade = (
         db.session.query(func.avg(Grade.grade_value))
-        .filter(
-            Grade.is_final == True  # noqa: E712
-        )
+        .filter(Grade.is_final.is_(True))
         .scalar()
         or 0
     )
@@ -381,9 +415,7 @@ def dashboard():
     # Get grade distribution
     distribution: list[Any] = (
         db.session.query(Grade.grade_label, func.count(Grade.id))
-        .filter(
-            Grade.is_final == True  # noqa: E712
-        )
+        .filter(Grade.is_final.is_(True))
         .group_by(Grade.grade_label)
         .all()
     )
@@ -413,7 +445,7 @@ def dashboard():
         )
         .join(Exam, Exam.course_id == Course.id)
         .join(Grade, Grade.exam_id == Exam.id)
-        .filter(Grade.is_final == True)  # noqa: E712
+        .filter(Grade.is_final.is_(True))
         .group_by(Course.id)
         .all()
     )

@@ -8,6 +8,7 @@ separating concerns from CLI and web interfaces.
 import logging
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from app.models.student import Student, validate_email, validate_student_id
 from app.services.audit_service import AuditService
@@ -66,6 +67,14 @@ class StudentService(BaseService):
         last_name = last_name.strip()
         if len(last_name) > 100:
             raise ValueError("Last name cannot exceed 100 characters")
+
+        # Validate program
+        if not program or not program.strip():
+            raise ValueError("Program cannot be empty")
+
+        program = program.strip()
+        if len(program) > 100:
+            raise ValueError("Program cannot exceed 100 characters")
 
         # Validate student ID
         student_id = student_id.strip()
@@ -150,7 +159,11 @@ class StudentService(BaseService):
             List of Student objects
         """
         try:
-            query = self.query(Student).filter(Student.deleted_at.is_(None))
+            query = (
+                self.query(Student)
+                .options(selectinload(Student.enrollments))
+                .filter(Student.deleted_at.is_(None))
+            )
 
             if search:
                 search_term = f"%{search}%"
@@ -186,6 +199,7 @@ class StudentService(BaseService):
         try:
             student = (
                 self.query(Student)
+                .options(selectinload(Student.enrollments))
                 .filter_by(id=student_id)
                 .filter(Student.deleted_at.is_(None))
                 .first()

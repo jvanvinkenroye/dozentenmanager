@@ -36,9 +36,15 @@ class Config:
     # Upload configuration
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER") or "uploads"
     MAX_CONTENT_LENGTH = int(
-        os.environ.get("MAX_CONTENT_LENGTH", 16 * 1024 * 1024)
-    )  # 16MB default
+        os.environ.get("MAX_CONTENT_LENGTH", 50 * 1024 * 1024)
+    )  # 50MB default
     ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "txt"}
+
+    # Session security
+    SESSION_COOKIE_SECURE = True  # Only over HTTPS (production)
+    SESSION_COOKIE_HTTPONLY = True  # No JavaScript access
+    SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection
+    PERMANENT_SESSION_LIFETIME = 3600  # 1 hour
 
     # Logging
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
@@ -79,6 +85,7 @@ class DevelopmentConfig(Config):
     )
     SQLALCHEMY_ECHO = True  # Log SQL queries in development
     WTF_CSRF_SSL_STRICT = False  # Allow HTTP in development
+    SESSION_COOKIE_SECURE = False  # Allow on HTTP for local development
 
 
 class TestingConfig(Config):
@@ -102,13 +109,13 @@ class ProductionConfig(Config):
         Path.home() / ".local" / "share" / "dozentenmanager" / "dozentenmanager.db",
     )
 
-    # Ensure secret key is set in production
-    SECRET_KEY = os.environ.get("SECRET_KEY") or Config.SECRET_KEY
-
     def __init__(self) -> None:
         """Validate production configuration."""
-        if not os.environ.get("SECRET_KEY"):
-            raise ValueError("SECRET_KEY must be set in production environment")
+        secret = os.environ.get("FLASK_SECRET_KEY") or os.environ.get("SECRET_KEY")
+        if not secret:
+            raise ValueError(
+                "SECRET_KEY or FLASK_SECRET_KEY must be set in production environment"
+            )
 
 
 # Configuration dictionary for easy access
